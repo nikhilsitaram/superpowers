@@ -170,6 +170,16 @@ After agents return:
 3. **Run full suite** - Verify all fixes work together
 4. **Spot check** - Agents can make systematic errors
 
+## Native Task Integration
+
+Use Claude Code's native task management to track parallel agent work:
+
+- **Before dispatch:** Call `TaskCreate` for each agent's scope — one task per agent. Parallel tasks have NO `blockedBy` dependencies (they run concurrently).
+- **During execution:** Each agent's task should be marked `in_progress` before dispatch.
+- **After completion:** `TaskUpdate` each task to `completed` as agents return results.
+- **Monitoring:** Call `TaskList` to see which agents have completed and which are still running.
+- **Integration task:** Create a final `TaskCreate` with `blockedBy` referencing all agent tasks — this blocks until all agents finish, then you review and integrate results.
+
 ## Real-World Impact
 
 From debugging session (2025-10-03):

@@ -117,6 +117,15 @@ The user then reconsiders the assumption entirely, saving implementation effort.
 - Invoke the writing-plans skill to create a detailed implementation plan
 - Do NOT invoke any other skill. writing-plans is the next step.
 
+## Native Task Integration
+
+Use Claude Code's native task management to track checklist progress:
+
+- **At skill start:** Call `TaskCreate` for each checklist item (explore context, challenge assumptions, ask questions, propose approaches, present design, write doc, transition)
+- **Set dependencies:** Each task should have `blockedBy` referencing the previous task, enforcing sequential completion
+- **During execution:** Call `TaskUpdate` to mark tasks `in_progress` when starting, `completed` when done
+- **Before handoff:** Call `TaskList` to verify all brainstorming tasks are complete before invoking writing-plans
+
 ## Key Principles
 
 - **Batch independent text questions** — up to 4 per AskUserQuestion call, multiple batches if more than 4
