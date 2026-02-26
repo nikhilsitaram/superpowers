@@ -127,15 +127,32 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
 
 When tasks are completed during execution, the executing skill updates this file so progress survives session boundaries.
 
+## Plan Review (Required)
+
+<HARD-GATE>
+After saving the plan and `.tasks.json`, run plan-review BEFORE offering execution options. Do NOT skip this step. Do NOT proceed to execution without a passing review.
+</HARD-GATE>
+
+**REQUIRED SUB-SKILL:** Use superpowers:plan-review to validate the plan.
+
+Provide the reviewer with:
+- The plan file path
+- The design doc path (if one exists from brainstorming)
+- The codebase root (worktree path)
+
+**If issues found:** Fix the plan, update `.tasks.json` if structure changed, re-run review.
+
+**If clean:** Proceed to execution handoff.
+
 ## Execution Handoff
 
 <HARD-GATE>
-After saving the plan and `.tasks.json`, use `AskUserQuestion` to present the execution choice. Do NOT proceed to implementation without an explicit answer.
+After plan review passes, use `AskUserQuestion` to present the execution choice. Do NOT proceed to implementation without an explicit answer.
 </HARD-GATE>
 
 Use `AskUserQuestion` with these options:
 
-**Question:** "Plan saved to `docs/plans/<filename>.md`. How would you like to execute?"
+**Question:** "Plan reviewed and validated. Saved to `docs/plans/<filename>.md`. How would you like to execute?"
 
 **Option 1: Subagent-Driven (this session)**
 - Description: "Dispatch an Opus orchestrator subagent with fresh context to run subagent-driven-development. Fast iteration, two-stage review per task."

@@ -25,6 +25,15 @@ Check for existing task state from a prior session:
 4. If `.tasks.json` found: Recreate native tasks with `TaskCreate`, preserving `blockedBy` dependencies and marking already-completed tasks
 5. If neither exists: Bootstrap tasks from the plan (Step 1b below)
 
+### Step 0.5: Verify Plan Review
+
+Before executing, confirm the plan has passed superpowers:plan-review:
+1. Check if a plan review was already run (ask user or check conversation context)
+2. If NOT reviewed: **REQUIRED SUB-SKILL:** Run superpowers:plan-review before proceeding
+3. If reviewed and passed: Continue to Step 1
+
+**Do NOT skip this.** Executing an unreviewed plan wastes implementation effort on inconsistencies that are cheap to fix in the plan.
+
 ### Step 1: Load and Review Plan
 1. Read plan file
 2. Review critically - identify any questions or concerns about the plan
@@ -99,5 +108,6 @@ After implementation review passes:
 **Required workflow skills:**
 - **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
 - **superpowers:writing-plans** - Creates the plan this skill executes
+- **superpowers:plan-review** - Validates plan consistency before execution begins
 - **superpowers:implementation-review** - Fresh-eyes review of entire feature after all batches
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
