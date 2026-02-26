@@ -53,15 +53,16 @@ digraph process {
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
         "Implementer subagent fixes quality issues" [shape=box];
-        "Mark task complete in TodoWrite" [shape=box];
+        "TaskUpdate: mark task completed" [shape=box];
     }
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
+    "Read plan, extract all tasks with full text, note context, TaskCreate for each" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Read plan, extract all tasks with full text, note context, TaskCreate for each" -> "TaskList to find next pending task";
+    "TaskList to find next pending task" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -74,9 +75,9 @@ digraph process {
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
-    "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "Code quality reviewer subagent approves?" -> "TaskUpdate: mark task completed" [label="yes"];
+    "TaskUpdate: mark task completed" -> "More tasks remain?";
+    "More tasks remain?" -> "TaskList to find next pending task" [label="yes"];
     "More tasks remain?" -> "Use superpowers:implementation-review for fresh-eyes review of entire feature" [label="no"];
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" -> "Use superpowers:finishing-a-development-branch";
 }
@@ -95,7 +96,7 @@ You: I'm using Subagent-Driven Development to execute this plan.
 
 [Read plan file once: docs/plans/feature-plan.md]
 [Extract all 5 tasks with full text and context]
-[Create TodoWrite with all tasks]
+[Create TaskCreate/TaskUpdate with all tasks]
 
 Task 1: Hook installation script
 

@@ -17,6 +17,10 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
 
+## REQUIRED FIRST STEP: Initialize Task Tracking
+
+Before any exploration or planning, call `TaskList` to check for existing tasks from a prior session. Then call `TaskCreate` for each major planning phase (explore codebase, write tasks, save plan, handoff).
+
 ## Bite-Sized Task Granularity
 
 **Each step is one action (2-5 minutes):**
@@ -94,22 +98,71 @@ git commit -m "feat: add specific feature"
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
 
+## Task Persistence
+
+After saving the plan, write a `.tasks.json` file co-located with the plan document. This enables cross-session resume:
+
+```json
+{
+  "planFile": "docs/plans/YYYY-MM-DD-feature-name.md",
+  "createdAt": "ISO-8601 timestamp",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task 1: Component Name",
+      "status": "pending",
+      "blockedBy": []
+    },
+    {
+      "id": 2,
+      "title": "Task 2: Next Component",
+      "status": "pending",
+      "blockedBy": [1]
+    }
+  ]
+}
+```
+
+**File location:** Same directory as the plan, e.g. `docs/plans/.tasks.json`
+
+When tasks are completed during execution, the executing skill updates this file so progress survives session boundaries.
+
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+<HARD-GATE>
+After saving the plan and `.tasks.json`, use `AskUserQuestion` to present the execution choice. Do NOT proceed to implementation without an explicit answer.
+</HARD-GATE>
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+Use `AskUserQuestion` with these options:
 
-**1. Subagent-Driven (this session)** - I dispatch fresh subagent per task, review between tasks, fast iteration
+**Question:** "Plan saved to `docs/plans/<filename>.md`. How would you like to execute?"
 
-**2. Parallel Session (separate)** - Open new session with executing-plans, batch execution with checkpoints
+**Option 1: Subagent-Driven (this session)**
+- Description: "Dispatch an Opus orchestrator subagent with fresh context to run subagent-driven-development. Fast iteration, two-stage review per task."
 
-**Which approach?"**
+**Option 2: Parallel Session (separate)**
+- Description: "Open a new session in the worktree directory and use executing-plans. Batch execution with human checkpoints between batches."
+
+**After user answers:**
 
 **If Subagent-Driven chosen:**
-- **REQUIRED SUB-SKILL:** Use superpowers:subagent-driven-development
-- Stay in this session
-- Fresh subagent per task + code review
+
+Dispatch a fresh **Opus** orchestrator subagent via the `Task` tool with `model: "opus"`. The orchestrator starts with zero prior context — all planning baggage stays in the parent. This is the automatic equivalent of `/clear` before execution.
+
+The orchestrator prompt MUST include:
+1. The full path to the plan file (e.g. `docs/plans/YYYY-MM-DD-feature.md`)
+2. The working directory (worktree path)
+3. Instruction to use `superpowers:subagent-driven-development` skill
+4. Instruction to use `superpowers:finishing-a-development-branch` when complete
+
+Example Task dispatch:
+```
+Task(
+  description: "Execute implementation plan",
+  model: "opus",
+  prompt: "You are an orchestrator. Read the plan at docs/plans/<filename>.md and execute it using the superpowers:subagent-driven-development skill. When all tasks are complete, use superpowers:finishing-a-development-branch to wrap up. Working directory: <worktree-path>"
+)
+```
 
 **If Parallel Session chosen:**
 - Guide them to open new session in worktree

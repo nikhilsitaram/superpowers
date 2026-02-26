@@ -15,20 +15,31 @@ Load plan, review critically, execute tasks in batches, report for review betwee
 
 ## The Process
 
+### Step 0: Load Persisted Tasks
+
+Check for existing task state from a prior session:
+
+1. Call `TaskList` to check for existing native tasks
+2. If tasks exist: Resume from where the previous session left off — find the first non-completed task
+3. If no tasks: Look for `.tasks.json` co-located with the plan file (e.g. `docs/plans/.tasks.json`)
+4. If `.tasks.json` found: Recreate native tasks with `TaskCreate`, preserving `blockedBy` dependencies and marking already-completed tasks
+5. If neither exists: Bootstrap tasks from the plan (Step 1b below)
+
 ### Step 1: Load and Review Plan
 1. Read plan file
 2. Review critically - identify any questions or concerns about the plan
 3. If concerns: Raise them with your human partner before starting
-4. If no concerns: Create TodoWrite and proceed
+4. If no concerns and no tasks loaded from Step 0: Create tasks with `TaskCreate` for each plan task, setting `blockedBy` dependencies for sequential tasks (Step 1b)
 
 ### Step 2: Execute Batch
 **Default: First 3 tasks**
 
 For each task:
-1. Mark as in_progress
+1. `TaskUpdate` to mark as `in_progress`
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
-4. Mark as completed
+4. `TaskUpdate` to mark as `completed`
+5. Update `.tasks.json` with new status (enables cross-session resume)
 
 ### Step 3: Report
 When batch complete:
