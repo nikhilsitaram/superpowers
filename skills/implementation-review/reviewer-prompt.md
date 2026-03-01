@@ -34,6 +34,16 @@ Task tool (general-purpose):
 
     Review ALL files in the diff. Read every file that was changed.
 
+    ## Completion Report
+
+    The orchestrator has written a completion report for this phase in the plan document.
+    Read the plan file at {PLAN_FILE_PATH} to understand:
+    - What was completed (Summary section)
+    - What deviated from the plan and why (Deviations section)
+
+    Use this context to distinguish intentional deviations from accidental inconsistencies.
+    An intentional deviation documented in the completion report is NOT a review issue.
+
     ## Your Focus: Cross-Task Issues
 
     Per-task reviewers already checked code quality, test coverage, and spec compliance
@@ -96,6 +106,16 @@ Task tool (general-purpose):
     **Issues found:** [count]
     **Severity:** [Critical / Important / Minor for each]
     **Ready to merge after fixing these?** [Yes/No]
+
+    ### Handoff Notes for Next Phase (if multi-phase)
+
+    If this is a multi-phase plan and there are future phases, list anything
+    the next phase's implementer needs to know:
+    - API/interface shapes that differ from what the plan assumed
+    - New dependencies or config that future phases will need
+    - Scope changes that affect future phase planning
+
+    If nothing to hand off, write "No handoff notes needed."
 
     ## Critical Rules
 

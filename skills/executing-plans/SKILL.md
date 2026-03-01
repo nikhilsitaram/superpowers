@@ -21,7 +21,7 @@ Check for existing task state from a prior session:
 
 1. Call `TaskList` to check for existing native tasks
 2. If tasks exist: Resume from where the previous session left off — find the first non-completed task
-3. If no tasks: Look for `.tasks.json` co-located with the plan file (e.g. `docs/plans/.tasks.json`)
+3. If no tasks: Look for `.tasks.json` co-located with the plan file (e.g. `docs/plans/YYYY-MM-DD-<topic>/.tasks.json`)
 4. If `.tasks.json` found: Recreate native tasks with `TaskCreate`, preserving `blockedBy` dependencies and marking already-completed tasks
 5. If neither exists: Bootstrap tasks from the plan (Step 1b below)
 
@@ -114,6 +114,29 @@ When reality diverges from the plan, follow these rules in order:
 - Fundamental approach needs rethinking
 
 **Don't force through blockers** - stop and ask.
+
+## Plan Doc Updates
+
+The executor updates the plan document during execution to maintain a living record.
+
+**On first task start (Step 2, first batch):**
+1. Read the plan file
+2. Change the frontmatter `status: Not Yet Started` to `status: In Development`
+3. Change the current phase's `**Status:** Not Yet Started` to `**Status:** In Development`
+
+**On each task completion (Step 2, within batch):**
+1. In the plan file's phase checklist, change `- [ ] Task N: ...` to `- [x] Task N: ...` for the completed task
+
+**After all tasks complete (Step 5, before implementation-review):**
+1. Append a `## Completion Report — [Phase Name]` section to the end of the plan doc
+2. Include:
+   - `**Completed:** YYYY-MM-DD`
+   - `### Summary` — 2-3 sentences describing what was built
+   - `### Deviations from Plan` — each deviation with: what changed, why, and impact (files/scope affected). Include Rule 1-3 auto-fixes from batch reports. If no deviations, write "None — implemented as planned."
+
+**After implementation-review passes (Step 5, after review clean):**
+1. Change the current phase's status to `**Status:** Complete (YYYY-MM-DD)`
+2. If all phases are complete, change the frontmatter to `status: Complete (YYYY-MM-DD)`
 
 ## Remember
 - Review plan critically first

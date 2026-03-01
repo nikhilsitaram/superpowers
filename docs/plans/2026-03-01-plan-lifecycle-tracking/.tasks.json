@@ -1,0 +1,13 @@
+{
+  "planFile": "docs/plans/2026-03-01-plan-lifecycle-tracking/plan-plan-lifecycle-tracking.md",
+  "createdAt": "2026-03-01T14:30:00-06:00",
+  "tasks": [
+    { "id": 1, "title": "Task 1: Update brainstorming output path convention", "status": "pending", "blockedBy": [] },
+    { "id": 2, "title": "Task 2: Update writing-plans output path and add frontmatter generation", "status": "pending", "blockedBy": [] },
+    { "id": 3, "title": "Task 3: Commit phase 1 changes", "status": "pending", "blockedBy": [1, 2] },
+    { "id": 4, "title": "Task 4: Add plan doc status updates to subagent-driven-development", "status": "pending", "blockedBy": [3] },
+    { "id": 5, "title": "Task 5: Add plan doc status updates to executing-plans", "status": "pending", "blockedBy": [3] },
+    { "id": 6, "title": "Task 6: Add completion report and handoff notes to implementation-review", "status": "pending", "blockedBy": [3] },
+    { "id": 7, "title": "Task 7: Commit phase 2 changes", "status": "pending", "blockedBy": [4, 5, 6] }
+  ]
+}
