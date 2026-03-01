@@ -69,7 +69,7 @@ Based on feedback:
 After all tasks complete and verified:
 - Verify Task 0 broad integration tests pass (GREEN) — if they don't, the feature isn't done
 - **REQUIRED SUB-SKILL:** Use superpowers:implementation-review
-- Implementation-review now **verifies** integration test coverage (Level 1 passing, Level 2 boundary tests exist) rather than writing integration tests from scratch. See @testing-anti-patterns.md Anti-Pattern 5 for the full three-level framework.
+- Implementation-review **verifies** integration test coverage (Level 1 passing, Level 2 boundary tests exist). See @testing-anti-patterns.md Anti-Pattern 5 for the full three-level framework.
 - Fix any cross-task issues found, re-run until clean
 
 ### Step 6: Complete Development
