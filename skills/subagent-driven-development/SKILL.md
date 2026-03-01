@@ -57,11 +57,13 @@ digraph process {
     }
 
     "Read plan, extract all tasks with full text, note context, TaskCreate for each" [shape=box];
+    "Execute Task 0: Broad integration tests (all RED)" [shape=box];
     "More tasks remain?" [shape=diamond];
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, TaskCreate for each" -> "TaskList to find next pending task";
+    "Read plan, extract all tasks with full text, note context, TaskCreate for each" -> "Execute Task 0: Broad integration tests (all RED)";
+    "Execute Task 0: Broad integration tests (all RED)" -> "TaskList to find next pending task";
     "TaskList to find next pending task" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
@@ -99,6 +101,15 @@ You: I'm using Subagent-Driven Development to execute this plan.
 [Read plan file once: docs/plans/YYYY-MM-DD-feature/plan-feature.md]
 [Extract all 5 tasks with full text and context]
 [Create TaskCreate/TaskUpdate with all tasks]
+
+Task 0: Broad integration tests
+
+[Dispatch implementer subagent for Task 0]
+Implementer: Created test_feature_e2e.py with 4 failing tests.
+  Created stub files for modules. All tests RED as expected. Committed.
+
+[Spec + code quality review pass]
+[Mark Task 0 complete]
 
 Task 1: Hook installation script
 
@@ -161,6 +172,8 @@ Code reviewer: ✅ Approved
 ...
 
 [After all tasks]
+[Verify Task 0 broad integration tests now pass (GREEN)]
+
 [Use superpowers:implementation-review — fresh-eyes review of entire feature]
 Implementation reviewer: Found 2 cross-task issues:
   - Duplicated constant in fetcher.ts and cache.ts
@@ -172,6 +185,8 @@ Implementation reviewer: No cross-task issues remaining
 [Use superpowers:finishing-a-development-branch]
 Done!
 ```
+
+**Integration test levels:** Task 0 provides Level 1 (broad acceptance tests, written first). Each implementer writes Level 2 (boundary tests at cross-task seams, during TDD). Implementation-review provides Level 3 (coverage verification). See @testing-anti-patterns.md Anti-Pattern 5 for details.
 
 ## Advantages
 
