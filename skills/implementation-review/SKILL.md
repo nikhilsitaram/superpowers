@@ -59,7 +59,7 @@ Before dispatching the reviewer:
 2. **Spot-check Level 2 tests** — at each cross-task seam, verify a boundary test exists using real components.
 3. **Fill gaps** — if boundary tests are missing at a seam, write them now and commit.
 
-**Skip verification when:** Single-module change, no cross-task data flow, or purely additive tasks with no interactions.
+**Skip verification when:** Single-module change, no cross-task data flow, or purely additive tasks with no interactions (e.g., adding independent utility functions).
 
 The reviewer will then assess whether coverage is adequate across all three levels and flag remaining gaps.
 

@@ -56,14 +56,13 @@ digraph process {
         "TaskUpdate: mark task completed" [shape=box];
     }
 
-    "Read plan, extract all tasks with full text, note context, TaskCreate for each" [shape=box];
-    "Execute Task 0: Broad integration tests (all RED)" [shape=box];
+    "Read plan, extract all tasks with full text, note context, TaskCreate for each\n(Task 0 is first: broad integration tests)" [shape=box];
     "More tasks remain?" [shape=diamond];
+    "Verify Task 0 broad integration tests pass (GREEN)" [shape=box];
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, TaskCreate for each" -> "Execute Task 0: Broad integration tests (all RED)";
-    "Execute Task 0: Broad integration tests (all RED)" -> "TaskList to find next pending task";
+    "Read plan, extract all tasks with full text, note context, TaskCreate for each\n(Task 0 is first: broad integration tests)" -> "TaskList to find next pending task";
     "TaskList to find next pending task" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
@@ -82,7 +81,8 @@ digraph process {
     "More tasks remain?" -> "TaskList to find next pending task" [label="yes"];
     "Write completion report to plan doc" [shape=box];
     "More tasks remain?" -> "Write completion report to plan doc" [label="no"];
-    "Write completion report to plan doc" -> "Use superpowers:implementation-review for fresh-eyes review of entire feature";
+    "Write completion report to plan doc" -> "Verify Task 0 broad integration tests pass (GREEN)";
+    "Verify Task 0 broad integration tests pass (GREEN)" -> "Use superpowers:implementation-review for fresh-eyes review of entire feature";
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
