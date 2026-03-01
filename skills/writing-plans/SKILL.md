@@ -15,7 +15,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<project-name>/plan-<project-name>.md` (inside the project folder created by brainstorming)
+**Save plans to:** `docs/plans/YYYY-MM-DD-<topic>/plan-<topic>.md` (inside the topic folder created by brainstorming)
 
 ## REQUIRED FIRST STEP: Initialize Task Tracking
 
@@ -176,7 +176,7 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
 
 ```json
 {
-  "planFile": "docs/plans/YYYY-MM-DD-project-name/plan-project-name.md",
+  "planFile": "docs/plans/YYYY-MM-DD-topic/plan-topic.md",
   "createdAt": "ISO-8601 timestamp",
   "tasks": [
     {
@@ -195,7 +195,7 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
 }
 ```
 
-**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<project-name>/.tasks.json`
+**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<topic>/.tasks.json`
 
 When tasks are completed during execution, the executing skill updates this file so progress survives session boundaries.
 
@@ -224,7 +224,7 @@ After plan review passes, use `AskUserQuestion` to present the execution choice.
 
 Use `AskUserQuestion` with these options:
 
-**Question:** "Plan reviewed and validated. Saved to `docs/plans/<project-folder>/plan-<project-name>.md`. How would you like to execute?"
+**Question:** "Plan reviewed and validated. Saved to `docs/plans/<topic-folder>/plan-<topic>.md`. How would you like to execute?"
 
 **Option 1: Subagent-Driven (this session)**
 - Description: "Dispatch an Opus orchestrator subagent with fresh context to run subagent-driven-development. Fast iteration, two-stage review per task."
@@ -239,7 +239,7 @@ Use `AskUserQuestion` with these options:
 Dispatch a fresh **Opus** orchestrator subagent via the `Task` tool with `model: "opus"`. The orchestrator starts with zero prior context — all planning baggage stays in the parent. This is the automatic equivalent of `/clear` before execution.
 
 The orchestrator prompt MUST include:
-1. The full path to the plan file (e.g. `docs/plans/YYYY-MM-DD-project-name/plan-project-name.md`)
+1. The full path to the plan file (e.g. `docs/plans/YYYY-MM-DD-topic/plan-topic.md`)
 2. The working directory (worktree path)
 3. Instruction to use `superpowers:subagent-driven-development` skill
 4. Instruction to use `superpowers:finishing-a-development-branch` when complete
@@ -249,7 +249,7 @@ Example Task dispatch:
 Task(
   description: "Execute implementation plan",
   model: "opus",
-  prompt: "You are an orchestrator. Read the plan at docs/plans/<project-folder>/plan-<project-name>.md and execute it using the superpowers:subagent-driven-development skill. When all tasks are complete, use superpowers:finishing-a-development-branch to wrap up. Working directory: <worktree-path>"
+  prompt: "You are an orchestrator. Read the plan at docs/plans/<topic-folder>/plan-<topic>.md and execute it using the superpowers:subagent-driven-development skill. When all tasks are complete, use superpowers:finishing-a-development-branch to wrap up. Working directory: <worktree-path>"
 )
 ```
 

@@ -21,7 +21,7 @@ Check for existing task state from a prior session:
 
 1. Call `TaskList` to check for existing native tasks
 2. If tasks exist: Resume from where the previous session left off — find the first non-completed task
-3. If no tasks: Look for `.tasks.json` co-located with the plan file (e.g. `docs/plans/YYYY-MM-DD-<project-name>/.tasks.json`)
+3. If no tasks: Look for `.tasks.json` co-located with the plan file (e.g. `docs/plans/YYYY-MM-DD-<topic>/.tasks.json`)
 4. If `.tasks.json` found: Recreate native tasks with `TaskCreate`, preserving `blockedBy` dependencies and marking already-completed tasks
 5. If neither exists: Bootstrap tasks from the plan (Step 1b below)
 

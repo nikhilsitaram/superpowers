@@ -43,7 +43,7 @@ status: Complete (2026-03-01)
 
 **Verification:** Read the modified file, confirm both locations reference the new path convention.
 
-**Done when:** Brainstorming skill references `docs/plans/YYYY-MM-DD-<project-name>/design-<project-name>.md` instead of `docs/plans/YYYY-MM-DD-<topic>-design.md` in both the checklist and the documentation section.
+**Done when:** Brainstorming skill references `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md` instead of `docs/plans/YYYY-MM-DD-<topic>-design.md` in both the checklist and the documentation section.
 
 **Avoid:** Don't change any other behavior in brainstorming — only the output path convention. Don't add lifecycle status tracking here (that's writing-plans' job).
 
@@ -56,7 +56,7 @@ Change:
 
 To:
 ```markdown
-6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<project-name>/design-<project-name>.md` and commit
+6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md` and commit
 ```
 
 **Step 2: Edit the "After the Design > Documentation" section (lines 111-112)**
@@ -70,8 +70,8 @@ Change:
 To:
 ```markdown
 **Documentation:**
-- Create project folder `docs/plans/YYYY-MM-DD-<project-name>/` if it doesn't exist
-- Write the validated design to `docs/plans/YYYY-MM-DD-<project-name>/design-<project-name>.md`
+- Create topic folder `docs/plans/YYYY-MM-DD-<topic>/` if it doesn't exist
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`
 ```
 
 **Step 3: Verify**
@@ -90,10 +90,10 @@ Read `skills/brainstorming/SKILL.md` and confirm both references use the new con
 **Verification:** Read the modified file, confirm the save path, header template, and .tasks.json path all reference the new convention, and the header includes the status frontmatter.
 
 **Done when:**
-- Save path says `docs/plans/YYYY-MM-DD-<project-name>/plan-<project-name>.md`
+- Save path says `docs/plans/YYYY-MM-DD-<topic>/plan-<topic>.md`
 - Plan header template includes `status: Not Yet Started` in YAML frontmatter
 - Plan header template includes per-phase status lines and task checklists
-- `.tasks.json` path references the project folder
+- `.tasks.json` path references the topic folder
 
 **Avoid:** Don't change task structure, review process, or execution handoff — only the output convention and header template. Don't add completion report writing here (that's the orchestrators' job).
 
@@ -106,7 +106,7 @@ Change:
 
 To:
 ```markdown
-**Save plans to:** `docs/plans/YYYY-MM-DD-<project-name>/plan-<project-name>.md` (inside the project folder created by brainstorming)
+**Save plans to:** `docs/plans/YYYY-MM-DD-<topic>/plan-<topic>.md` (inside the topic folder created by brainstorming)
 ```
 
 **Step 2: Edit the Plan Document Header template (lines 37-49)**
@@ -170,7 +170,7 @@ Change:
 
 To:
 ```markdown
-**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<project-name>/.tasks.json`
+**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<topic>/.tasks.json`
 ```
 
 Also update the `planFile` field in the JSON example:
@@ -182,7 +182,7 @@ Change:
 
 To:
 ```json
-"planFile": "docs/plans/YYYY-MM-DD-project-name/plan-project-name.md",
+"planFile": "docs/plans/YYYY-MM-DD-topic/plan-topic.md",
 ```
 
 **Step 4: Verify**
@@ -209,7 +209,7 @@ Read `skills/writing-plans/SKILL.md` and confirm all three locations are updated
 git add skills/brainstorming/SKILL.md skills/writing-plans/SKILL.md
 git commit -m "feat(skills): per-project plan folders and lifecycle frontmatter
 
-Update brainstorming to write design docs into per-project folders.
+Update brainstorming to write design docs into per-topic folders.
 Update writing-plans to write plans into same folders with status
 frontmatter and per-phase task checklists.
 
@@ -458,7 +458,7 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
 ### Summary
 
-Updated brainstorming and writing-plans skills to use per-project folder convention (`docs/plans/YYYY-MM-DD-<project-name>/`) instead of flat file naming. Added YAML frontmatter with `status` field and per-phase status tracking with task checklists to the plan document header template.
+Updated brainstorming and writing-plans skills to use per-topic folder convention (`docs/plans/YYYY-MM-DD-<topic>/`) instead of flat file naming. Added YAML frontmatter with `status` field and per-phase status tracking with task checklists to the plan document header template.
 
 ### Deviations from Plan
 

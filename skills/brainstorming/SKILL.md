@@ -28,7 +28,7 @@ You MUST create a task for each of these items and complete them in order:
 3. **Ask clarifying questions** — in smart batches, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<project-name>/design-<project-name>.md` and commit
+6. **Write design doc** — save to `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md` and commit
 7. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
@@ -109,8 +109,8 @@ The user then reconsiders the assumption entirely, saving implementation effort.
 ## After the Design
 
 **Documentation:**
-- Create project folder `docs/plans/YYYY-MM-DD-<project-name>/` if it doesn't exist
-- Write the validated design to `docs/plans/YYYY-MM-DD-<project-name>/design-<project-name>.md`
+- Create topic folder `docs/plans/YYYY-MM-DD-<topic>/` if it doesn't exist
+- Write the validated design to `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
 

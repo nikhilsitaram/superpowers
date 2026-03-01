@@ -99,20 +99,20 @@ Brief narrative of what was built. 2-3 sentences covering the scope delivered.
 
 ## Plan Doc Directory Convention
 
-Plan documents are organized in per-project folders under `docs/plans/`:
+Plan documents are organized in per-topic folders under `docs/plans/`:
 
 ```
 docs/plans/
-  YYYY-MM-DD-project-name/
-    design-project-name.md
-    plan-project-name.md
+  YYYY-MM-DD-topic/
+    design-topic.md
+    plan-topic.md
 ```
 
-**File naming:** `{design|plan}-{project name}.md`
+**File naming:** `{design|plan}-{topic}.md`
 
 - `design-` prefix for design docs (output of brainstorming)
 - `plan-` prefix for implementation plans (output of writing-plans)
-- One plan doc per project containing all phases
+- One plan doc per topic, containing all phases
 
 **Skills affected:** brainstorming (writes design docs) and writing-plans (writes plan docs) need their output path conventions updated to use this structure.
 
@@ -122,16 +122,16 @@ docs/plans/
 
 Update output path convention:
 
-- Create project folder `docs/plans/YYYY-MM-DD-<project-name>/` if it doesn't exist
-- Write design doc as `design-<project-name>.md` inside that folder
+- Create topic folder `docs/plans/YYYY-MM-DD-<topic>/` if it doesn't exist
+- Write design doc as `design-<topic>.md` inside that folder
 - Previously: `docs/plans/YYYY-MM-DD-<topic>-design.md` (flat)
 
 ### 2. writing-plans
 
 Update output path convention and generate lifecycle frontmatter:
 
-- Write plan doc into the project folder created by brainstorming: `docs/plans/YYYY-MM-DD-<project-name>/`
-- Name as `plan-<project-name>.md`
+- Write plan doc into the topic folder created by brainstorming: `docs/plans/YYYY-MM-DD-<topic>/`
+- Name as `plan-<topic>.md`
 - All phases go in one document
 - Previously: `docs/plans/YYYY-MM-DD-<feature-name>.md` (flat)
 - Add `status: Not Yet Started` to frontmatter
