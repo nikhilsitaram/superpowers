@@ -82,11 +82,11 @@ Task tool (general-purpose):
        - Return values computed but never used by callers
        - Interfaces defined in one task but not implemented where needed
 
-    7. **Inadequate integration test coverage**
-       - Cross-boundary interactions that the integration tests don't cover
-       - Integration tests that mock away the very boundaries they should verify
-       - Data flows through multiple modules where the integration test only checks part of the path
-       - Configuration consumed by multiple modules with no test that validates the full path
+    7. **Inadequate integration test coverage (three levels)**
+       - **Level 1 (broad acceptance tests):** Do they exist from Task 0? Do they all pass?
+       - **Level 2 (boundary tests):** At each cross-task seam, is there a test using real components?
+       - **Level 3 (gaps):** Are there cross-boundary interactions not covered by Level 1 or 2?
+       - Integration tests that mock away the boundaries they should verify
 
     ## How to Review
 
@@ -109,18 +109,25 @@ Task tool (general-purpose):
 
     ### Integration Test Coverage Assessment
 
-    Review the integration tests that were written before this review.
-    For each cross-boundary interaction in the feature:
-    - **Interaction**: Which components/modules connect
-    - **Covered?**: Yes/No — is there an integration test for this?
-    - **If gap**: What's missing and why it matters
+    **Level 1 — Broad Acceptance Tests (from Task 0):**
+    - Exist? [Yes/No]
+    - All passing? [Yes/No — list failures if any]
 
-    If integration test coverage is adequate, write "Integration test coverage is adequate — [brief rationale]."
+    **Level 2 — Boundary Tests (from per-task TDD):**
+    For each cross-task seam:
+    - **Seam**: [Component A] → [Component B]
+    - **Test exists?**: Yes/No
+    - **Uses real components?**: Yes/No
+
+    **Level 3 — Gaps:**
+    - [List any cross-boundary interactions not covered by Level 1 or 2]
+
+    If coverage is adequate across all three levels, write "Integration test coverage is adequate — [brief rationale]."
 
     ### Assessment
 
     **Issues found:** [count]
-    **Integration test gaps:** [count]
+    **Integration test gaps:** Level 1: [count], Level 2: [count], Level 3: [count]
     **Severity:** [Critical / Important / Minor for each]
     **Ready to merge after fixing these?** [Yes/No]
 

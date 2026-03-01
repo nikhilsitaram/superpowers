@@ -1,0 +1,60 @@
+{
+  "planFile": "docs/plans/2026-03-01-three-level-integration-testing/plan-three-level-integration-testing.md",
+  "createdAt": "2026-03-01T21:38:00.000Z",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Task 1: Define three-level vocabulary in testing-anti-patterns.md",
+      "status": "pending",
+      "blockedBy": []
+    },
+    {
+      "id": 2,
+      "title": "Task 2: Add boundary tests to TDD skill",
+      "status": "pending",
+      "blockedBy": [1]
+    },
+    {
+      "id": 3,
+      "title": "Task 3: Add boundary test instruction to implementer prompt",
+      "status": "pending",
+      "blockedBy": [2]
+    },
+    {
+      "id": 4,
+      "title": "Task 4: Add Task 0 convention to writing-plans",
+      "status": "pending",
+      "blockedBy": [1]
+    },
+    {
+      "id": 5,
+      "title": "Task 5: Add Task 0 to subagent-driven-development flow",
+      "status": "pending",
+      "blockedBy": [4]
+    },
+    {
+      "id": 6,
+      "title": "Task 6: Add Task 0 and verify-not-write to executing-plans",
+      "status": "pending",
+      "blockedBy": [4]
+    },
+    {
+      "id": 7,
+      "title": "Task 7: Shift implementation-review from write to verify",
+      "status": "pending",
+      "blockedBy": [1]
+    },
+    {
+      "id": 8,
+      "title": "Task 8: Update reviewer prompt for three-level assessment",
+      "status": "pending",
+      "blockedBy": [7]
+    },
+    {
+      "id": 9,
+      "title": "Task 9: Add Task 0 validation to plan-review",
+      "status": "pending",
+      "blockedBy": [7]
+    }
+  ]
+}

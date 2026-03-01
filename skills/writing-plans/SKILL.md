@@ -56,6 +56,7 @@ status: Not Yet Started
 ### Phase 1 — [Phase Name]
 **Status:** Not Yet Started
 
+- [ ] Task 0: Write failing broad integration tests
 - [ ] Task 1: [Task title]
 - [ ] Task 2: [Task title]
 
@@ -156,11 +157,41 @@ Embed the contract in the plan so executors don't need to explore the codebase t
 
 Example ordering:
 ```
-Task 1: Define UserService interface and types     ← contract
-Task 2: Implement UserService against interface     ← implements contract
-Task 3: Implement UserRepository against interface  ← implements contract
-Task 4: Wire UserService into API routes            ← consumes implementations
+Task 0: Write failing broad integration tests        ← acceptance criteria (stays RED)
+Task 1: Define UserService interface and types       ← contract
+Task 2: Implement UserService against interface      ← implements contract
+Task 3: Implement UserRepository against interface   ← implements contract
+Task 4: Wire implementations to consumers            ← Task 0 tests go GREEN
 ```
+
+## Broad Integration Tests (Task 0)
+
+Every multi-task plan MUST include Task 0: failing broad integration tests that define the feature's acceptance criteria in code.
+
+**What Task 0 contains:**
+- End-to-end tests that exercise the feature's complete flow
+- They import/reference modules that later tasks will create
+- Stub files (empty exports, interface-only) so tests compile/parse
+- All tests fail (RED) — they define "done," implementation hasn't started yet
+
+**This is the outer loop of double-loop TDD:** Task 0 tests stay RED throughout implementation. They go GREEN when the last piece lands. If they don't go green, the feature isn't done.
+
+**Task 0 follows normal task structure** (Files, Verification, Done when, Steps). Example:
+
+    ### Task 0: Write failing broad integration tests
+
+    **Files:**
+    - Create: `tests/integration/test_feature_e2e.py`
+    - Create: `src/module_a.py` (stub — empty exports only)
+    - Create: `src/module_b.py` (stub — empty exports only)
+
+    **Verification:** `pytest tests/integration/test_feature_e2e.py -v` — all tests FAIL (expected)
+
+    **Done when:** Integration test file exists with 3+ test cases covering the feature's acceptance criteria. All tests fail because implementations are stubs. Stubs compile/parse without errors.
+
+    **Avoid:** Don't implement any real logic in stubs — just enough for tests to parse and fail on assertions, not on import errors.
+
+**Skip Task 0 when:** Single-module change, no cross-task data flow, or purely additive tasks with no interactions (e.g., adding independent utility functions).
 
 ## Remember
 - Exact file paths always
@@ -180,10 +211,16 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
   "createdAt": "ISO-8601 timestamp",
   "tasks": [
     {
+      "id": 0,
+      "title": "Task 0: Write failing broad integration tests",
+      "status": "pending",
+      "blockedBy": []
+    },
+    {
       "id": 1,
       "title": "Task 1: Component Name",
       "status": "pending",
-      "blockedBy": []
+      "blockedBy": [0]
     },
     {
       "id": 2,

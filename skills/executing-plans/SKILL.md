@@ -43,6 +43,8 @@ Before executing, confirm the plan has passed superpowers:plan-review:
 ### Step 2: Execute Batch
 **Default: First 3 tasks**
 
+**Note:** If the plan includes Task 0 (broad integration tests), it should be in the first batch. Task 0 establishes failing acceptance criteria that go GREEN as later tasks complete.
+
 For each task:
 1. `TaskUpdate` to mark as `in_progress`
 2. Follow each step exactly (plan has bite-sized steps)
@@ -65,8 +67,9 @@ Based on feedback:
 ### Step 5: Implementation Review
 
 After all tasks complete and verified:
+- Verify Task 0 broad integration tests pass (GREEN) — if they don't, the feature isn't done
 - **REQUIRED SUB-SKILL:** Use superpowers:implementation-review
-- Fresh-eyes review of entire feature (base-branch..HEAD, not just final batch)
+- Implementation-review **verifies** integration test coverage (Level 1 passing, Level 2 boundary tests exist). See @testing-anti-patterns.md Anti-Pattern 5 for the full three-level framework.
 - Fix any cross-task issues found, re-run until clean
 
 ### Step 6: Complete Development

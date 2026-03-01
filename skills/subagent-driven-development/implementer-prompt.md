@@ -31,11 +31,12 @@ Task tool (general-purpose):
 
     Once you're clear on requirements:
     1. Invoke the `superpowers:test-driven-development` skill — follow it for all implementation
-    2. Implement exactly what the task specifies using TDD (red/green/refactor)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    2. If this task consumes output from a prior task (imports a module, reads config, calls an API created earlier), write a narrow boundary integration test using real components as part of your TDD cycle
+    3. Implement exactly what the task specifies using TDD (red/green/refactor)
+    4. Verify implementation works
+    5. Commit your work
+    6. Self-review (see below)
+    7. Report back
 
     Work from: [directory]
 
@@ -65,6 +66,7 @@ Task tool (general-purpose):
     - Do tests actually verify behavior (not just mock behavior)?
     - Did I follow TDD (red/green/refactor)?
     - Are tests comprehensive?
+    - If this task touches cross-task boundaries, did I write boundary integration tests using real components (not mocks)?
 
     If you find issues during self-review, fix them now before reporting.
 
