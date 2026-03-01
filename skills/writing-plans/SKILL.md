@@ -15,7 +15,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+**Save plans to:** `docs/plans/YYYY-MM-DD-<project-name>/plan-<project-name>.md` (inside the project folder created by brainstorming)
 
 ## REQUIRED FIRST STEP: Initialize Task Tracking
 
@@ -34,7 +34,11 @@ Before any exploration or planning, call `TaskList` to check for existing tasks 
 
 **Every plan MUST start with this header:**
 
-```markdown
+````markdown
+---
+status: Not Yet Started
+---
+
 # [Feature Name] Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
@@ -46,7 +50,31 @@ Before any exploration or planning, call `TaskList` to check for existing tasks 
 **Tech Stack:** [Key technologies/libraries]
 
 ---
-```
+
+## Phases
+
+### Phase 1 — [Phase Name]
+**Status:** Not Yet Started
+
+- [ ] Task 1: [Task title]
+- [ ] Task 2: [Task title]
+
+### Phase 2 — [Phase Name] (if multi-phase)
+**Status:** Not Yet Started
+
+- [ ] Task 3: [Task title]
+- [ ] Task 4: [Task title]
+
+---
+
+## Task Details
+````
+
+**Status values:** `Not Yet Started` | `In Development` | `Complete (YYYY-MM-DD)`
+
+The orchestrator (subagent-driven-development or executing-plans) updates these statuses during execution. The plan author only sets the initial `Not Yet Started` values.
+
+For single-phase plans, use one phase section. The phase structure is required even for single-phase work — it keeps the format consistent and supports future phase additions.
 
 ## Task Structure
 
@@ -148,7 +176,7 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
 
 ```json
 {
-  "planFile": "docs/plans/YYYY-MM-DD-feature-name.md",
+  "planFile": "docs/plans/YYYY-MM-DD-project-name/plan-project-name.md",
   "createdAt": "ISO-8601 timestamp",
   "tasks": [
     {
@@ -167,7 +195,7 @@ After saving the plan, write a `.tasks.json` file co-located with the plan docum
 }
 ```
 
-**File location:** Same directory as the plan, e.g. `docs/plans/.tasks.json`
+**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<project-name>/.tasks.json`
 
 When tasks are completed during execution, the executing skill updates this file so progress survives session boundaries.
 
