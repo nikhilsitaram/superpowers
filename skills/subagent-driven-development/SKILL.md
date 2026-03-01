@@ -96,7 +96,7 @@ digraph process {
 ```
 You: I'm using Subagent-Driven Development to execute this plan.
 
-[Read plan file once: docs/plans/feature-plan.md]
+[Read plan file once: docs/plans/YYYY-MM-DD-feature/plan-feature.md]
 [Extract all 5 tasks with full text and context]
 [Create TaskCreate/TaskUpdate with all tasks]
 

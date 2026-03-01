@@ -224,7 +224,7 @@ After plan review passes, use `AskUserQuestion` to present the execution choice.
 
 Use `AskUserQuestion` with these options:
 
-**Question:** "Plan reviewed and validated. Saved to `docs/plans/<filename>.md`. How would you like to execute?"
+**Question:** "Plan reviewed and validated. Saved to `docs/plans/<project-folder>/plan-<project-name>.md`. How would you like to execute?"
 
 **Option 1: Subagent-Driven (this session)**
 - Description: "Dispatch an Opus orchestrator subagent with fresh context to run subagent-driven-development. Fast iteration, two-stage review per task."
@@ -239,7 +239,7 @@ Use `AskUserQuestion` with these options:
 Dispatch a fresh **Opus** orchestrator subagent via the `Task` tool with `model: "opus"`. The orchestrator starts with zero prior context — all planning baggage stays in the parent. This is the automatic equivalent of `/clear` before execution.
 
 The orchestrator prompt MUST include:
-1. The full path to the plan file (e.g. `docs/plans/YYYY-MM-DD-feature.md`)
+1. The full path to the plan file (e.g. `docs/plans/YYYY-MM-DD-project-name/plan-project-name.md`)
 2. The working directory (worktree path)
 3. Instruction to use `superpowers:subagent-driven-development` skill
 4. Instruction to use `superpowers:finishing-a-development-branch` when complete
@@ -249,7 +249,7 @@ Example Task dispatch:
 Task(
   description: "Execute implementation plan",
   model: "opus",
-  prompt: "You are an orchestrator. Read the plan at docs/plans/<filename>.md and execute it using the superpowers:subagent-driven-development skill. When all tasks are complete, use superpowers:finishing-a-development-branch to wrap up. Working directory: <worktree-path>"
+  prompt: "You are an orchestrator. Read the plan at docs/plans/<project-folder>/plan-<project-name>.md and execute it using the superpowers:subagent-driven-development skill. When all tasks are complete, use superpowers:finishing-a-development-branch to wrap up. Working directory: <worktree-path>"
 )
 ```
 
