@@ -78,7 +78,9 @@ digraph process {
     "Code quality reviewer subagent approves?" -> "TaskUpdate: mark task completed" [label="yes"];
     "TaskUpdate: mark task completed" -> "More tasks remain?";
     "More tasks remain?" -> "TaskList to find next pending task" [label="yes"];
-    "More tasks remain?" -> "Use superpowers:implementation-review for fresh-eyes review of entire feature" [label="no"];
+    "Write completion report to plan doc" [shape=box];
+    "More tasks remain?" -> "Write completion report to plan doc" [label="no"];
+    "Write completion report to plan doc" -> "Use superpowers:implementation-review for fresh-eyes review of entire feature";
     "Use superpowers:implementation-review for fresh-eyes review of entire feature" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
@@ -224,6 +226,29 @@ When reality diverges from the plan, follow these rules in order:
 - Which rule applied
 
 The orchestrator includes deviation summaries in the final report.
+
+## Plan Doc Updates
+
+The orchestrator updates the plan document during execution to maintain a living record.
+
+**On first task start:**
+1. Read the plan file
+2. Change the frontmatter `status: Not Yet Started` to `status: In Development`
+3. Change the current phase's `**Status:** Not Yet Started` to `**Status:** In Development`
+
+**On each task completion:**
+1. In the plan file's phase checklist, change `- [ ] Task N: ...` to `- [x] Task N: ...` for the completed task
+
+**After all tasks complete (before invoking implementation-review):**
+1. Append a `## Completion Report — [Phase Name]` section to the end of the plan doc
+2. Include:
+   - `**Completed:** YYYY-MM-DD`
+   - `### Summary` — 2-3 sentences describing what was built
+   - `### Deviations from Plan` — each deviation with: what changed, why, and impact (files/scope affected). Include Rule 1-3 auto-fixes from the deviation log. If no deviations, write "None — implemented as planned."
+
+**After implementation-review passes:**
+1. Change the current phase's status to `**Status:** Complete (YYYY-MM-DD)`
+2. If all phases are complete, change the frontmatter to `status: Complete (YYYY-MM-DD)`
 
 ## Red Flags
 

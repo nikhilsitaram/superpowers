@@ -54,6 +54,7 @@ Then dispatch using `./reviewer-prompt.md` template with:
 - `{HEAD_SHA}` — current tip
 - `{FEATURE_SUMMARY}` — what the feature does (1-2 sentences)
 - `{TASK_LIST}` — list of tasks that were implemented
+- `{PLAN_FILE_PATH}` — path to the plan document (contains completion report)
 
 **Critical:** Always use `model: "opus"` for the reviewer subagent. Fresh-eyes review requires the strongest reasoning model to catch subtle cross-task issues.
 
@@ -81,6 +82,26 @@ Then dispatch using `./reviewer-prompt.md` template with:
 - Fix them before proceeding to finishing-a-development-branch
 - Re-run the review after fixes
 - Don't skip re-review
+
+## Post-Review: Plan Doc Updates
+
+After the implementation review passes (all issues fixed, re-review clean), the **orchestrator** (not the reviewer subagent) updates the plan document:
+
+**Document fixups:**
+- Append an `### Implementation Review Changes` subsection to the existing `## Completion Report` section
+- List each change made during review fixups (e.g., "Fixed inconsistent port config across modules")
+- If no fixups were needed, omit this subsection
+
+**Write handoff notes (multi-phase plans only):**
+- If the plan has future phases, write handoff notes directly into the next phase's section
+- Insert as a blockquote before the task checklist:
+  ```markdown
+  > **Handoff from Phase N:**
+  > - [Thing the next phase needs to know]
+  > - [API shape changes, new dependencies, scope adjustments]
+  ```
+- Handoff notes should cover: API/interface changes from what the plan originally assumed, new dependencies introduced, scope adjustments that affect future phases
+- If there's nothing to hand off, don't add the blockquote
 
 ## Integration
 
