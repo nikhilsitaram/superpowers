@@ -225,27 +225,62 @@ BEFORE creating mock responses:
   If uncertain: Include all documented fields
 ```
 
-## Anti-Pattern 5: Integration Tests as Afterthought
+## Anti-Pattern 5: Integration Tests at the Wrong Time
 
-**The violation:**
+Integration testing is not one thing — it's three levels, each with a specific owner and timing:
+
+| Level | What | When | Who |
+|-------|------|------|-----|
+| **Level 1: Broad acceptance tests** | End-to-end tests defining feature "done" | FIRST — before any implementation (Task 0) | Plan author / orchestrator |
+| **Level 2: Narrow boundary tests** | Tests at cross-task seams using real components | During TDD, when task consumes another task's output | Implementer (per-task) |
+| **Level 3: Coverage verification** | Verify Level 1 passes, Level 2 covers seams, fill gaps | At implementation review, after all tasks | Reviewer / orchestrator |
+
+**Violation 1: All integration tests written after implementation**
 ```
-✅ Implementation complete
-❌ No tests written
-"Ready for testing"
+✅ All tasks implemented
+❌ No integration tests until implementation-review
+"The reviewer will write integration tests"
+```
+
+**Violation 2: Only unit tests per task, broad tests at the end**
+```
+✅ Each task has unit tests
+❌ No boundary tests at cross-task seams
+❌ Broad acceptance tests written last
+"We'll add end-to-end tests when everything is done"
 ```
 
 **Why this is wrong:**
-- Testing is part of implementation, not optional follow-up
-- TDD would have caught this
-- Can't claim complete without tests
+- Writing all integration tests after implementation means you discover integration failures late
+- Boundary issues are cheapest to fix during the task that introduces them
+- Broad acceptance tests written last can't guide implementation — they just confirm what's already built
 
 **The fix:**
 ```
-TDD cycle:
-1. Write failing test
-2. Implement to pass
-3. Refactor
-4. THEN claim complete
+Level 1 FIRST:  Task 0 writes broad acceptance tests (all RED)
+Level 2 DURING: Each task writes boundary tests at cross-task seams (part of TDD)
+Level 3 AFTER:  Implementation review VERIFIES coverage, fills gaps only
+```
+
+### Boundary Test Gate Function
+
+```
+BEFORE completing a task that touches cross-task boundaries:
+  Ask: "Does this task import, call, or read data produced by another task?"
+
+  IF yes:
+    Write a narrow integration test at the boundary (Level 2)
+    Use real components, not mocks
+    Follow the same red-green-refactor cycle
+    This is part of your TDD, not a separate phase
+
+  IF no cross-task dependency:
+    No boundary test needed for this task
+
+  Red flags:
+    - "I'll add integration tests later"
+    - "The implementation-review will handle integration testing"
+    - "Mocking the boundary is good enough"
 ```
 
 ## When Mocks Become Too Complex
@@ -279,6 +314,7 @@ TDD cycle:
 | Mock without understanding | Understand dependencies first, mock minimally |
 | Incomplete mocks | Mirror real API completely |
 | Tests as afterthought | TDD - tests first |
+| Integration tests at wrong time | Level 1 first, Level 2 per-task, Level 3 verify |
 | Over-complex mocks | Consider integration tests |
 
 ## Red Flags
@@ -289,6 +325,8 @@ TDD cycle:
 - Test fails when you remove mock
 - Can't explain why mock is needed
 - Mocking "just to be safe"
+- All integration tests deferred to implementation review
+- No boundary tests at cross-task seams
 
 ## The Bottom Line
 
