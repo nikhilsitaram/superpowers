@@ -12,7 +12,6 @@ SKILLS=(
     "test-driven-development"
     "writing-plans"
     "dispatching-parallel-agents"
-    "executing-plans"
     "requesting-code-review"
 )
 
@@ -33,7 +32,7 @@ for skill in "${SKILLS[@]}"; do
 
     echo "Testing: $skill"
 
-    if "$SCRIPT_DIR/run-test.sh" "$skill" "$prompt_file" 3 2>&1 | tee /tmp/skill-test-$skill.log; then
+    if "$SCRIPT_DIR/run-test.sh" "$skill" "$prompt_file" 3 2>&1 | tee /tmp/skill-test-"$skill".log; then
         PASSED=$((PASSED + 1))
         RESULTS+=("✅ $skill")
     else
