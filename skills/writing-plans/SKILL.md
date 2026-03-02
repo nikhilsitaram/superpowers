@@ -85,7 +85,7 @@ Before writing tasks, determine whether the plan needs multiple phases.
 
 1. **Dependency layers** — Phase N creates things (utilities, interfaces, schemas) consumed by Phase N+1. Example: shared utility extraction must land before bug fixes that import those utilities.
 2. **Verification gates** — Phase N must be verified working before Phase N+1 can meaningfully start. Example: database schema changes must be tested before API routes that depend on the new schema.
-3. **Independent shippability** — each phase should be deployable and revertable on its own. Example: "critical bugs" phase can ship independently of "code quality" phase.
+3. **Independent shippability** — each phase should be deployable and revertible on its own. Example: "critical bugs" phase can ship independently of "code quality" phase.
 
 **Stay single-phase when:** All tasks are independent or share only a linear dependency chain with no natural cut points. Don't phase for phasing's sake — one phase with 5 tasks is better than 5 phases with 1 task each.
 

@@ -43,7 +43,7 @@ New section between plan template and task writing guidance. Contains three trig
 
 - **Dependency layers** — Phase N creates things (utilities, interfaces, schemas) consumed by Phase N+1
 - **Verification gates** — Phase N must be verified working before Phase N+1 can meaningfully start
-- **Independent shippability** — each phase should be deployable/revertable on its own
+- **Independent shippability** — each phase should be deployable/revertible on its own
 
 Single-phase criteria: all tasks are independent or share only a linear dependency chain with no natural cut points. Don't phase for phasing's sake.
 
@@ -72,7 +72,7 @@ If the design doc includes an "Implementation Approach" section with approved ph
 
 ## Signal Flow
 
-```
+```text
 brainstorming: identify dependency layers during architecture
     -> present phasing recommendation to user
     -> user approves/adjusts
