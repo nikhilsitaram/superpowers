@@ -1,10 +1,10 @@
-# Codebase Review -- Scope Reviewer Prompt Template
+# Codebase Review — Scope Reviewer Prompt Template
 
 Use this template when dispatching parallel Explore subagents for each review unit.
 
 **Purpose:** Review a single directory/module for code quality issues across all 5 categories.
 
-**Dispatch one per review unit** -- all run in parallel.
+**Dispatch one per review unit** — all run in parallel.
 
 ```
 Agent tool (Explore):
@@ -54,16 +54,16 @@ Agent tool (Explore):
     ## Criticality Levels
 
     Rate each finding:
-    - **Critical** -- Active bug risk or severe performance issue
-    - **High** -- Significant maintenance burden or correctness risk
-    - **Medium** -- Code smell that makes the codebase harder to work with
-    - **Low** -- Minor style/convention issue
+    - **Critical** — Active bug risk or severe performance issue
+    - **High** — Significant maintenance burden or correctness risk
+    - **Medium** — Code smell that makes the codebase harder to work with
+    - **Low** — Minor style/convention issue
 
     ## Fix Complexity Classification
 
     For each finding, classify the fix:
-    - **Inline** -- fixable in a few lines within this scope, no planning needed
-    - **Needs own plan** -- multi-file change, architectural decision, or requires its own design/brainstorming cycle
+    - **Inline** — fixable in a few lines within this scope, no planning needed
+    - **Needs own plan** — multi-file change, architectural decision, or requires its own design/brainstorming cycle
 
     ## Output Format
 
@@ -79,7 +79,7 @@ Agent tool (Explore):
 
     ## Rules
 
-    - Be concrete -- cite file:line, not vague descriptions
+    - Be concrete — cite file:line, not vague descriptions
     - Only report real issues you can point to in the code
     - Do NOT invent problems to fill the report
     - If you find zero issues in a category, say "No issues found" for that category

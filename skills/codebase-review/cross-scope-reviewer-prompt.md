@@ -1,10 +1,10 @@
-# Codebase Review -- Cross-Scope Reconciliation Prompt Template
+# Codebase Review — Cross-Scope Reconciliation Prompt Template
 
 Use this template after all parallel scope reviewers have completed.
 
-**Purpose:** Catch cross-directory issues that individual scope reviewers couldn't detect -- duplication across modules, naming drift between directories, and patterns that only emerge when viewing the codebase holistically.
+**Purpose:** Catch cross-directory issues that individual scope reviewers couldn't detect — duplication across modules, naming drift between directories, and patterns that only emerge when viewing the codebase holistically.
 
-**Dispatch once** -- after all scope reviewers return.
+**Dispatch once** — after all scope reviewers return.
 
 ```
 Agent tool (Explore):
@@ -54,16 +54,16 @@ Agent tool (Explore):
     ## Criticality Levels
 
     Rate each finding:
-    - **Critical** -- Active bug risk or severe performance issue
-    - **High** -- Significant maintenance burden or correctness risk
-    - **Medium** -- Code smell that makes the codebase harder to work with
-    - **Low** -- Minor style/convention issue
+    - **Critical** — Active bug risk or severe performance issue
+    - **High** — Significant maintenance burden or correctness risk
+    - **Medium** — Code smell that makes the codebase harder to work with
+    - **Low** — Minor style/convention issue
 
     ## Fix Complexity Classification
 
     For each finding, classify the fix:
-    - **Inline** -- fixable in a few lines, no planning needed
-    - **Needs own plan** -- multi-file change, architectural decision, or requires its own design/brainstorming cycle
+    - **Inline** — fixable in a few lines, no planning needed
+    - **Needs own plan** — multi-file change, architectural decision, or requires its own design/brainstorming cycle
 
     ## Output Format
 
@@ -81,8 +81,8 @@ Agent tool (Explore):
     ## Rules
 
     - ONLY report cross-boundary issues. Within-scope issues are already covered.
-    - Be concrete -- cite file:line from BOTH sides of the boundary
+    - Be concrete — cite file:line from BOTH sides of the boundary
     - Read actual files to verify suspected cross-scope issues
-    - If you find zero cross-scope issues, say so -- don't invent problems
+    - If you find zero cross-scope issues, say so — don't invent problems
     - Do NOT modify any files. Read-only review.
 ```
