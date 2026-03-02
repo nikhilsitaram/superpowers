@@ -1,150 +1,77 @@
 # Superpowers
 
-Superpowers is a complete software development workflow for your coding agents, built on top of a set of composable "skills" and some initial instructions that make sure your agent uses them.
+A composable skills library for Claude Code that gives your coding agent a complete software development workflow — from brainstorming through shipping.
 
-## How it works
+Forked from [obra/superpowers](https://github.com/obra/superpowers). This fork adds skills for code review workflows, phased plans, codebase audits, and tighter subagent-driven development.
 
-It starts from the moment you fire up your coding agent. As soon as it sees that you're building something, it *doesn't* just jump into trying to write code. Instead, it steps back and asks you what you're really trying to do. 
+## How It Works
 
-Once it's teased a spec out of the conversation, it shows it to you in chunks short enough to actually read and digest. 
+When you start a conversation, the agent doesn't jump straight into writing code. Instead:
 
-After you've signed off on the design, your agent puts together an implementation plan that's clear enough for an enthusiastic junior engineer with poor taste, no judgement, no project context, and an aversion to testing to follow. It emphasizes true red/green TDD, YAGNI (You Aren't Gonna Need It), and DRY. 
+1. **Brainstorming** — asks what you're really building, explores alternatives, presents a design in digestible sections for your approval
+2. **Planning** — breaks the approved design into bite-sized tasks with exact file paths, verification steps, and code
+3. **Execution** — launches subagents per task with two-stage review (spec compliance, then code quality), enforcing TDD throughout
+4. **Shipping** — creates a PR, waits for CodeRabbit review, addresses feedback, merges, and cleans up
 
-Next up, once you say "go", it launches a *subagent-driven-development* process, having agents work through each engineering task, inspecting and reviewing their work, and continuing forward. It's not uncommon for Claude to be able to work autonomously for a couple hours at a time without deviating from the plan you put together.
-
-There's a bunch more to it, but that's the core of the system. And because the skills trigger automatically, you don't need to do anything special. Your coding agent just has Superpowers.
-
-
-## Sponsorship
-
-If Superpowers has helped you do stuff that makes money and you are so inclined, I'd greatly appreciate it if you'd consider [sponsoring my opensource work](https://github.com/sponsors/obra).
-
-Thanks! 
-
-- Jesse
-
+Skills trigger automatically based on what you're doing. You don't invoke them manually — your agent just has Superpowers.
 
 ## Installation
 
-**Note:** Installation differs by platform. Claude Code or Cursor have built-in plugin marketplaces. Codex and OpenCode require manual setup.
-
-
-### Claude Code (via Plugin Marketplace)
-
-In Claude Code, register the marketplace first:
+### Claude Code (Plugin Marketplace)
 
 ```bash
 /plugin marketplace add obra/superpowers-marketplace
-```
-
-Then install the plugin from this marketplace:
-
-```bash
 /plugin install superpowers@superpowers-marketplace
 ```
 
-### Cursor (via Plugin Marketplace)
+### From This Fork
 
-In Cursor Agent chat, install from marketplace:
+Clone the repo and symlink skills into your Claude Code config:
 
-```text
-/plugin-add superpowers
+```bash
+git clone https://github.com/nikhilsitaram/superpowers.git ~/personal/superpowers
 ```
 
-### Codex
-
-Tell Codex:
-
-```
-Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md
-```
-
-**Detailed docs:** [docs/README.codex.md](docs/README.codex.md)
-
-### OpenCode
-
-Tell OpenCode:
-
-```
-Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md
-```
-
-**Detailed docs:** [docs/README.opencode.md](docs/README.opencode.md)
+Then register as a local plugin or symlink `skills/` into `~/.claude/skills/superpowers/`.
 
 ### Verify Installation
 
-Start a new session in your chosen platform and ask for something that should trigger a skill (for example, "help me plan this feature" or "let's debug this issue"). The agent should automatically invoke the relevant superpowers skill.
+Start a new session and ask to build something. The agent should trigger the brainstorming skill before writing any code.
 
-## The Basic Workflow
+## Skills
 
-1. **brainstorming** - Activates before writing code. Refines rough ideas through questions, explores alternatives, presents design in sections for validation. Saves design document.
+### Core Workflow
+- **brainstorming** — Socratic design refinement before any code
+- **writing-plans** — Detailed implementation plans from approved designs
+- **subagent-driven-development** — Parallel task execution with two-stage review
+- **test-driven-development** — RED-GREEN-REFACTOR cycle with anti-patterns reference
+- **ship** — Commit, push, create PR
+- **merge-pr** — Address CodeRabbit feedback, merge, clean up branch/worktree
 
-2. **using-git-worktrees** - Activates after design approval. Creates isolated workspace on new branch, runs project setup, verifies clean test baseline.
+### Quality
+- **systematic-debugging** — 4-phase root cause process with bundled techniques
+- **verification-before-completion** — Verify before declaring success
+- **requesting-code-review** / **receiving-code-review** — Pre-review checklist and feedback handling
+- **codebase-review** — Whole-repo quality audit with parallel reviewers and fix routing
+- **implementation-review** — Cross-task holistic review before merging
+- **plan-review** — Validates plans before execution begins
 
-3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
-
-4. **subagent-driven-development** - Activates with plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality).
-
-5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
-
-6. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
-
-7. **ship** - Activates when tasks complete. Reviews docs, runs tests, commits, pushes, creates PR. Stops for CodeRabbit review.
-
-8. **merge-pr** - Activates after CodeRabbit review. Addresses feedback, comments on PR, merges, cleans up branch and worktree.
-
-**The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
-
-## What's Inside
-
-### Skills Library
-
-**Testing**
-- **test-driven-development** - RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
-
-**Debugging**
-- **systematic-debugging** - 4-phase root cause process (includes root-cause-tracing, defense-in-depth, condition-based-waiting techniques)
-- **verification-before-completion** - Ensure it's actually fixed
-
-**Collaboration** 
-- **brainstorming** - Socratic design refinement
-- **writing-plans** - Detailed implementation plans
-- **dispatching-parallel-agents** - Concurrent subagent workflows
-- **requesting-code-review** - Pre-review checklist
-- **receiving-code-review** - Responding to feedback
-- **using-git-worktrees** - Parallel development branches
-- **ship** - Commit, push, and create PR workflow
-- **merge-pr** - Address review feedback, merge, and clean up
-- **codebase-review** - Whole-repo code quality audit with parallel review, ranked report, and fix routing
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
-
-**Meta**
-- **writing-skills** - Create new skills following best practices (includes testing methodology)
-- **using-superpowers** - Introduction to the skills system
-
-## Philosophy
-
-- **Test-Driven Development** - Write tests first, always
-- **Systematic over ad-hoc** - Process over guessing
-- **Complexity reduction** - Simplicity as primary goal
-- **Evidence over claims** - Verify before declaring success
-
-Read more: [Superpowers for Claude Code](https://blog.fsck.com/2025/10/09/superpowers/)
+### Infrastructure
+- **using-superpowers** — Skill system entry point and priority routing
+- **using-git-worktrees** — Isolated workspaces for feature development
+- **dispatching-parallel-agents** — Concurrent subagent workflows
 
 ## Contributing
 
-Skills live directly in this repository. To contribute:
-
 1. Fork the repository
-2. Create a branch for your skill
-3. Follow the `writing-skills` skill for creating and testing new skills
-4. Submit a PR
+2. Create a feature branch
+3. Use the `skill-creator` plugin (`claude skill create`) for eval-driven skill development
+4. Target <500 words for SKILL.md files
+5. Submit a PR
 
-See `skills/writing-skills/SKILL.md` for the complete guide.
+See `.claude/CLAUDE.md` for project conventions.
 
 ## Updating
-
-Skills update automatically when you update the plugin:
 
 ```bash
 /plugin update superpowers
@@ -152,9 +79,4 @@ Skills update automatically when you update the plugin:
 
 ## License
 
-MIT License - see LICENSE file for details
-
-## Support
-
-- **Issues**: https://github.com/obra/superpowers/issues
-- **Marketplace**: https://github.com/obra/superpowers-marketplace
+MIT License — see LICENSE file for details.

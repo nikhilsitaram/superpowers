@@ -1,4 +1,6 @@
 .worktrees/
 .private-journal/
-.claude/
+# Ignore .claude/ contents except CLAUDE.md
+.claude/*
+!.claude/CLAUDE.md
 .DS_Store

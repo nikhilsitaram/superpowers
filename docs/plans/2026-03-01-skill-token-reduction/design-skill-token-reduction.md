@@ -1,139 +1,329 @@
 # Skill Token Reduction — Design Doc
 
+**GitHub Issue:** #26 — "Skills are much too verbose"
+
 ## Problem
 
-Every skill SKILL.md is 2-4x over the word count targets in writing-skills guidance:
+SKILL.md files are 2-4x over target word counts. When skills are invoked, their full SKILL.md is injected into context. Every excess word displaces working memory the agent could use for the actual task.
 
 | Target | Guidance | Actual Range |
 |--------|----------|-------------|
-| Frequently-loaded (using-superpowers) | <200 words | 621 words (3.1x) |
-| Other skills | <500 words | 366–1803 words |
+| Frequently-loaded (using-superpowers) | <200 words | 611 words (3.1x) |
+| Discipline skills (TDD, debugging) | <600 words | 1,504–1,655 words |
+| Other skills | <500 words | 366–3,204 words |
 
-Only 1 of 16 skills (requesting-code-review at 366 words) meets the <500 target. The 15 others collectively burn ~16,800 excess words of context per full skill load.
+Only 1 of 17 skills (requesting-code-review at 366 words) meets its target. The 16 others collectively burn ~18,000+ excess words of context per full skill load.
 
-**Why it matters:** Skills are injected into context. Every excess word displaces working memory the agent could use for the actual task. The most-loaded skills (using-superpowers, brainstorming, TDD) impose the highest tax because they fire on nearly every conversation.
+The most-loaded skills (using-superpowers, brainstorming, TDD) impose the highest tax because they fire on nearly every conversation.
+
+## Guiding Principles
+
+Based on Anthropic's official skill-creator best practices (`anthropics/skills/skill-creator`):
+
+### Progressive Disclosure (Three-Level Loading)
+
+Skills use a three-level system. Each level loads only when needed:
+
+1. **Metadata** (name + description) — Always in context. ~100 words. This is the primary triggering mechanism.
+2. **SKILL.md body** — Loaded when skill triggers. Target: <500 lines, <500 words (general) / <600 words (discipline).
+3. **Bundled resources** (references/, scripts/, agents/) — Loaded on-demand when the agent reads them. Unlimited size. Scripts can execute without loading into context.
+
+**Key rule:** SKILL.md should contain only what the agent needs to decide how to proceed. Reference material, detailed examples, templates, and checklists belong in Level 3.
+
+### Explain the Why, Not Heavy-Handed MUSTs
+
+> "Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are smart. They have good theory of mind and when given a good harness can go beyond rote instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — reframe and explain the reasoning so that the model understands why the thing you're asking for is important."
+> — Anthropic skill-creator
+
+This means:
+- Replace `MUST`, `NEVER`, `ALWAYS` patterns with reasoning that explains *why* the behavior matters
+- Replace rationalization/Red Flags tables with concise explanations of the underlying principle
+- Trust the model's understanding once it knows the reasoning
+
+### Keep the Prompt Lean
+
+> "Remove things that aren't pulling their weight. Read the transcripts — if the skill is making the model waste time doing unproductive things, try getting rid of those parts."
+
+### Reference Files with Clear Pointers
+
+- Reference files should be clearly mentioned from SKILL.md with guidance on **when** to read them
+- For large reference files (>300 lines), include a table of contents
+- Use `**See:** filename.md` for optional reference, `**REQUIRED:** Read filename.md` for mandatory
 
 ## Current State
 
-| Skill | Words | Target | Over By |
-|-------|------:|-------:|--------:|
-| subagent-driven-development | 1803 | 500 | 1303 |
-| test-driven-development | 1655 | 500 | 1155 |
-| systematic-debugging | 1504 | 500 | 1004 |
-| writing-plans | 1494 | 500 | 994 |
-| brainstorming | 1120 | 500 | 620 |
-| implementation-review | 976 | 500 | 476 |
+Measured 2026-03-02 across all 17 skills in `skills/`:
+
+| Skill | SKILL.md Words | Target | Over By |
+|-------|---------------:|-------:|--------:|
+| ~~writing-skills~~ | ~~3,204~~ | — | ~~retired~~ |
+| subagent-driven-development | 1,868 | 500 | 1,368 |
+| test-driven-development | 1,655 | 600 | 1,055 |
+| writing-plans | 1,577 | 500 | 1,077 |
+| systematic-debugging | 1,504 | 600 | 904 |
+| ship | 1,381 | 500 | 881 |
+| brainstorming | 1,245 | 500 | 745 |
+| merge-pr | 1,201 | 500 | 701 |
+| codebase-review | 1,148 | 500 | 648 |
 | dispatching-parallel-agents | 975 | 500 | 475 |
-| receiving-code-review | 929 | 500 | 429 |
-| using-git-worktrees | 782 | 500 | 282 |
-| finishing-a-development-branch | 675 | 500 | 175 |
-| verification-before-completion | 668 | 500 | 168 |
-| plan-review | 667 | 500 | 167 |
-| using-superpowers | 621 | 200 | 421 |
+| implementation-review | 974 | 500 | 474 |
+| receiving-code-review | 917 | 500 | 417 |
+| using-git-worktrees | 775 | 500 | 275 |
+| plan-review | 653 | 500 | 153 |
+| verification-before-completion | 651 | 500 | 151 |
+| using-superpowers | 611 | 300 | 311 |
 | requesting-code-review | 366 | 500 | -134 (OK) |
+
+**Note:** Some skills also have supporting files loaded on-demand (not injected automatically). These are lower priority since they only load when the agent explicitly reads them. Notably, `systematic-debugging` has 5,462 across 7 files. (writing-skills was the largest at 11,837 words across 5 files, but has been retired.)
+
+## Resolved Decisions
+
+These were open questions in the original design. Now resolved based on GH Issue #26 feedback and usage experience:
+
+1. **Word targets:** <600 for discipline skills (TDD, systematic-debugging), <500 for all others, <300 for using-superpowers. Discipline skills need more text for their core patterns, but not for examples and rationalization tables.
+
+2. **Red Flags and rationalization tables: remove entirely.** Issue #26 explicitly flags these as "based on old LLM logic and outdated now." After months of use, Claude has internalized the compliance patterns. These tables are pure context tax. Remove from all SKILL.md files — do not move to supporting files.
+
+3. **No `_shared/` directory.** No cross-skill shared content has materialized. Each skill keeps its own supporting files in its own directory. Drop this convention.
+
+4. **`@`-references in SKILL.md force-load files and should be replaced.** Replace with `**See:** filename.md` cross-references. (writing-skills, which had the worst `@`-reference violations, has been retired.)
 
 ## Reduction Techniques
 
-The writing-skills guidance prescribes four techniques. Here's how they map to each skill:
+Five techniques, ordered by expected impact:
 
-### Technique 1: Move details to supporting files
+### Technique 1: Remove Red Flags, rationalization tables, and anti-pattern lists
 
-Content that the agent only needs when actively performing a subtask (not when deciding whether/how to follow the skill) can move to a supporting `.md` file in the skill directory. The SKILL.md keeps a one-line reference.
+These were written when skills were new and Claude needed explicit compliance training. They're now internalized. Remove entirely — not moved to supporting files, deleted.
 
-**Candidates:**
-- **subagent-driven-development** — The example workflow (lines 98-187, ~400 words) is reference material. Move to `example-workflow.md`.
-- **systematic-debugging** — The multi-component evidence gathering example (lines 76-108, ~150 words) and "your human partner's Signals" section (lines 234-244, ~80 words) could move to supporting file.
-- **test-driven-development** — The "Why Order Matters" section (lines 206-254, ~300 words) is persuasion material agents don't need once compliant. The rationalization table (lines 256-270) covers the same ground. Keep the table, move the prose to a supporting file.
-- **writing-plans** — The full task structure template (lines 84-131, ~250 words) and .tasks.json example (lines 207-233, ~150 words) are reference material. Move to `task-template.md`.
-- **dispatching-parallel-agents** — The "Real Example from Session" (lines 131-156, ~150 words) duplicates the pattern already shown above it. Remove or move to supporting file.
+**Applies to:**
+- **using-superpowers** — Red Flags table (~200 words, 12 rows)
+- ~~**writing-skills**~~ — retired
+- **test-driven-development** — rationalization table + Red Flags list (verify actual content)
+- **codebase-review** — Red Flags section (~80 words)
 
-### Technique 2: Compress examples
+### Technique 2: Move details to supporting files
 
-Replace verbose multi-line examples with minimal ones. One good example, not three.
-
-**Candidates:**
-- **receiving-code-review** — Four "Real Examples" (lines 177-201, ~120 words) when one would suffice.
-- **brainstorming** — The "Challenging Product Assumptions" example (lines 66-82, ~100 words) could be compressed to 2-3 lines.
-- **using-git-worktrees** — Creation Steps section (lines 77-99, ~130 words) repeats what the bash examples already show.
-
-### Technique 3: Eliminate redundancy
-
-Content duplicated across skills or restating what's obvious from the skill name/structure.
+Content the agent only needs when actively performing a subtask (not when deciding whether/how to follow the skill). SKILL.md keeps a one-line `**See:** filename.md` reference.
 
 **Candidates:**
-- **implementation-review** — Integration Test Verification section (lines 46-65, ~150 words) restates what subagent-driven-development already describes. Compress to "Verify Task 0 tests pass, spot-check Level 2 boundary tests, fill gaps."
-- **brainstorming** — Native Task Integration section (lines 126-133, ~80 words) restates generic TaskCreate/TaskUpdate usage that any skill can figure out.
-- **finishing-a-development-branch** — Common Mistakes section (lines 162-178, ~100 words) restates the Red Flags section immediately below it.
+- ~~**writing-skills**~~ — retired
+- **subagent-driven-development** — Deviation rules and plan doc update instructions; move to `deviation-rules.md` and `plan-doc-updates.md`.
+- **writing-plans** — Full task structure template (~250 words); move to `task-template.md`.
+- **systematic-debugging** — Multi-component evidence gathering example (~150 words) and "Human Partner's Signals" section (~80 words); move to supporting file. (Note: this skill already has 6 supporting files, so the pattern is established.)
+- **ship** — CLAUDE.md Guidelines section (~150 words) is generic guidance; move to `docs-review-guide.md`.
+- **codebase-review** — Report format template (~150 words); move to `report-template.md`.
+
+### Technique 3: Compress examples and remove redundancy
+
+Replace verbose multi-line examples with minimal ones. One good example, not three. Remove content that duplicates other skills or restates the obvious.
+
+**Candidates:**
+- **receiving-code-review** — Four "Real Examples" when one suffices (~90 words saved)
+- **brainstorming** — "Challenging Product Assumptions" example compressible to 2-3 lines; "Anti-Pattern: This Is Too Simple" section compressible to 1 line; "Native Task Integration" section is generic TaskCreate/TaskUpdate usage any skill can figure out (remove entirely)
+- **using-git-worktrees** — Creation Steps section repeats what bash examples already show
+- **ship** — Common Mistakes table (8 rows) and Examples section are redundant with workflow steps
+- **merge-pr** — Common Mistakes table (8 rows), Examples section, and duplicate test runner table (cross-reference ship instead)
+- **implementation-review** — Integration Test Verification section restates what subagent-driven-development already describes; compress to 1 line
+- ~~**writing-skills**~~ — retired
+- **test-driven-development** — "Why Order Matters" prose (~300 words) is persuasion material; move to supporting file or delete
 
 ### Technique 4: Cross-reference instead of repeat
 
-Use `**REQUIRED SUB-SKILL:** Use superpowers:X` pattern to point agents at other skills rather than embedding their content.
+Use `**REQUIRED SUB-SKILL:** Use superpowers:X` or `**See:** filename.md` to point agents at other skills/files rather than embedding their content. Replace `@` force-load references with non-loading cross-references.
 
-**Already done well by:** plan-review, implementation-review, finishing-a-development-branch.
+**Already done well by:** plan-review, implementation-review.
 
 **Needs improvement:**
-- **subagent-driven-development** — Embeds deviation rules and plan doc update instructions that could move to a supporting file.
+- ~~**writing-skills**~~ — retired
+- **subagent-driven-development** — Embeds deviation rules that belong in a supporting file
+
+### Technique 5: Tighten bash code blocks
+
+Many skills embed multi-line bash scripts that are 50-100 words each. These are instructional — telling the agent what commands to run. Claude already knows these commands; a 1-line description is sufficient.
+
+**Candidates:**
+- **ship** — Steps 2 (branch detection, ~100 words of bash), 6 (rebase), 7 (push) can each be 1 line
+- **merge-pr** — Steps 1 (identify PR), 2 (detect environment), 3 (read reviews) are verbose bash
+- **codebase-review** — Phase 1 bash example is unnecessary
+
+### Technique 6: Style migration — explain-the-why
+
+Rewrite imperative MUST/NEVER/ALWAYS patterns into reasoning-based guidance. This is not just trimming — it's a style change that makes skills more effective per Anthropic's research.
+
+**Before (heavy-handed):**
+```markdown
+**NEVER** skip the cross-scope reconciliation pass.
+**ALWAYS** write the report before starting any fixes.
+```
+
+**After (reasoning-based):**
+```markdown
+Run the cross-scope reconciliation pass after individual reviews — without it, cross-directory DRY violations and naming drift go undetected.
+
+Write the report before starting fixes so the user can triage complexity and decide which items become GitHub issues vs inline fixes.
+```
+
+**Applies to all skills**, but most heavily to:
+- **using-superpowers** — `EXTREMELY-IMPORTANT` blocks, `MUST` directives
+- ~~**writing-skills**~~ — retired
+- **test-driven-development** — Iron Law, "Violating the letter" directives
+- **codebase-review** — "Never/Always" Red Flags list
+- **brainstorming** — `HARD-GATE` blocks
+
+## Evaluation Methodology
+
+Uses Anthropic's skill-creator eval framework (`anthropics/skills/skill-creator`), pulled into our repo as tooling. Each phase of skills gets verified before moving to the next.
+
+### Setup: Pull in Anthropic Eval Framework
+
+Clone or vendor `anthropics/skills/skill-creator/` into the repo under `tools/skill-eval/`. Key components:
+
+| Component | Purpose |
+|-----------|---------|
+| **Scripts** | |
+| `scripts/run_eval.py` | Runs test prompts via `claude -p` with/without skill, captures outputs |
+| `scripts/run_loop.py` | Full improvement loop: eval → improve → re-eval (up to N iterations) |
+| `scripts/aggregate_benchmark.py` | Aggregates pass rates, timing, token usage into `benchmark.json`/`benchmark.md` |
+| `scripts/generate_report.py` | Generates human-readable report from benchmark data |
+| `scripts/improve_description.py` | Optimizes skill description for triggering accuracy |
+| `scripts/quick_validate.py` | Fast sanity check — validates skill structure and runs a single prompt |
+| `scripts/package_skill.py` | Packages a skill directory into a `.skill` file for distribution |
+| `scripts/utils.py` | Shared utilities used by other scripts |
+| **Eval Viewer** | |
+| `eval-viewer/generate_review.py` | Generates HTML viewer for side-by-side output comparison + benchmark tab |
+| `eval-viewer/viewer.html` | Template for the interactive eval review viewer (Outputs tab + Benchmark tab) |
+| **Assets** | |
+| `assets/eval_review.html` | Template for description triggering eval review (user edits trigger queries) |
+| **Agents** | |
+| `agents/grader.md` | Subagent prompt for evaluating assertions against outputs |
+| `agents/comparator.md` | Subagent prompt for blind A/B comparison between two outputs |
+| `agents/analyzer.md` | Subagent prompt for analyzing benchmark results and surfacing patterns |
+| **References** | |
+| `references/schemas.md` | JSON schemas for evals.json, grading.json, benchmark.json, history.json |
+
+### Per-Skill Eval Process
+
+For each skill reduction:
+
+1. **Write 2-3 realistic test prompts** — save to `evals/evals.json` per skill. Make them concrete and specific (file paths, personal context, abbreviations) — not abstract requests. Each prompt should be something a real user would actually type.
+
+2. **Write assertions** — verifiable behavioral expectations for each prompt. Focus on workflow steps, not output wording:
+   - "Agent creates feature branch before committing" (workflow)
+   - "Agent runs tests before pushing" (safety check)
+   - "Agent asks user before force-pushing" (decision point)
+
+3. **Run baseline and reduced in parallel** — use `run_eval.py` to spawn subagents:
+   - **Baseline:** original (unreduced) SKILL.md
+   - **Reduced:** new SKILL.md
+   - Both get the same test prompts, outputs saved to `iteration-N/eval-ID/{with_skill,old_skill}/outputs/`
+
+4. **Grade** — use grader subagent (`agents/grader.md`) to evaluate assertions. For assertions that can be checked programmatically (e.g., "file exists", "git log shows commit"), write a script instead.
+
+5. **Aggregate and review** — run `aggregate_benchmark.py` to produce `benchmark.json`, then `generate_review.py` to open the HTML viewer for human review of qualitative differences.
+
+6. **Iterate** — if the reduced skill misses assertions, add back the minimum text needed and re-eval. Use `run_loop.py` for automated iteration if needed.
+
+### What "Same Behavior" Means
+
+The reduced skill doesn't need to produce *identical* output — it needs to produce *equivalent* behavior. The agent should:
+- Follow the same workflow steps in the same order
+- Make the same key decisions (e.g., when to branch, when to ask the user)
+- Not skip safety checks or important validations
+- Not introduce new failure modes
+
+Style differences (different wording in commit messages, slightly different phrasing in questions) are fine. Workflow deviations are not.
+
+### Eval Scaling by Change Size
+
+| Change Size | Eval Approach |
+|-------------|--------------|
+| Major restructure (>200w removed, style migration) | Full 3-prompt eval with assertions + HTML viewer |
+| Moderate trim (100-200w removed) | 2-prompt eval with key assertions |
+| Minor trim (<100w, e.g., plan-review) | 1-prompt spot check, manual verification |
+
+### Description Optimization (Post-Reduction)
+
+After reducing all skills, optionally run `improve_description.py` on each skill's description field. This uses `claude -p` to test triggering accuracy against realistic prompts and iteratively improves the description. Useful since reduced skills may need updated descriptions to maintain triggering reliability.
 
 ## Approach
 
-### Tier 1: High-frequency skills (do first)
+### Plan 1: SUPERSEDED (2026-03-02)
 
-These load in nearly every conversation. Target: get each under 400 words.
+Plan 1 (vendor Anthropic eval framework + rewrite writing-skills) is superseded:
 
-| Skill | Current | Reduction Strategy | Target |
-|-------|--------:|--------------------|---------:|
-| using-superpowers | 621 | Remove Red Flags table rows (agent has internalized after months of use); compress Skill Types section | <300 |
-| brainstorming | 1120 | Move product assumptions example to supporting file; compress Native Task Integration to 1 line; compress Process section | <450 |
-| test-driven-development | 1655 | Move "Why Order Matters" prose to supporting file (keep rationalization table); compress Good/Bad examples | <500 |
+- **writing-skills retired.** The skill and all its supporting files have been deleted. Skill conventions now live in `.claude/CLAUDE.md` as project-level instructions — always in context, no skill triggering needed.
+- **Vendored eval framework replaced by skill-creator plugin.** Instead of vendoring `anthropics/skills/skill-creator/` into `tools/skill-eval/`, we use the Anthropic `skill-creator` plugin directly (`claude skill create` / `claude skill improve`). This gives us eval-driven skill development without maintaining vendored scripts.
+- **PR #30 closed** with explanation. No code was merged from Plan 1.
 
-### Tier 2: Execution pipeline skills (do second)
+The guiding principles, reduction techniques, and current-state measurements in this document remain valid and inform Plan 2.
 
-These load during plan execution. Target: get each under 500 words.
+### Plan 2: Reduce all remaining skills
 
-| Skill | Current | Reduction Strategy | Target |
-|-------|--------:|--------------------|---------:|
-| subagent-driven-development | 1803 | Move example workflow to supporting file; move deviation rules + plan doc updates to supporting files | <500 |
-| writing-plans | 1494 | Move task template + .tasks.json example to supporting files; compress header template | <500 |
-| systematic-debugging | 1504 | Move multi-component example to supporting file; compress Phase 2-4 (keep Phase 1 detailed) | <500 |
+Applies the reduction techniques documented above to all 15 remaining over-target skills. Uses the `skill-creator` plugin for eval-driven regression testing. Could ship as multiple PRs (one per phase). Skill conventions are now in `.claude/CLAUDE.md`.
 
-### Tier 3: Review/finishing skills (do last)
-
-These load less frequently. Target: get each under 500 words.
+**Phase 2a: High-frequency skills** — load on nearly every conversation. Highest ROI per word saved.
 
 | Skill | Current | Reduction Strategy | Target |
 |-------|--------:|--------------------|---------:|
-| implementation-review | 976 | Compress integration test verification to 3 lines; tighten "What It Catches" table | <500 |
-| dispatching-parallel-agents | 975 | Remove session example (redundant); compress Agent Prompt Structure | <500 |
-| receiving-code-review | 929 | Remove 3 of 4 real examples; compress Source-Specific Handling | <500 |
-| using-git-worktrees | 782 | Compress Creation Steps (bash speaks for itself); remove Example Workflow | <500 |
-| plan-review | 667 | Compress "What It Catches" table (10 rows is excessive) | <500 |
-| finishing-a-development-branch | 675 | Merge Common Mistakes into Red Flags; compress option details | <500 |
-| verification-before-completion | 668 | Compress Key Patterns section | <500 |
+| using-superpowers | 611 | T1: Remove Red Flags table (~200w). T3: Compress Skill Priority section. T6: Rewrite EXTREMELY-IMPORTANT block to reasoning. | <300 |
+| brainstorming | 1,245 | T3: Remove Native Task Integration; compress Anti-Pattern to 1 line; compress Challenging Product Assumptions example; compress Process section. T6: Rewrite HARD-GATE to reasoning. | <500 |
+| test-driven-development | 1,655 | T1: Remove rationalization table + Red Flags. T2: Move "Why Order Matters" to supporting file. T3: Compress Good/Bad examples. T6: Rewrite Iron Law block to reasoning-based. | <600 |
 
-### Supporting files
+**Phase 2b: Execution pipeline skills** — load during plan execution.
 
-Move heavy reference content from subagent-driven-development to supporting files in its directory:
+| Skill | Current | Reduction Strategy | Target |
+|-------|--------:|--------------------|---------:|
+| subagent-driven-development | 1,868 | T2: Move deviation rules + plan doc updates to supporting files. T3: Move example workflow to supporting file. | <500 |
+| writing-plans | 1,577 | T2: Move task template to supporting file. T3: Compress header template. | <500 |
+| systematic-debugging | 1,504 | T2: Move multi-component example + Human Partner's Signals to supporting file. T3: Compress Phase 2-4 (keep Phase 1 detailed). | <600 |
 
-1. **`skills/subagent-driven-development/deviation-rules.md`** — the deviation rules table + scope boundary + fix attempt limit + documentation requirement.
+**Phase 2c: Shipping and review skills** — all remaining skills over target.
 
-2. **`skills/subagent-driven-development/plan-doc-updates.md`** — the plan document lifecycle update instructions.
+| Skill | Current | Reduction Strategy | Target |
+|-------|--------:|--------------------|---------:|
+| ship | 1,381 | T2: Move CLAUDE.md guidelines to supporting file. T3: Remove Common Mistakes + Examples. T5: Compress bash in Steps 2/6/7. | <500 |
+| merge-pr | 1,201 | T3: Remove Common Mistakes + Examples; cross-ref ship for test runner table. T5: Compress bash in Steps 1-3. | <500 |
+| codebase-review | 1,148 | T1: Remove Red Flags. T2: Move report template to supporting file. T3: Remove Common Mistakes. T5: Remove Phase 1 bash. | <500 |
+| dispatching-parallel-agents | 975 | T3: Remove session example (redundant). | <500 |
+| implementation-review | 974 | T3: Compress integration test verification to 1 line. | <500 |
+| receiving-code-review | 917 | T3: Remove 3 of 4 real examples. | <500 |
+| using-git-worktrees | 775 | T3: Compress Creation Steps. | <500 |
+| plan-review | 653 | T3: Compress "What It Catches" table. | <500 |
+| verification-before-completion | 651 | T3: Compress Key Patterns section. | <500 |
+
+### Summary
+
+| Phase | Skills | Current | Target | Savings |
+|-------|-------:|--------:|-------:|--------:|
+| ~~1a (eval setup)~~ | — | — | — | ~~superseded~~ |
+| ~~1b (writing-skills)~~ | ~~1~~ | ~~3,204~~ | — | ~~retired~~ |
+| 2a (high-freq) | 3 | 3,511 | ~1,400 | ~2,100 |
+| 2b (execution) | 3 | 4,949 | ~1,600 | ~3,350 |
+| 2c (shipping/review) | 9 | 9,675 | ~4,100 | ~5,575 |
+| **Total (Plan 2)** | **15** | **18,135** | **~7,100** | **~11,035 (~61%)** |
+
+(requesting-code-review already under target; excluded. writing-skills retired entirely.)
 
 ## Constraints
 
-- **No behavioral changes.** The reduced skills must produce identical agent behavior. This is a content-only refactor.
-- **TDD applies.** Per writing-skills Iron Law, each skill edit needs testing. For token reduction specifically: verify the agent still follows the skill correctly with less text. Lightweight pressure test per tier.
-- **One tier at a time.** Complete and verify one tier before starting the next.
-- **Preserve discipline content.** Rationalization tables, Red Flags lists, and Iron Laws are the highest-value content per word. These get compressed last (or not at all).
+- **No workflow changes.** Reduced skills must produce equivalent agent workflow behavior — same steps, same decision points, same safety checks. Style changes (MUST → reasoning, verbose → concise) are encouraged per Anthropic best practices. See "What Same Behavior Means" in Evaluation Methodology.
+- **Eval before merge.** Use `skill-creator` plugin evals to verify each phase before moving to the next.
+- **Supporting files inherit existing patterns.** Several skills (systematic-debugging, subagent-driven-development, test-driven-development) already use supporting files. Follow the same conventions.
+- **Progressive disclosure.** When moving content to supporting files, include clear pointers in SKILL.md about *when* to read them. For files >300 lines, include a table of contents.
+- **Skill conventions in `.claude/CLAUDE.md`.** Project-level instructions (Iron Law, token targets, cross-referencing syntax) replace the retired writing-skills.
 
 ## Success Criteria
 
-- All 15 over-target skills under 500 words (using-superpowers under 300)
-- No skill behavioral regressions in pressure tests
-- Shared supporting files eliminate cross-skill duplication
-- Total context budget across all skills reduced by ~50%
+### Plan 1: SUPERSEDED
 
-## Open Questions
+See "Plan 1: SUPERSEDED" section above.
 
-1. **Is the <500 word target realistic for discipline skills (TDD, systematic-debugging)?** These are long because they need rationalization tables + Red Flags + examples. Might need to relax to <600 for the most discipline-heavy skills.
-2. **Should `_shared/` be the convention for cross-skill supporting files?** Alternative: always put shared content in the "primary" skill's directory and cross-reference. `_shared/` is cleaner but adds a new convention.
-3. **Is using-superpowers's Red Flags table still earning its context cost?** It was written when skills were new. After months of use, the agent may have internalized the patterns. Could be moved to a supporting file loaded only when violations are detected.
+### Plan 2
+
+- All 15 remaining over-target skills under their respective targets (<600 discipline, <500 general, <300 using-superpowers)
+- All SKILL.md files under 500 lines
+- No skill workflow regressions in `skill-creator` evals
+- Total SKILL.md context budget reduced by ~60% across all skills
+- All Red Flags / rationalization tables removed
+- MUST/NEVER/ALWAYS patterns replaced with reasoning-based guidance
