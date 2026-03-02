@@ -136,7 +136,7 @@ Analyze the staged changes and create a conventional commit message:
 - Include body with details if changes are significant
 
 Format:
-```
+```text
 <type>(<scope>): <subject>
 
 <body - what and why>
@@ -173,7 +173,7 @@ git rebase origin/$DEFAULT_BRANCH
 
 Push the branch to the remote:
 ```bash
-git push -u origin <branch-name>
+git push -u origin $CURRENT_BRANCH
 ```
 
 If the branch was rebased and already had a remote, use:
@@ -219,7 +219,7 @@ Provide a summary:
 
 ## Examples
 
-```
+```text
 /ship                           # Full workflow: branch, commit, push, PR
 /ship -d                        # Review docs only, no commit
 /ship -q                        # Quick: skip doc review

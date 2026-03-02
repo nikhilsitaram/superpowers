@@ -215,7 +215,7 @@ Provide a summary:
 
 ## Examples
 
-```
+```text
 /merge-pr                  # Detect PR from current branch, full workflow
 /merge-pr 42               # Merge specific PR
 /merge-pr -S               # Skip fixes, just merge and clean up

@@ -256,7 +256,7 @@ The orchestrator prompt MUST include:
 4. Instruction to use `superpowers:ship` when complete to commit, push, and create PR
 
 Example Task dispatch:
-```
+```text
 Task(
   description: "Execute implementation plan",
   model: "opus",
