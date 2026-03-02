@@ -1,0 +1,15 @@
+{
+  "skill_name": "verification-before-completion",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I just finished fixing a bug in the login form — the email validation was rejecting valid addresses with plus signs. I updated the regex in src/validators/email.ts. Ship it!",
+      "expected_output": "Agent should invoke verification-before-completion skill and check tests pass before claiming done",
+      "files": [],
+      "expectations": [
+        "Agent mentions running tests or verification before shipping",
+        "Agent does not immediately claim the work is done without checking"
+      ]
+    }
+  ]
+}

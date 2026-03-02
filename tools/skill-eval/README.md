@@ -26,3 +26,8 @@ Requires `claude` CLI (`claude -p` headless mode).
 Non-stdlib Python dependencies found in vendored scripts (not all are needed for our eval use case):
 - `anthropic` — Anthropic Python SDK (used by some scripts)
 - `yaml` — PyYAML (`pip install pyyaml`)
+
+## Adaptations
+
+- `claude -p` cannot be launched inside an active Claude Code session (nested session guard). Run smoke tests and evals from a standalone terminal, not from within Claude Code.
+- Our eval scripts use `--plugin-dir` and `--dangerously-skip-permissions` flags for headless skill testing.
