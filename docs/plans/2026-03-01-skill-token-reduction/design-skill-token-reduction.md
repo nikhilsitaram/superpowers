@@ -137,3 +137,21 @@ Move heavy reference content from subagent-driven-development to supporting file
 1. **Is the <500 word target realistic for discipline skills (TDD, systematic-debugging)?** These are long because they need rationalization tables + Red Flags + examples. Might need to relax to <600 for the most discipline-heavy skills.
 2. **Should `_shared/` be the convention for cross-skill supporting files?** Alternative: always put shared content in the "primary" skill's directory and cross-reference. `_shared/` is cleaner but adds a new convention.
 3. **Is using-superpowers's Red Flags table still earning its context cost?** It was written when skills were new. After months of use, the agent may have internalized the patterns. Could be moved to a supporting file loaded only when violations are detected.
+
+---
+
+## Plan 1 Completion
+
+**Completed:** 2026-03-02
+
+**Summary:** Anthropic's skill-creator eval framework vendored into `tools/skill-eval/`. writing-skills SKILL.md rewritten from 3,204 words to 468 words (85% reduction). Heavy content extracted to supporting files (cso-guide.md, checklist.md). Eval comparison shows no behavioral regression across 3 test prompts.
+
+**Results:**
+- Eval framework: 18 files vendored, Python imports resolve, smoke test infrastructure created
+- writing-skills: 468 words / 73 lines (target: <500 / <500)
+- Zero `@` force-load references (replaced with `**See:**` pointers)
+- Zero ALL CAPS directives (replaced with reasoning-based guidance)
+- 2 new supporting files created (cso-guide.md, checklist.md)
+- Existing supporting files preserved (anthropic-best-practices.md, persuasion-principles.md, testing-skills-with-subagents.md, graphviz-conventions.dot)
+
+**Plan 2 (next):** Reduce remaining 15 skills using writing-skills as the reference standard.
