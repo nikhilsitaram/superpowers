@@ -40,7 +40,7 @@ status: Complete (2026-03-02)
 
 **Done when:** SKILL.md exists with valid frontmatter (name, description under 1024 chars), all required sections (Overview, When to Use, Invocation, Review Categories, The Process, Report Format, Common Mistakes, Red Flags, Integration), and the process flow covers all design doc phases (scope resolution, parallel review, cross-scope reconciliation, aggregate/triage).
 
-**Avoid:** Don't make the description a workflow summary — focus ONLY on triggering conditions per writing-skills convention. Don't exceed 1024 chars in the description field.
+**Avoid:** Don't make the description a workflow summary — focus ONLY on triggering conditions. Don't exceed 1024 chars in the description field.
 
 **Step 1: Write the SKILL.md file**
 
