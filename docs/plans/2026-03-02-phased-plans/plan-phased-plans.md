@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: In Development
 ---
 
 # Phased Plans Implementation Plan
@@ -21,10 +21,10 @@ status: Not Yet Started
 ## Phases
 
 ### Phase 1 — Phasing Guidance
-**Status:** Not Yet Started
+**Status:** In Development
 
-- [ ] Task 1: Add phasing awareness and approval gate to brainstorming
-- [ ] Task 2: Add phasing decision section to writing-plans
+- [x] Task 1: Add phasing awareness and approval gate to brainstorming
+- [x] Task 2: Add phasing decision section to writing-plans
 
 ---
 
@@ -165,3 +165,17 @@ Expected: 4 or more matches
 git add skills/writing-plans/SKILL.md
 git commit -m "feat(writing-plans): add phasing decision framework (closes #16)"
 ```
+
+---
+
+## Completion Report — Phasing Guidance
+
+**Completed:** 2026-03-02
+
+### Summary
+
+Added phasing awareness and approval gate to the brainstorming skill (3 insertions: phasing candidates bullet, phasing recommendation subsection with AskUserQuestion, Implementation Approach design doc guidance). Added a Phasing Decision section to the writing-plans skill (1 insertion: three triggers, single-phase criteria, boundary rules, design doc inheritance). Both skills now guide Claude to evaluate and recommend phasing when dependency layers, verification gates, or independent shippability warrant it.
+
+### Deviations from Plan
+
+None — implemented as planned.
