@@ -201,45 +201,10 @@ Every multi-task plan MUST include Task 0: failing broad integration tests that 
 - DRY, YAGNI, TDD, frequent commits
 - Every task passes the "fresh Claude" specificity test
 
-## Task Persistence
-
-After saving the plan, write a `.tasks.json` file co-located with the plan document. This enables cross-session resume:
-
-```json
-{
-  "planFile": "docs/plans/YYYY-MM-DD-topic/plan-topic.md",
-  "createdAt": "ISO-8601 timestamp",
-  "tasks": [
-    {
-      "id": 0,
-      "title": "Task 0: Write failing broad integration tests",
-      "status": "pending",
-      "blockedBy": []
-    },
-    {
-      "id": 1,
-      "title": "Task 1: Component Name",
-      "status": "pending",
-      "blockedBy": [0]
-    },
-    {
-      "id": 2,
-      "title": "Task 2: Next Component",
-      "status": "pending",
-      "blockedBy": [1]
-    }
-  ]
-}
-```
-
-**File location:** Same directory as the plan, e.g. `docs/plans/YYYY-MM-DD-<topic>/.tasks.json`
-
-When tasks are completed during execution, the executing skill updates this file so progress survives session boundaries.
-
 ## Plan Review (Required)
 
 <HARD-GATE>
-After saving the plan and `.tasks.json`, auto-dispatch a plan review subagent BEFORE offering execution options. Do NOT skip. Do NOT proceed to execution without a passing review.
+After saving the plan, auto-dispatch a plan review subagent BEFORE offering execution options. Do NOT skip. Do NOT proceed to execution without a passing review.
 </HARD-GATE>
 
 **Announce:** "Running plan review before execution."
@@ -254,7 +219,7 @@ After saving the plan and `.tasks.json`, auto-dispatch a plan review subagent BE
 Use the Agent tool (general-purpose, model: "opus") with the prompt template from `skills/plan-review/reviewer-prompt.md`, substituting the three variables above.
 
 **Handle result:**
-- If issues found: fix the plan, update `.tasks.json` if structure changed, re-dispatch reviewer
+- If issues found: fix the plan, re-dispatch reviewer
 - Repeat until clean
 - Once clean: proceed to execution handoff
 

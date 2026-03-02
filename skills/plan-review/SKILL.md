@@ -80,7 +80,6 @@ Then dispatch using `./reviewer-prompt.md` template with:
 
 **If reviewer finds issues:**
 - Fix the plan document
-- Update `.tasks.json` if task structure changed
 - Re-run review after fixes
 - Don't skip re-review
 
