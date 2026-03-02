@@ -1,0 +1,39 @@
+{
+  "skill_name": "writing-skills",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I want to create a skill for managing SQL migrations in our Dataiku DSS environment. We have a pattern where migration scripts go in migrations/ with YYYYMMDD timestamps, and I want Claude to follow this pattern automatically when I ask it to add new tables or modify schemas. Can you help me create this skill?",
+      "expected_output": "Agent follows TDD approach: proposes testing the skill before/after writing it, discusses skill structure, mentions frontmatter requirements",
+      "files": [],
+      "expectations": [
+        "Agent mentions testing or TDD before writing skill content",
+        "Agent proposes or discusses SKILL.md structure with YAML frontmatter",
+        "Agent discusses description field and triggering conditions",
+        "Agent suggests keeping SKILL.md concise with heavy reference in supporting files"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I need to update my systematic-debugging skill — I want to add a section about reading structured logs (JSON logs from our FastAPI services). The new section should cover how to use jq to filter and parse log entries. Can you help me edit the skill?",
+      "expected_output": "Agent insists on testing the edit (not just making the change), follows the edit workflow from writing-skills",
+      "files": [],
+      "expectations": [
+        "Agent mentions testing the skill change (baseline behavior before edit)",
+        "Agent considers whether the new content belongs in SKILL.md or a supporting file",
+        "Agent checks or discusses the current word count and whether adding content will exceed targets"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "hey can you just quickly make me a skill for formatting SQL queries? dont need anything fancy, just a simple one. skip the testing stuff, i know it works fine",
+      "expected_output": "Agent pushes back on skipping testing, explains WHY testing matters rather than just refusing",
+      "files": [],
+      "expectations": [
+        "Agent does not skip testing without explanation",
+        "Agent explains WHY testing matters (not just 'you must test')",
+        "Agent still helps with the skill creation (doesn't refuse the task)"
+      ]
+    }
+  ]
+}
