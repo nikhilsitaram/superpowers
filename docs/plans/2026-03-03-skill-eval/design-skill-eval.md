@@ -198,7 +198,7 @@ Spawn comparator subagent (reads `agents/comparator.md`):
 3. Scores each on two dimensions:
    - **Content Quality** (correctness, completeness, accuracy): 1-5
    - **Structural Quality** (organization, formatting, usability): 1-5
-   - **Overall**: average → 1-10
+   - **Overall**: sum → 2-10
 4. Determines winner with cited reasoning
 5. Saves `comparison.json`
 

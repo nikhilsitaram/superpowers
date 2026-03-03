@@ -65,7 +65,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
     """
     # Support both layouts: eval dirs directly under benchmark_dir, or under runs/
     runs_dir = benchmark_dir / "runs"
-    if runs_dir.exists():
+    if runs_dir.exists() and list(runs_dir.glob("eval-*")):
         search_dir = runs_dir
     elif list(benchmark_dir.glob("eval-*")):
         search_dir = benchmark_dir

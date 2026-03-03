@@ -63,9 +63,9 @@ If expectations are provided, check each against both outputs. Use as secondary 
 Compare based on (priority order):
 1. **Primary**: Overall rubric score
 2. **Secondary**: Assertion pass rates (if applicable)
-3. **Tiebreaker**: If truly equal, declare TIE
+3. **Tiebreaker**: If scores are equal, choose the output with fewer critical flaws. If still indistinguishable, default to A (no-preference fallback). Always return A or B — downstream analysis requires a definitive winner.
 
-Be decisive — ties should be rare.
+Be decisive — true ties are almost never equal under close inspection.
 
 ### Step 7: Write Comparison Results
 

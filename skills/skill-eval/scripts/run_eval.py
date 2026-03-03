@@ -135,16 +135,20 @@ def run_eval(
         variant_dir.mkdir(parents=True, exist_ok=True)
 
         # Write eval_metadata.json (once per eval, shared across variants)
+        # Use exclusive create to avoid races when variants run in parallel
         metadata_path = output_dir / eval_dir_name / "eval_metadata.json"
-        if not metadata_path.exists():
+        try:
+            fd = os.open(str(metadata_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL)
             metadata = {
                 "eval_id": eval_id,
                 "eval_name": eval_name,
                 "prompt": eval_item["prompt"],
                 "expectations": eval_item.get("expectations", []),
             }
-            with open(metadata_path, "w", encoding="utf-8") as f:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)
+        except FileExistsError:
+            pass  # Another variant already wrote it
 
         prompt = eval_item["prompt"]
 
@@ -211,6 +215,12 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.runs < 1:
+        parser.error("--runs must be >= 1")
+
+    if args.timeout < 1:
+        parser.error("--timeout must be >= 1")
 
     if not args.evals_path.exists():
         print(f"Error: evals file not found: {args.evals_path}")
