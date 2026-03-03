@@ -21,6 +21,7 @@ Detect environment:
 - `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master)
 - `MAIN_REPO` from `git rev-parse --path-format=absolute --git-common-dir` (strip `/.git`)
 - `IS_WORKTREE` — true when `--git-dir` differs from `--git-common-dir`
+- `WORKTREE_PATH` — look up from `git worktree list` by matching `$BRANCH_NAME` (works regardless of CWD)
 
 If not on the PR branch, check it out.
 
@@ -66,7 +67,12 @@ Never use `--delete-branch` — branch cleanup is handled in Step 6.
 
 **Worktree — run each sub-step as a SEPARATE Bash tool call.** Never chain with `&&` — CWD changes don't persist if a later chained command fails, bricking the shell.
 
-1. `git worktree remove <path>` (retry with `--force` if untracked files)
+Derive `WORKTREE_PATH` if not already captured:
+```bash
+git worktree list --porcelain | grep -B2 "branch refs/heads/$BRANCH_NAME" | head -1 | sed 's/^worktree //'
+```
+
+1. `git worktree remove "$WORKTREE_PATH"` (retry with `--force` if untracked files)
 2. `git branch -D $BRANCH_NAME`
 3. `git worktree prune`
 4. `git pull --rebase`
