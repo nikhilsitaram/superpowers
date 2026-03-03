@@ -50,7 +50,6 @@ Start a new session and ask to build something. The agent should trigger the bra
 ### Infrastructure
 - **using-superpowers** — Skill system entry point and priority routing
 - **using-git-worktrees** — Isolated workspaces for feature development
-- **dispatching-parallel-agents** — Concurrent subagent workflows
 
 ## License
 
