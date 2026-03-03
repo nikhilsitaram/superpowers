@@ -4,7 +4,7 @@ Dispatch an Opus reviewer subagent to validate a plan before execution.
 
 **Only dispatch after the plan is fully written and saved.**
 
-```
+```yaml
 Agent tool (general-purpose):
   model: "opus"
   description: "Plan consistency review"
