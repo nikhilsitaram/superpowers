@@ -15,23 +15,11 @@ Git worktrees create isolated workspaces sharing the same repository, allowing w
 
 Follow this priority — never assume a location:
 
-1. **Check existing directories:** Look for `.worktrees/` then `worktrees/` (`.worktrees/` wins if both exist)
+1. **Check for `.worktrees/`** in the repo root
 2. **Check CLAUDE.md** for a worktree directory preference
 3. **Ask the user** which location to use
 
-### 2. Verify .gitignore (Project-Local Only)
-
-Before creating a worktree in a project-local directory, verify it's git-ignored:
-
-```bash
-git check-ignore -q .worktrees 2>/dev/null
-```
-
-If not ignored: add to `.gitignore` and commit before proceeding. Unignored worktree directories get tracked and pollute git status — a messy problem to clean up after the fact.
-
-Global directories (e.g. `~/.config/superpowers/worktrees/`) skip this check.
-
-### 3. Create Worktree
+### 2. Create Worktree
 
 ```bash
 git worktree add <path>/<branch-name> -b <branch-name>
@@ -67,11 +55,8 @@ Ready to implement <feature-name>
 
 | Situation | Action |
 |-----------|--------|
-| `.worktrees/` exists | Use it (verify ignored) |
-| `worktrees/` exists | Use it (verify ignored) |
-| Both exist | Use `.worktrees/` |
-| Neither exists | Check CLAUDE.md → Ask user |
-| Directory not ignored | Add to .gitignore + commit |
+| `.worktrees/` exists | Use it |
+| `.worktrees/` missing | Check CLAUDE.md → Ask user |
 | Tests fail during baseline | Report failures + ask |
 | No package.json/Cargo.toml | Skip dependency install |
 
