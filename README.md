@@ -52,16 +52,6 @@ Start a new session and ask to build something. The agent should trigger the bra
 - **using-git-worktrees** — Isolated workspaces for feature development
 - **dispatching-parallel-agents** — Concurrent subagent workflows
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Use the `skill-creator` plugin (`claude skill create`) for eval-driven skill development
-4. Target <500 words for SKILL.md files
-5. Submit a PR
-
-See `.claude/CLAUDE.md` for project conventions.
-
 ## License
 
 MIT License — see LICENSE file for details.
