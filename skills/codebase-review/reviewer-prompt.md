@@ -6,7 +6,7 @@ Use this template when dispatching parallel Explore subagents for each review un
 
 **Dispatch one per review unit** — all run in parallel.
 
-```
+```text
 Agent tool (Explore):
   description: "Review {SCOPE_PATH} for code quality"
   prompt: |
