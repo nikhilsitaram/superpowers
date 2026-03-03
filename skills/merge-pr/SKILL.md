@@ -9,7 +9,7 @@ Address review feedback, comment on the PR, merge with squash, and clean up.
 
 **Prerequisite:** A PR created by `/ship` that has been reviewed.
 
-**REQUIRED SUB-SKILL:** Use superpowers:receiving-code-review
+**Review principle:** Verify each suggestion against the codebase before implementing. Push back on incorrect suggestions with technical reasoning. No performative agreement ("Great point!", "You're right!").
 
 ## Workflow
 
@@ -34,7 +34,7 @@ Categorize each comment:
 | Category | Action |
 |----------|--------|
 | **Actionable fix** — bug, security, correctness | Fix it |
-| **Suggestion** — style, refactor, nice-to-have | Evaluate per receiving-code-review: fix if it improves correctness/readability, dismiss with reason if not |
+| **Suggestion** — style, refactor, nice-to-have | Evaluate: fix if it improves correctness/readability, dismiss with reason if not |
 | **Informational** — explanation, praise | Acknowledge, no change |
 | **False positive** — incorrect analysis | Dismiss with technical reasoning |
 
@@ -107,5 +107,5 @@ Report: PR number/URL, review items (fixed/dismissed/informational), merge statu
 | Chaining Step 6 with `&&` | CWD change doesn't persist if later command fails. Use separate Bash calls. |
 | Deleting branch before removing worktree | Git refuses. Remove worktree first. |
 | Using `--delete-branch` on `gh pr merge` | Fails in worktree flows. Delete branch manually after. |
-| Blindly implementing review suggestions | Follow receiving-code-review: verify each, push back on incorrect ones. |
+| Blindly implementing review suggestions | Verify each against the codebase, push back on incorrect ones. |
 | Merging without commenting | Always post what was addressed before merging. |
