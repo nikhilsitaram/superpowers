@@ -61,7 +61,7 @@ Mark complete
 [Auto-invoke ship → PR created]
 ```
 
-**Integration test levels:** Task 0 provides broad acceptance tests (Level 1). Implementers write boundary tests at cross-task seams (Level 2). Implementation-review verifies coverage (Level 3). See `test-driven-development/testing-anti-patterns.md` Anti-Pattern 5.
+**Integration test levels:** Task 0 provides broad acceptance tests (Level 1). Implementers write boundary tests at cross-task seams (Level 2). Implementation-review verifies coverage (Level 3).
 
 ## Deviation Rules
 

@@ -3,392 +3,138 @@ name: test-driven-development
 description: Use when implementing any feature or bugfix, before writing implementation code
 ---
 
-# Test-Driven Development (TDD)
+# Test-Driven Development
 
-## Overview
+Write tests first, then make them pass. The cycle: Red (failing test) → Green (minimal code to pass) → Refactor (clean up).
 
-Write the test first. Watch it fail. Write minimal code to pass.
+**Why TDD for LLMs:** You optimize for coherent, plausible-looking code. Tests catch when plausible isn't correct. Without the red-before-green discipline, you'll write tests that confirm whatever you already wrote.
 
-**Core principle:** If you didn't watch the test fail, you don't know if it tests the right thing.
+## The Cycle
 
-**Violating the letter of the rules is violating the spirit of the rules.**
-
-## When to Use
-
-**Always:**
-- New features
-- Bug fixes
-- Refactoring
-- Behavior changes
-
-**Exceptions (ask your human partner):**
-- Throwaway prototypes
-- Generated code
-- Configuration files
-
-Thinking "skip TDD just this once"? Stop. That's rationalization.
-
-## The Iron Law
-
-```
-NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
+```text
+1. Write a failing test
+2. Run it — verify it FAILS (red)
+3. Write minimal code to pass
+4. Run it — verify it PASSES (green)
+5. Refactor if needed
+6. Commit
 ```
 
-Write code before the test? Delete it. Start over.
+**Step 2 matters most.** If you skip "verify it fails," you might write a test that passes regardless of implementation. That test protects nothing.
 
-**No exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
+## Working With Plan Tasks
 
-Implement fresh from tests. Period.
+Tasks from writing-plans already embed TDD structure. Your job is to execute it faithfully:
 
-## Red-Green-Refactor
+```markdown
+**Step 1: Write the failing test**
+[test code from plan]
 
-```dot
-digraph tdd_cycle {
-    rankdir=LR;
-    red [label="RED\nWrite failing test", shape=box, style=filled, fillcolor="#ffcccc"];
-    verify_red [label="Verify fails\ncorrectly", shape=diamond];
-    green [label="GREEN\nMinimal code", shape=box, style=filled, fillcolor="#ccffcc"];
-    verify_green [label="Verify passes\nAll green", shape=diamond];
-    refactor [label="REFACTOR\nClean up", shape=box, style=filled, fillcolor="#ccccff"];
-    next [label="Next", shape=ellipse];
+**Step 2: Run test to verify it fails**
+`pytest tests/path/test.py::test_name -v` — expect FAIL
 
-    red -> verify_red;
-    verify_red -> green [label="yes"];
-    verify_red -> red [label="wrong\nfailure"];
-    green -> verify_green;
-    verify_green -> refactor [label="yes"];
-    verify_green -> green [label="no"];
-    refactor -> verify_green [label="stay\ngreen"];
-    verify_green -> next;
-    next -> red;
-}
+**Step 3: Write minimal implementation**
+[implementation code from plan]
+
+**Step 4: Run test to verify it passes**
+`pytest tests/path/test.py::test_name -v` — expect PASS
+
+**Step 5: Commit**
 ```
 
-### RED - Write Failing Test
+Execute each step. Don't batch steps 1-4 into one action. The value is in verifying each transition.
 
-Write one minimal test showing what should happen.
+## Test Discovery
 
-<Good>
-```typescript
-test('retries failed operations 3 times', async () => {
-  let attempts = 0;
-  const operation = () => {
-    attempts++;
-    if (attempts < 3) throw new Error('fail');
-    return 'success';
-  };
-
-  const result = await retryOperation(operation);
-
-  expect(result).toBe('success');
-  expect(attempts).toBe(3);
-});
-```
-Clear name, tests real behavior, one thing
-</Good>
-
-<Bad>
-```typescript
-test('retry works', async () => {
-  const mock = jest.fn()
-    .mockRejectedValueOnce(new Error())
-    .mockRejectedValueOnce(new Error())
-    .mockResolvedValueOnce('success');
-  await retryOperation(mock);
-  expect(mock).toHaveBeenCalledTimes(3);
-});
-```
-Vague name, tests mock not code
-</Bad>
-
-**Requirements:**
-- One behavior
-- Clear name
-- Real code (no mocks unless unavoidable)
-
-### Verify RED - Watch It Fail
-
-**MANDATORY. Never skip.**
+If the task doesn't specify test patterns, find them:
 
 ```bash
-npm test path/to/test.test.ts
+# Find existing test files
+ls -la tests/ || ls -la test/ || ls -la *_test.* || ls -la *.test.*
+
+# Find test runner config
+cat pytest.ini 2>/dev/null || cat pyproject.toml 2>/dev/null | grep -A10 tool.pytest
+cat package.json 2>/dev/null | grep -A5 '"test"'
+
+# Run existing tests to understand patterns
+pytest --collect-only 2>/dev/null | head -20
+npm test -- --listTests 2>/dev/null | head -20
 ```
 
-Confirm:
-- Test fails (not errors)
-- Failure message is expected
-- Fails because feature missing (not typos)
+Match existing patterns. If tests use `pytest`, use `pytest`. If tests use class-based structure, use classes.
 
-**Test passes?** You're testing existing behavior. Fix test.
+## What to Test
 
-**Test errors?** Fix error, re-run until it fails correctly.
+Test **behavior**, not implementation:
 
-### GREEN - Minimal Code
+| Good (behavior) | Bad (implementation) |
+|-----------------|---------------------|
+| `login_returns_token_for_valid_credentials` | `login_calls_database_once` |
+| `expired_token_returns_401` | `token_validator_internal_state` |
+| `retry_succeeds_after_transient_failure` | `retry_loop_increments_counter` |
 
-Write simplest code to pass the test.
+One behavior per test. If a test name has "and" in it, split it.
 
-<Good>
-```typescript
-async function retryOperation<T>(fn: () => Promise<T>): Promise<T> {
-  for (let i = 0; i < 3; i++) {
-    try {
-      return await fn();
-    } catch (e) {
-      if (i === 2) throw e;
-    }
-  }
-  throw new Error('unreachable');
-}
-```
-Just enough to pass
-</Good>
+## When Tests Fail Unexpectedly
 
-<Bad>
-```typescript
-async function retryOperation<T>(
-  fn: () => Promise<T>,
-  options?: {
-    maxRetries?: number;
-    backoff?: 'linear' | 'exponential';
-    onRetry?: (attempt: number) => void;
-  }
-): Promise<T> {
-  // YAGNI
-}
-```
-Over-engineered
-</Bad>
+If a test fails when you expected it to pass:
 
-Don't add features, refactor other code, or "improve" beyond the test.
+1. Read the error message completely
+2. Check if you're testing the right thing (path, function name, import)
+3. Check if dependencies exist (prior task outputs, config files)
+4. Fix the root cause, don't patch the test to pass
 
-### Verify GREEN - Watch It Pass
+If a test passes when you expected it to fail:
 
-**MANDATORY.**
+1. Your test doesn't test what you think — the assertion is wrong
+2. The implementation already exists (check git status)
+3. The test is testing a mock, not real behavior
 
-```bash
-npm test path/to/test.test.ts
-```
+## Refactoring
 
-Confirm:
-- Test passes
-- Other tests still pass
-- Output pristine (no errors, warnings)
+Refactor only after green. Refactoring means changing structure without changing behavior.
 
-**Test fails?** Fix code, not test.
+**Refactor when:**
+- Duplication appeared (extract function)
+- Names don't match what things do
+- Function does multiple things (split)
 
-**Other tests fail?** Fix now.
+**Don't refactor:**
+- Before tests pass (you might break something)
+- Code outside your task scope (create a separate task)
+- Working code that's "not how I'd write it"
 
-### REFACTOR - Clean Up
-
-After green only:
-- Remove duplication
-- Improve names
-- Extract helpers
-
-Keep tests green. Don't add behavior.
-
-### Repeat
-
-Next failing test for next feature.
-
-## Good Tests
-
-| Quality | Good | Bad |
-|---------|------|-----|
-| **Minimal** | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
-| **Clear** | Name describes behavior | `test('test1')` |
-| **Shows intent** | Demonstrates desired API | Obscures what code should do |
-
-## Why Order Matters
-
-**"I'll write tests after to verify it works"**
-
-Tests written after code pass immediately. Passing immediately proves nothing:
-- Might test wrong thing
-- Might test implementation, not behavior
-- Might miss edge cases you forgot
-- You never saw it catch the bug
-
-Test-first forces you to see the test fail, proving it actually tests something.
-
-**"I already manually tested all the edge cases"**
-
-Manual testing is ad-hoc. You think you tested everything but:
-- No record of what you tested
-- Can't re-run when code changes
-- Easy to forget cases under pressure
-- "It worked when I tried it" ≠ comprehensive
-
-Automated tests are systematic. They run the same way every time.
-
-**"Deleting X hours of work is wasteful"**
-
-Sunk cost fallacy. The time is already gone. Your choice now:
-- Delete and rewrite with TDD (X more hours, high confidence)
-- Keep it and add tests after (30 min, low confidence, likely bugs)
-
-The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
-
-**"TDD is dogmatic, being pragmatic means adapting"**
-
-TDD IS pragmatic:
-- Finds bugs before commit (faster than debugging after)
-- Prevents regressions (tests catch breaks immediately)
-- Documents behavior (tests show how to use code)
-- Enables refactoring (change freely, tests catch breaks)
-
-"Pragmatic" shortcuts = debugging in production = slower.
-
-**"Tests after achieve the same goals - it's spirit not ritual"**
-
-No. Tests-after answer "What does this do?" Tests-first answer "What should this do?"
-
-Tests-after are biased by your implementation. You test what you built, not what's required. You verify remembered edge cases, not discovered ones.
-
-Tests-first force edge case discovery before implementing. Tests-after verify you remembered everything (you didn't).
-
-30 minutes of tests after ≠ TDD. You get coverage, lose proof tests work.
-
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "Too simple to test" | Simple code breaks. Test takes 30 seconds. |
-| "I'll test after" | Tests passing immediately prove nothing. |
-| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
-| "Already manually tested" | Ad-hoc ≠ systematic. No record, can't re-run. |
-| "Deleting X hours is wasteful" | Sunk cost fallacy. Keeping unverified code is technical debt. |
-| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete. |
-| "Need to explore first" | Fine. Throw away exploration, start with TDD. |
-| "Test hard = design unclear" | Listen to test. Hard to test = hard to use. |
-| "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
-| "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
-| "Existing code has no tests" | You're improving it. Add tests for existing code. |
-
-## Red Flags - STOP and Start Over
-
-- Code before test
-- Test after implementation
-- Test passes immediately
-- Can't explain why test failed
-- Tests added "later"
-- Rationalizing "just this once"
-- "I already manually tested it"
-- "Tests after achieve the same purpose"
-- "It's about spirit not ritual"
-- "Keep as reference" or "adapt existing code"
-- "Already spent X hours, deleting is wasteful"
-- "TDD is dogmatic, I'm being pragmatic"
-- "This is different because..."
-
-**All of these mean: Delete code. Start over with TDD.**
-
-## Example: Bug Fix
-
-**Bug:** Empty email accepted
-
-**RED**
-```typescript
-test('rejects empty email', async () => {
-  const result = await submitForm({ email: '' });
-  expect(result.error).toBe('Email required');
-});
-```
-
-**Verify RED**
-```bash
-$ npm test
-FAIL: expected 'Email required', got undefined
-```
-
-**GREEN**
-```typescript
-function submitForm(data: FormData) {
-  if (!data.email?.trim()) {
-    return { error: 'Email required' };
-  }
-  // ...
-}
-```
-
-**Verify GREEN**
-```bash
-$ npm test
-PASS
-```
-
-**REFACTOR**
-Extract validation for multiple fields if needed.
-
-## Verification Checklist
-
-Before marking work complete:
-
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
-- [ ] Each test failed for expected reason (feature missing, not typo)
-- [ ] Wrote minimal code to pass each test
-- [ ] All tests pass
-- [ ] Output pristine (no errors, warnings)
-- [ ] Tests use real code (mocks only if unavoidable)
-- [ ] Edge cases and errors covered
-- [ ] If this task consumes cross-task output, boundary integration tests written with real components
-
-Can't check all boxes? You skipped TDD. Start over.
-
-## When Stuck
-
-| Problem | Solution |
-|---------|----------|
-| Don't know how to test | Write wished-for API. Write assertion first. Ask your human partner. |
-| Test too complicated | Design too complicated. Simplify interface. |
-| Must mock everything | Code too coupled. Use dependency injection. |
-| Test setup huge | Extract helpers. Still complex? Simplify design. |
-
-## Debugging Integration
-
-Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix and prevents regression.
-
-Never fix bugs without a test.
+Run tests after each refactor step. If tests fail, you changed behavior — revert and try again.
 
 ## Boundary Tests
 
-When your task consumes output from a prior task (imports a module, reads config, calls an API created earlier), write a narrow integration test at the boundary. Use real components, not mocks — this IS your TDD cycle, not a separate phase.
+If your task consumes output from a prior task (imports a module, calls an API), write a boundary integration test:
 
-The test follows red-green-refactor: write it RED (boundary fails because integration not wired yet), wire the integration to make it GREEN, then refactor.
+```python
+# Test that auth_service (Task 2) integrates with user_repository (Task 1)
+def test_auth_service_fetches_user_from_repository():
+    repo = UserRepository(db_connection)  # Real component from Task 1
+    auth = AuthService(repo)              # Component from Task 2
 
-```typescript
-// Task 2 imports UserService created by Task 1
-// Boundary test: verify the real integration works
-test('repository queries return users from real database adapter', () => {
-  const repo = new UserRepository(new SqliteAdapter(':memory:'));
-  repo.save({ id: '1', name: 'Alice' });
+    result = auth.authenticate("valid_user", "valid_pass")
 
-  const result = repo.findById('1');
-
-  expect(result.name).toBe('Alice');
-});
+    assert result.user_id == expected_id  # Tests the seam
 ```
 
-See testing-anti-patterns.md Anti-Pattern 5 for the full three-level framework and boundary test gate function.
+Use real components at boundaries, not mocks. Mocks at boundaries hide integration bugs.
 
-## Testing Anti-Patterns
+## Common Failure Modes
 
-When adding mocks or test utilities, read testing-anti-patterns.md to avoid common pitfalls:
-- Testing mock behavior instead of real behavior
-- Adding test-only methods to production classes
-- Mocking without understanding dependencies
-- Three-level integration testing (when to write broad vs boundary vs verification tests)
+| Failure | Why It Happens | Fix |
+|---------|---------------|-----|
+| Test passes before implementation | Assertion is wrong or tests a mock | Verify assertion tests real behavior |
+| Test fails after "correct" implementation | Wrong import, path, or assumption | Read error completely, fix root cause |
+| Refactor breaks tests | Changed behavior, not just structure | Revert, make smaller changes |
+| Tests pass but feature doesn't work | Testing mocks instead of real code | Use real components, especially at boundaries |
+| Skipped "verify fail" step | Feels redundant | It's not. Do it every time. |
 
-## Final Rule
+## Integration
 
-```
-Production code → test exists and failed first
-Otherwise → not TDD
-```
+**Called by:** superpowers:subagent-driven-development (implementer subagents)
 
-No exceptions without your human partner's permission.
+**Works with:** Plans from superpowers:writing-plans (tasks have TDD structure embedded)
