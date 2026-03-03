@@ -15,7 +15,7 @@ Address review feedback, comment on the PR, merge with squash, and clean up.
 
 ### Step 1: Setup
 
-Identify the PR from argument, current branch, or `gh pr list --author @me --state open`. Store PR number, branch name, and URL.
+Identify the PR from argument or current branch. If neither works, run `gh pr list --author @me --state open` and ask the user to pick one (never auto-select when multiple candidates exist). Store PR number, branch name, and URL.
 
 Detect environment:
 - `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master)
@@ -67,9 +67,9 @@ Never use `--delete-branch` — branch cleanup is handled in Step 6.
 
 **Worktree — run each sub-step as a SEPARATE Bash tool call.** Never chain with `&&` — CWD changes don't persist if a later chained command fails, bricking the shell.
 
-Derive `WORKTREE_PATH` if not already captured:
+Derive `WORKTREE_PATH` if not already captured (exact branch match — grep substring would collide on similar names like `feature` vs `feature-2`):
 ```bash
-git worktree list --porcelain | grep -B2 "branch refs/heads/$BRANCH_NAME" | head -1 | sed 's/^worktree //'
+git worktree list --porcelain | awk -v b="refs/heads/$BRANCH_NAME" '$1=="worktree"{wt=$2} $1=="branch" && $2==b{print wt; exit}'
 ```
 
 1. `git worktree remove "$WORKTREE_PATH"` (retry with `--force` if untracked files)
