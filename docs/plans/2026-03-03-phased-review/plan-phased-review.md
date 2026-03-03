@@ -25,6 +25,10 @@ status: Not Yet Started
 
 Task 0 skipped: skill file edits with no cross-task data flow or imports.
 
+**Note:** Line numbers in steps reference the original unmodified file. Use the semantic anchors (e.g., "After the existing `{REPO_PATH}` row") as the primary guide when line numbers shift due to earlier insertions within the same task.
+
+**Testing:** SkillForge eval-driven testing deferred — these are targeted additions to existing skills, not new skill creation. Behavioral validation happens at first multi-phase plan execution.
+
 ---
 
 ## Task Details
@@ -36,7 +40,7 @@ Task 0 skipped: skill file edits with no cross-task data flow or imports.
 
 **Verification:** Word count under 1,000w: `wc -w skills/implementation-review/SKILL.md`
 
-**Done when:** SKILL.md includes inter-phase in When to Use, phase-scoped BASE_SHA guidance in How to Dispatch, new PHASE_CONTEXT/DOWNSTREAM_PHASES template variables, and >5 re-review rule. Word count stays under 1,000w.
+**Done when:** SKILL.md includes inter-phase in When to Use, phase-scoped BASE_SHA guidance in How to Dispatch, new PHASE_CONTEXT template variable (which includes downstream phase expectations), and >5 re-review rule. Word count stays under 1,000w.
 
 **Avoid:** Don't restructure the whole file — make targeted additions to existing sections. Don't repeat content that belongs in the reviewer-prompt.md template (Task 2 handles that).
 
@@ -115,7 +119,7 @@ After the Git Range section (after line 29 ```` ``` ````), add:
 
 **Step 2: Add cross-phase boundary test check to Integration Test Coverage output**
 
-After the existing L3 row in the Integration Test Coverage table (line 76), add:
+After the existing L3 row in the Integration Test Coverage table (line 75), add:
 
 ```markdown
     | L4: Cross-phase boundary tests | Pass/Fail/Missing | List interface contracts downstream phases depend on that lack tests |
@@ -215,7 +219,7 @@ Under 5 issues: orchestrator verifies fixes and proceeds.
 
 **Step 4: Update Plan Doc Updates table**
 
-Replace the existing Plan Doc Updates table (lines 87-93) to add per-phase tracking:
+Replace the existing Plan Doc Updates section (lines 83-93, heading + intro text + table) with:
 
 ```markdown
 ## Plan Doc Updates
