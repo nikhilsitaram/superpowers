@@ -79,7 +79,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
         metadata_path = eval_dir / "eval_metadata.json"
         if metadata_path.exists():
             try:
-                with open(metadata_path) as mf:
+                with open(metadata_path, encoding="utf-8") as mf:
                     eval_id = json.load(mf).get("eval_id", eval_idx)
             except (json.JSONDecodeError, OSError):
                 eval_id = eval_idx
@@ -111,7 +111,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
                     continue
 
                 try:
-                    with open(grading_file) as f:
+                    with open(grading_file, encoding="utf-8") as f:
                         grading = json.load(f)
                 except json.JSONDecodeError as e:
                     print(f"Warning: Invalid JSON in {grading_file}: {e}")
@@ -132,7 +132,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
                 timing_file = run_dir / "timing.json"
                 if result["time_seconds"] == 0.0 and timing_file.exists():
                     try:
-                        with open(timing_file) as tf:
+                        with open(timing_file, encoding="utf-8") as tf:
                             timing_data = json.load(tf)
                         result["time_seconds"] = timing_data.get(
                             "total_duration_seconds", 0.0
@@ -151,7 +151,7 @@ def load_run_results(benchmark_dir: Path) -> dict:
                 # Extract expectations
                 raw_expectations = grading.get("expectations", [])
                 for exp in raw_expectations:
-                    if "text" not in exp or "passed" not in exp:
+                    if "text" not in exp or "passed" not in exp or "evidence" not in exp:
                         print(
                             f"Warning: expectation in {grading_file} missing "
                             f"required fields (text, passed, evidence): {exp}"
@@ -196,8 +196,11 @@ def aggregate_results(results: dict) -> dict:
             "tokens": calculate_stats(tokens),
         }
 
-    # Delta between first two configs
-    if len(configs) >= 2:
+    # Delta: after vs before (explicit lookup, alphabetical fallback)
+    if "after" in run_summary and "before" in run_summary:
+        primary = run_summary["after"]
+        baseline = run_summary["before"]
+    elif len(configs) >= 2:
         primary = run_summary.get(configs[0], {})
         baseline = run_summary.get(configs[1], {})
     else:
@@ -263,7 +266,9 @@ def generate_benchmark(
             "skill_path": skill_path or "<path/to/skill>",
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "evals_run": eval_ids,
-            "runs_per_configuration": 3,
+            "runs_per_configuration": max(
+                (len(runs) for runs in results.values()), default=3
+            ),
         },
         "runs": runs,
         "run_summary": run_summary,
@@ -364,12 +369,12 @@ def main():
     output_json = args.output or (args.benchmark_dir / "benchmark.json")
     output_md = output_json.with_suffix(".md")
 
-    with open(output_json, "w") as f:
+    with open(output_json, "w", encoding="utf-8") as f:
         json.dump(benchmark, f, indent=2)
     print(f"Generated: {output_json}")
 
     markdown = generate_markdown(benchmark)
-    with open(output_md, "w") as f:
+    with open(output_md, "w", encoding="utf-8") as f:
         f.write(markdown)
     print(f"Generated: {output_md}")
 

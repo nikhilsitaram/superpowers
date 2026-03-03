@@ -29,6 +29,7 @@ Read the eval_prompt. Identify what the task requires and what would distinguish
 Based on the task, generate a rubric with two dimensions:
 
 **Content Rubric** (what the output says):
+
 | Criterion | 1 (Poor) | 3 (Acceptable) | 5 (Excellent) |
 |-----------|----------|----------------|---------------|
 | Correctness | Major errors or wrong advice | Minor inaccuracies | Fully correct |
@@ -36,6 +37,7 @@ Based on the task, generate a rubric with two dimensions:
 | Accuracy | Significant inaccuracies | Minor issues | Accurate throughout |
 
 **Structure Rubric** (how the output is organized):
+
 | Criterion | 1 (Poor) | 3 (Acceptable) | 5 (Excellent) |
 |-----------|----------|----------------|---------------|
 | Organization | Disorganized, hard to follow | Reasonably structured | Clear, logical flow |

@@ -21,7 +21,7 @@ status: In Development
 
 ---
 
-### Phase 1 — Core Implementation
+## Phase 1 — Core Implementation
 **Status:** Complete (2026-03-03)
 **Rationale:** All components are independent with shared schemas as the only interface contract. Interface-first ordering: schemas → scripts → agent prompts → SKILL.md.
 

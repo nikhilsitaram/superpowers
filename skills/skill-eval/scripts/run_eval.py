@@ -116,7 +116,7 @@ def run_eval(
     timeout: int = 120,
 ):
     """Run all evals for a single variant."""
-    with open(evals_path) as f:
+    with open(evals_path, encoding="utf-8") as f:
         evals_data = json.load(f)
 
     cmd = build_claude_command(skill_path, model)
@@ -143,7 +143,7 @@ def run_eval(
                 "prompt": eval_item["prompt"],
                 "expectations": eval_item.get("expectations", []),
             }
-            with open(metadata_path, "w") as f:
+            with open(metadata_path, "w", encoding="utf-8") as f:
                 json.dump(metadata, f, indent=2)
 
         prompt = eval_item["prompt"]
@@ -160,7 +160,7 @@ def run_eval(
 
             # Write output text
             output_text = response.get("result", "")
-            with open(run_dir / "output.txt", "w") as f:
+            with open(run_dir / "output.txt", "w", encoding="utf-8") as f:
                 f.write(output_text)
 
             # Write timing
@@ -175,7 +175,7 @@ def run_eval(
             if response.get("error"):
                 timing["error"] = response["error"]
 
-            with open(run_dir / "timing.json", "w") as f:
+            with open(run_dir / "timing.json", "w", encoding="utf-8") as f:
                 json.dump(timing, f, indent=2)
 
             status = "ERROR" if response.get("is_error") else "OK"

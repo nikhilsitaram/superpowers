@@ -38,11 +38,14 @@ All eval data lives in `.skill-evals/` (gitignored):
     │   ├── config.json               # what before/after represent
     │   ├── eval-{id}-{name}/
     │   │   ├── before/
-    │   │   │   ├── run-1.txt         # claude -p stdout
-    │   │   │   ├── run-2.txt
-    │   │   │   ├── run-3.txt
-    │   │   │   ├── timing.json       # per-run tokens + duration
-    │   │   │   └── grading.json      # assertion results
+    │   │   │   ├── run-1/
+    │   │   │   │   ├── output.txt    # claude -p stdout
+    │   │   │   │   ├── timing.json   # tokens + duration
+    │   │   │   │   └── grading.json  # assertion results
+    │   │   │   ├── run-2/
+    │   │   │   │   └── ...
+    │   │   │   └── run-3/
+    │   │   │       └── ...
     │   │   ├── after/
     │   │   │   └── ...
     │   │   └── eval_metadata.json    # prompt + assertions for this eval
@@ -89,7 +92,7 @@ When `type` is `"none"`, no skill is loaded (no-skill baseline). Every eval alwa
 
 | Component | Rationale |
 |-----------|-----------|
-| `run_eval.py` | Anthropic's `run_eval.py` tests description triggering (uses `--output-format stream-json` to detect tool invocations). Our version tests behavioral output quality (uses `--output-format text` to capture pure text responses). Different purpose → different implementation. |
+| `run_eval.py` | Anthropic's `run_eval.py` tests description triggering (uses `--output-format stream-json` to detect tool invocations). Our version tests behavioral output quality (uses `--output-format json` to capture text responses with timing metadata). Different purpose → different implementation. |
 | `SKILL.md` | Workflow orchestration tailored to this repo's conventions (<1,000w). |
 
 ### Dropped from skill-creator
@@ -138,7 +141,7 @@ Under the hood, `run_eval.py` invokes:
 ```bash
 env -u CLAUDECODE CLAUDE_SKIP_MEMORY=1 claude -p \
   --system-prompt "$(cat path/to/SKILL.md)" \
-  --output-format text \
+  --output-format json \
   --allowedTools "" \
   <<< "$PROMPT"
 ```
@@ -260,7 +263,7 @@ Validated against Anthropic's skill-creator source and TDD eval proof-of-concept
 | Gotcha | Source | Detail |
 |--------|--------|--------|
 | `env -u CLAUDECODE` | Anthropic confirmed | `CLAUDECODE` env var blocks nested `claude -p` sessions. Anthropic filters it: `{k: v for k, v in os.environ.items() if k != "CLAUDECODE"}` |
-| `--output-format text` | Repo-specific | Anthropic uses `stream-json` (trigger detection). We need `text` for behavioral output capture. Without it, output goes to stderr. |
+| `--output-format json` | Repo-specific | Anthropic uses `stream-json` (trigger detection). We use `json` for behavioral output capture with timing metadata. Without an explicit format, output goes to stderr. |
 | `CLAUDE_SKIP_MEMORY=1` | Repo-specific | Suppresses memory injection in subprocesses. Not in Anthropic's code (they don't have a memory system). |
 | `--allowedTools ""` | Repo-specific | Prevents tool use for pure text behavioral responses. Anthropic doesn't use this (they need tools for trigger detection). |
 | `set -eo pipefail` | General best practice | `tee` silently masks pipeline failures without `pipefail`. TDD eval proof-of-concept caught this. |
