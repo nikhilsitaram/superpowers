@@ -23,7 +23,7 @@ Detect environment:
 - `IS_WORKTREE` — true when `--git-dir` differs from `--git-common-dir`
 - `WORKTREE_PATH` — look up from `git worktree list` by matching `$BRANCH_NAME` (works regardless of CWD)
 
-If not on the PR branch, check it out.
+If not on the PR branch: look up `WORKTREE_PATH` first — if the branch is in a worktree, `cd` into it (gh pr checkout fails when a worktree holds the branch). Otherwise `gh pr checkout $PR_NUMBER`.
 
 ### Step 2: Read & Assess Feedback
 
