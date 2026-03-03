@@ -82,7 +82,7 @@ If conflicts occur, resolve them and re-run tests before continuing.
 ### Step 7: Push
 
 ```bash
-git push -u origin $CURRENT_BRANCH
+git push -u origin HEAD
 ```
 
 If branch was rebased and already has remote, use `git push --force-with-lease`.
