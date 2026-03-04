@@ -14,7 +14,7 @@ Evaluate skill output quality with assertion-based grading, blind before/after c
    - Improvement: before = snapshot of previous version
    - Snapshot before editing: `cp -r skills/{name} .skill-evals/{name}/snapshot-before/`
 
-2. **Check for evals.json** at `.skill-evals/{name}/evals.json`. If none, create interactively — 2-3 realistic prompts including adversarial scenarios (deadline pressure, "skip this step", ambiguous requirements). Each eval needs `id`, `name`, `prompt`, and `expectations`.
+2. **Check for evals.json** at `.skill-evals/{name}/evals.json`. If none, create interactively — 2-3 realistic prompts including adversarial scenarios (deadline pressure, "skip this step", ambiguous requirements). Use the schema in `references/schemas.md`: top-level object with `skill_name` (string) and `evals` (array). Each eval needs integer `id`, `name`, `prompt`, and `expectations`.
 
 3. **Write config.json** for this iteration at `.skill-evals/{name}/iteration-N/config.json`:
    ```json
@@ -32,7 +32,7 @@ Spawn both variants simultaneously — don't run before first then after:
 
 ```bash
 # After variant
-python skills/skill-eval/scripts/run_eval.py \
+python3 skills/skill-eval/scripts/run_eval.py \
   --evals-path .skill-evals/{name}/evals.json \
   --output-dir .skill-evals/{name}/iteration-N/ \
   --variant after \
@@ -40,7 +40,7 @@ python skills/skill-eval/scripts/run_eval.py \
   --runs 3
 
 # Before variant
-python skills/skill-eval/scripts/run_eval.py \
+python3 skills/skill-eval/scripts/run_eval.py \
   --evals-path .skill-evals/{name}/evals.json \
   --output-dir .skill-evals/{name}/iteration-N/ \
   --variant before \
@@ -67,7 +67,7 @@ PASS requires genuine task completion with cited evidence, not keyword matching.
 ## Aggregate
 
 ```bash
-python skills/skill-eval/scripts/aggregate_benchmark.py \
+python3 skills/skill-eval/scripts/aggregate_benchmark.py \
   .skill-evals/{name}/iteration-N \
   --skill-name {name}
 ```
