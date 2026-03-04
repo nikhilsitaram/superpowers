@@ -67,6 +67,6 @@ Reviewer produces:
 
 ## Integration
 
-**Auto-dispatched by:** superpowers:writing-plans (after plan saved)
+**Auto-dispatched by:** writing-plans (after plan saved)
 
-**Leads to:** superpowers:orchestrating (once review passes)
+**Leads to:** orchestrating (once review passes)

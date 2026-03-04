@@ -25,8 +25,8 @@ Challenge every line: Does the agent already know this? Does this paragraph just
 ### Cross-Referencing Syntax
 
 ```text
-**REQUIRED SUB-SKILL:** Use superpowers:skill-name
-**REQUIRED BACKGROUND:** Read superpowers:skill-name first
+**REQUIRED SUB-SKILL:** Use skill-name
+**REQUIRED BACKGROUND:** Read skill-name first
 **See:** filename.md
 ```
 

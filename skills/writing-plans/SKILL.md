@@ -30,7 +30,7 @@ status: Not Yet Started
 
 # [Feature Name] Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:orchestrating
+> **For Claude:** REQUIRED SUB-SKILL: Use orchestrating
 
 **Goal:** [One sentence]
 **Architecture:** [2-3 sentences]
@@ -144,15 +144,15 @@ Skipping review risks plans with missing paths or ordering bugs reaching executi
 
 After review passes, dispatch a fresh Opus orchestrator with zero planning context (automatic `/clear`).
 
-Prompt includes: plan file path, working directory, instruction to use `superpowers:orchestrating`, instruction to use `superpowers:ship` when complete.
+Prompt includes: plan file path, working directory, instruction to use `orchestrating`, instruction to use `ship` when complete.
 
 ```text
 Agent(
   subagent_type: "general-purpose",
   model: "opus",
   prompt: "Read the plan at docs/plans/<folder>/plan-<topic>.md and execute
-    using superpowers:orchestrating. When complete, use
-    superpowers:implementation-review then superpowers:ship.
+    using orchestrating. When complete, use
+    implementation-review then ship.
     Working directory: <worktree-path>"
 )
 ```

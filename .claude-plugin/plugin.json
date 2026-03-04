@@ -1,13 +1,13 @@
 {
-  "name": "superpowers",
-  "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
+  "name": "claude-caliper",
+  "description": "A Claude workflow that measures twice and cuts once",
   "version": "4.3.1",
   "author": {
     "name": "Nikhil Sitaram",
     "email": "nikhil5890@gmail.com"
   },
-  "homepage": "https://github.com/nikhilsitaram/superpowers",
-  "repository": "https://github.com/nikhilsitaram/superpowers",
+  "homepage": "https://github.com/nikhilsitaram/claude-caliper",
+  "repository": "https://github.com/nikhilsitaram/claude-caliper",
   "license": "MIT",
-  "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows"]
+  "keywords": ["skills", "tdd", "planning", "workflow", "best-practices", "code-review"]
 }

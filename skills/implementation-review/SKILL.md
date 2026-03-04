@@ -76,6 +76,6 @@ Under 5 issues, the orchestrator verifies fixes and proceeds without re-review.
 
 ## Integration
 
-**Auto-dispatched by:** superpowers:orchestrating (after all tasks complete)
+**Auto-dispatched by:** orchestrating (after all tasks complete)
 
-**Leads to:** superpowers:ship (once review passes)
+**Leads to:** ship (once review passes)
