@@ -146,7 +146,7 @@ After review passes, dispatch a fresh Opus orchestrator with zero planning conte
 
 Prompt includes: plan file path, working directory, instruction to use `superpowers:orchestrating`, instruction to use `superpowers:ship` when complete.
 
-```
+```text
 Agent(
   subagent_type: "general-purpose",
   model: "opus",

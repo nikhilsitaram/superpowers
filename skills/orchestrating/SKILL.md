@@ -82,7 +82,7 @@ After all tasks complete, before implementation review, append to the plan doc:
 - Task N: [what changed] — Rule [1-3]: [one-line reason] / Rule 4: [user approved on YYYY-MM-DD]
 ```
 
-This is not optional. Skipping it loses the record of what actually shipped vs. what was planned, which makes debugging regressions and reviewing PRs significantly harder.
+Include this report every time: without it, reviewers lose traceability between planned and shipped work, which slows regression debugging and PR validation.
 
 ## Multi-Phase Execution
 
@@ -113,7 +113,7 @@ Insert before the next phase's task checklist:
 **Decisions made:** [Any plan deviations approved by user or auto-fixed, with rationale]
 ```
 
-Handoff notes must reflect the post-fix state of the phase, not the reviewer's suggestions before fixes were applied. A Phase 2 implementer who reads these should have everything they need to build on Phase 1's output without re-reading the full conversation.
+Handoff notes should reflect the post-fix phase state (not pre-fix reviewer suggestions), so the next phase can proceed without reconstructing context from the full conversation.
 
 ## Re-Review Gate
 
