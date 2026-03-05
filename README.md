@@ -17,14 +17,15 @@ Claude wants to write code immediately — before the design is agreed on, befor
 claude-caliper installs a complete development workflow as skills that fire automatically at the right moment. Design before plan. Plan before code. Test before merge. Every time.
 
 ```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 20, 'rankSpacing': 35}}}%%
 flowchart TD
     A([Idea]) --> B[Brainstorm]
     B --> C[Write Plan]
     C --> D[Plan Review]
 
-    D --> T1[Task 1\nImplementer]
-    D --> T2[Task 2\nImplementer]
-    D --> TN[Task N\nImplementer]
+    D --> T1[Task 1]
+    D --> T2[Task 2]
+    D --> TN[Task N]
 
     T1 --> S1[Spec Review]
     S1 --> C1[Code Review]
@@ -36,18 +37,21 @@ flowchart TD
     C1 & C2 & CN --> IR[Implementation Review]
     IR --> Ship([Ship PR])
 
-    style A  fill:#ef4444,stroke:#b91c1c,color:#fff
-    style B  fill:#7c3aed,stroke:#5b21b6,color:#fff
-    style C  fill:#7c3aed,stroke:#5b21b6,color:#fff
-    style D  fill:#fbbf24,stroke:#d97706,color:#000
-    style S1 fill:#fbbf24,stroke:#d97706,color:#000
-    style C1 fill:#fbbf24,stroke:#d97706,color:#000
-    style S2 fill:#fbbf24,stroke:#d97706,color:#000
-    style C2 fill:#fbbf24,stroke:#d97706,color:#000
-    style SN fill:#fbbf24,stroke:#d97706,color:#000
-    style CN fill:#fbbf24,stroke:#d97706,color:#000
-    style IR fill:#fbbf24,stroke:#d97706,color:#000
-    style Ship fill:#16a34a,stroke:#15803d,color:#fff
+    style A    fill:#ef4444,stroke:#dc2626,color:#fff
+    style B    fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C    fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style D    fill:#eab308,stroke:#ca8a04,color:#000
+    style T1   fill:#f97316,stroke:#ea580c,color:#fff
+    style T2   fill:#f97316,stroke:#ea580c,color:#fff
+    style TN   fill:#f97316,stroke:#ea580c,color:#fff
+    style S1   fill:#eab308,stroke:#ca8a04,color:#000
+    style C1   fill:#eab308,stroke:#ca8a04,color:#000
+    style S2   fill:#eab308,stroke:#ca8a04,color:#000
+    style C2   fill:#eab308,stroke:#ca8a04,color:#000
+    style SN   fill:#eab308,stroke:#ca8a04,color:#000
+    style CN   fill:#eab308,stroke:#ca8a04,color:#000
+    style IR   fill:#eab308,stroke:#ca8a04,color:#000
+    style Ship fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
 Every task gets a fresh implementer. Every review gets a fresh reviewer. No agent ever reviews its own work.
