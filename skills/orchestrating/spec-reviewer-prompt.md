@@ -4,7 +4,7 @@ Use this template when dispatching a spec compliance reviewer subagent.
 
 **Purpose:** Verify implementer built what was requested (nothing more, nothing less)
 
-```
+```text
 Task tool (general-purpose):
   model: "sonnet"
   mode: "bypassPermissions"

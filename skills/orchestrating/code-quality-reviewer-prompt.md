@@ -6,7 +6,7 @@ Use this template when dispatching a code quality reviewer subagent.
 
 **Only dispatch after spec compliance review passes.**
 
-```
+```text
 Agent tool (general-purpose):
   model: "sonnet"
   mode: "bypassPermissions"
