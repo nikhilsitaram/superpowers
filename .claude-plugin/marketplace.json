@@ -1,0 +1,66 @@
+{
+  "name": "claude-caliper",
+  "owner": {
+    "name": "Nikhil Sitaram",
+    "email": "nikhil5890@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "claude-caliper",
+      "description": "claude-caliper bundle",
+      "version": "4.4.0",
+      "source": "./",
+      "author": {
+        "name": "Nikhil Sitaram",
+        "email": "nikhil5890@gmail.com"
+      },
+      "strict": false,
+      "skills": [
+        "./skills/build",
+        "./skills/draft-plan",
+        "./skills/orchestrate",
+        "./skills/plan-review",
+        "./skills/implementation-review",
+        "./skills/codebase-review",
+        "./skills/ship",
+        "./skills/merge-pr",
+        "./skills/skill-eval"
+      ]
+    },
+    {
+      "name": "claude-caliper-workflow",
+      "description": "End-to-end development workflow: build → draft-plan → orchestrate → review → ship → merge",
+      "version": "4.4.0",
+      "source": "./",
+      "author": {
+        "name": "Nikhil Sitaram",
+        "email": "nikhil5890@gmail.com"
+      },
+      "strict": false,
+      "skills": [
+        "./skills/build",
+        "./skills/draft-plan",
+        "./skills/plan-review",
+        "./skills/orchestrate",
+        "./skills/implementation-review",
+        "./skills/ship",
+        "./skills/merge-pr"
+      ]
+    },
+    {
+      "name": "claude-caliper-tooling",
+      "description": "Standalone tools: codebase audit and skill evaluation",
+      "version": "4.4.0",
+      "source": "./",
+      "author": {
+        "name": "Nikhil Sitaram",
+        "email": "nikhil5890@gmail.com"
+      },
+      "strict": false,
+      "skills": [
+        "./skills/codebase-review",
+        "./skills/skill-eval"
+      ]
+    }
+  ]
+}
