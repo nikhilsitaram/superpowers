@@ -69,7 +69,9 @@ In a Claude Code session:
 ```
 
 ```bash
-/plugin install claude-caliper@claude-caliper
+/plugin install claude-caliper@claude-caliper          # everything
+/plugin install claude-caliper-workflow@claude-caliper # brainstorm → plan → execute → ship → merge
+/plugin install claude-caliper-tooling@claude-caliper  # codebase-review + skill-eval
 ```
 
 Then restart Claude Code.
