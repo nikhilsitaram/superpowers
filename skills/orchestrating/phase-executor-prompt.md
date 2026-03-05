@@ -58,7 +58,7 @@ Task tool (general-purpose):
     | 1: Auto-fix bug | Code doesn't work as intended | Fix inline, document |
     | 2: Auto-add critical | Missing validation, auth, error handling | Fix inline, document |
     | 3: Auto-fix blocker | Missing dep, broken import, wrong types | Fix inline, document |
-    | 4: STOP | Architectural change (new table, library swap, breaking API) | Stop immediately, report to orchestrating context |
+    | 4: STOP | Architectural change (new table, library swap, breaking API) | Stop immediately — report to orchestrating context with: what change is needed, which task triggered it, and why the plan doesn't cover it |
 
     Only fix issues caused by the current task. Pre-existing issues go to the deferred
     list. After 3 failed fix attempts, stop and document.

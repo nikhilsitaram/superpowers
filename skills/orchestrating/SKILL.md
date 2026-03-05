@@ -73,7 +73,7 @@ For each phase:
 3. After executor returns: dispatch implementation-review (`skills/implementation-review/reviewer-prompt.md`)
    - BASE_SHA = PHASE_BASE_SHA, HEAD_SHA = `git rev-parse HEAD`
    - PHASE_CONTEXT = what downstream phases expect (from plan); empty for final/single phase
-4. Triage findings through deviation rules — dispatch implementer for Rule 1-3, escalate Rule 4 to user
+4. Triage findings through deviation rules — dispatch implementer for Rule 1-3; Rule 4 → write BLOCKED to plan doc and terminate (see Rule 4 Handling)
 5. Re-Review Gate: >5 issues → re-review after all fixes
 6. Append to the phase completion report in plan doc:
    ```markdown
@@ -119,13 +119,44 @@ Under 5 issues: orchestrator verifies fixes and proceeds.
 | **Rule 1: Auto-fix bugs** | Code doesn't work as intended | Fix inline, document |
 | **Rule 2: Auto-add critical** | Missing error handling, validation, auth | Fix inline, document |
 | **Rule 3: Auto-fix blockers** | Missing dep, broken import, wrong types | Fix inline, document |
-| **Rule 4: STOP** | New DB table, library swap, breaking API | **Ask user first** |
+| **Rule 4: STOP** | New DB table, library swap, breaking API | Write BLOCKED to plan → terminate |
 
 **Scope:** Only auto-fix issues caused by current task. Pre-existing issues go to deferred list.
 
 **Limit:** After 3 fix attempts on same issue, stop and document.
 
 **Documentation:** Every Rule 1-3 deviation must include: what deviated, what was done, which rule applied.
+
+## Rule 4 Handling
+
+When a phase executor reports a Rule 4 violation, orchestrating cannot ask the user (it runs as a subagent dispatched by writing-plans). Instead:
+
+1. Update plan frontmatter:
+
+```markdown
+---
+status: BLOCKED
+blocked_by: "Rule 4 — [specific issue, e.g., Task 2 requires a new DB table not in the plan]"
+blocked_at: "Phase N, Task M"
+---
+```
+
+2. Append to the plan doc body:
+
+```markdown
+## Execution Blocked — [YYYY-MM-DD]
+
+**Rule 4 violation:** [What architectural change would be required]
+**Discovered at:** Phase N, Task M — [task title]
+**Context:** [What the implementer tried to do and why the plan doesn't cover it]
+**Options:**
+- Update the plan to include the required change, then re-run orchestrating
+- Adjust the task scope to avoid the architectural change
+```
+
+3. Terminate. Do not attempt subsequent tasks or phases.
+
+The user sees the plan doc in a clean BLOCKED state and can resolve the conflict before re-invoking orchestrating.
 
 ## Plan Doc Updates
 
@@ -137,6 +168,7 @@ Under 5 issues: orchestrator verifies fixes and proceeds.
 | Review fixes applied | Orchestrating context appends `### Implementation Review Changes` to completion report |
 | Phase review passes | Phase status: `Complete (YYYY-MM-DD)` |
 | All phases done | Frontmatter: `status: Complete` |
+| Rule 4 violation | Frontmatter: `status: BLOCKED` + blocked_by + blocked_at |
 
 ## Key Constraints
 
