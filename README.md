@@ -68,19 +68,8 @@ In a Claude Code session:
 /plugin marketplace add nikhilsitaram/claude-caliper
 ```
 
-**Install all skills:**
-
 ```bash
 /plugin install claude-caliper@claude-caliper
-```
-
-**Or install individual skills:**
-
-```bash
-/plugin install brainstorming@claude-caliper
-/plugin install orchestrating@claude-caliper
-/plugin install skill-eval@claude-caliper
-# etc.
 ```
 
 Then restart Claude Code.
