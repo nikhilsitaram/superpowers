@@ -1,14 +1,14 @@
 {
-  "name": "superpowers-dev",
-  "description": "Development marketplace for Superpowers core skills library",
+  "name": "claude-caliper",
+  "description": "A Claude workflow that measures twice and cuts once",
   "owner": {
     "name": "Nikhil Sitaram",
     "email": "nikhil5890@gmail.com"
   },
   "plugins": [
     {
-      "name": "superpowers",
-      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
+      "name": "claude-caliper",
+      "description": "A Claude workflow that measures twice and cuts once — design, plan, build with TDD, review, ship",
       "version": "4.3.1",
       "source": "./",
       "author": {
