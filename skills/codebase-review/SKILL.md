@@ -24,14 +24,14 @@ Periodic whole-repo audits catch issues that per-task reviews miss — cross-mod
 
 ### Phase 2 — Parallel Scope Reviews
 
-Dispatch **Explore** subagent per review unit using `reviewer-prompt.md` template:
+Dispatch **Explore** subagent per review unit using `agents/reviewer.md` instructions:
 - `{SCOPE_PATH}` = directory to review
 
 All subagents run in parallel. Each returns structured findings with category, criticality, fix complexity.
 
 ### Phase 3 — Cross-Scope Reconciliation
 
-After Phase 2 completes, dispatch one **Explore** subagent using `cross-scope-reviewer-prompt.md`:
+After Phase 2 completes, dispatch one **Explore** subagent using `agents/cross-scope-reviewer.md` instructions:
 - `{ALL_FINDINGS}` = concatenated Phase 2 findings
 - `{FILE_MANIFEST}` = all files in repo
 - `{SCOPE_PATH}` = root scope
@@ -67,7 +67,7 @@ Summary: X findings (N Critical, N High, N Medium, N Low) | Y deferred → GH is
 
 ## Categories
 
-See `reviewer-prompt.md` for full definitions. Summary:
+See `agents/reviewer.md` for full definitions. Summary:
 - **DRY** — duplicated logic, repeated constants
 - **YAGNI** — unused code, dead paths, speculative features
 - **Simplicity & Efficiency** — over-abstraction, unnecessary indirection
