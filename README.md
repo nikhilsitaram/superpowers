@@ -87,7 +87,7 @@ Skills fire automatically as your work progresses through each stage. You intera
 | [orchestrating](skills/orchestrating/) | 🤖 writing-plans (subagent) | Dispatches fresh subagents per task, each running full RED→GREEN→REFACTOR; spec + code review after every task; per-phase implementation review before advancing |
 | [implementation-review](skills/implementation-review/) | 🤖 orchestrating (subagent) | Cross-task holistic review — catches inconsistencies a per-task reviewer can't see |
 | [ship](skills/ship/) | 🤖 orchestrating (subagent) | Commits, pushes, opens PR with summary |
-| [merge-pr](skills/merge-pr/) | 👤 You — after CodeRabbit reviews | Addresses feedback, merges, cleans up branch and worktree |
+| [merge-pr](skills/merge-pr/) | 👤 You — after reviewing the PR | Addresses feedback, merges, cleans up branch and worktree |
 
 ---
 
