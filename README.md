@@ -17,45 +17,40 @@ Claude wants to write code immediately — before the design is agreed on, befor
 claude-caliper installs a complete development workflow as skills that fire automatically at the right moment. Design before plan. Plan before code. Test before merge. Every time.
 
 ```mermaid
-flowchart LR
-    A([Idea]) --> B[Brainstorm]
-    B --> C[Plan]
-    C --> D[Plan Review]
-    D --> E[Build + TDD]
-    E --> F[Impl Review]
-    F --> G[Ship PR]
-    G --> H[Merge]
-
-    style D fill:#fef3c7,stroke:#d97706,color:#000
-    style F fill:#fef3c7,stroke:#d97706,color:#000
-```
-
-Yellow nodes are quality gates — the workflow pauses here until the stage is solid.
-
-The build step runs entirely via subagents. Every task gets a fresh implementer. Every review gets a fresh reviewer. No agent ever reviews its own work.
-
-```mermaid
 flowchart TD
-    P[Plan] --> T0[Task 0: Integration Tests\nfresh subagent]
+    A([Idea]) --> B[Brainstorm]
+    B --> C[Write Plan]
+    C --> D[Plan Review]
 
-    T0 --> T1[Task 1\nfresh implementer]
-    T0 --> T2[Task 2\nfresh implementer]
-    T0 --> TN[Task N\nfresh implementer]
+    D --> T1[Task 1\nImplementer]
+    D --> T2[Task 2\nImplementer]
+    D --> TN[Task N\nImplementer]
 
-    T1 --> S1[Spec Review\nfresh reviewer]
-    S1 --> C1[Code Review\nfresh reviewer]
+    T1 --> S1[Spec Review]
+    S1 --> C1[Code Review]
+    T2 --> S2[Spec Review]
+    S2 --> C2[Code Review]
+    TN --> SN[Spec Review]
+    SN --> CN[Code Review]
 
-    T2 --> S2[Spec Review\nfresh reviewer]
-    S2 --> C2[Code Review\nfresh reviewer]
+    C1 & C2 & CN --> IR[Implementation Review]
+    IR --> Ship([Ship PR])
 
-    TN --> SN[Spec Review\nfresh reviewer]
-    SN --> CN[Code Review\nfresh reviewer]
-
-    C1 & C2 & CN --> IR[Implementation Review\nfresh reviewer — sees all tasks together]
-    IR --> Ship[Ship PR]
-
-    style IR fill:#fef3c7,stroke:#d97706,color:#000
+    style A  fill:#ef4444,stroke:#b91c1c,color:#fff
+    style B  fill:#7c3aed,stroke:#5b21b6,color:#fff
+    style C  fill:#7c3aed,stroke:#5b21b6,color:#fff
+    style D  fill:#fbbf24,stroke:#d97706,color:#000
+    style S1 fill:#fbbf24,stroke:#d97706,color:#000
+    style C1 fill:#fbbf24,stroke:#d97706,color:#000
+    style S2 fill:#fbbf24,stroke:#d97706,color:#000
+    style C2 fill:#fbbf24,stroke:#d97706,color:#000
+    style SN fill:#fbbf24,stroke:#d97706,color:#000
+    style CN fill:#fbbf24,stroke:#d97706,color:#000
+    style IR fill:#fbbf24,stroke:#d97706,color:#000
+    style Ship fill:#16a34a,stroke:#15803d,color:#fff
 ```
+
+Every task gets a fresh implementer. Every review gets a fresh reviewer. No agent ever reviews its own work.
 
 ---
 
