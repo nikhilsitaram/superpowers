@@ -75,9 +75,15 @@ For each phase:
    - PHASE_CONTEXT = what downstream phases expect (from plan); empty for final/single phase
 4. Triage findings through deviation rules — dispatch implementer for Rule 1-3, escalate Rule 4 to user
 5. Re-Review Gate: >5 issues → re-review after all fixes
-6. Emit phase summary: "Phase N complete. [N tasks]. Review: X issues — [brief list]. [All fixed / N deferred]."
-7. Write handoff notes into plan doc (see format below)
-8. Update phase status: `Complete (YYYY-MM-DD)`
+6. Append to the phase completion report in plan doc:
+   ```markdown
+   ### Implementation Review Changes
+   - [each fix: what changed and why]
+   ```
+   Omit section if no fixes were needed.
+7. Emit phase summary: "Phase N complete. [N tasks]. Review: X issues — [brief list]. [All fixed / N deferred]."
+8. Write handoff notes into plan doc (see format below)
+9. Update phase status: `Complete (YYYY-MM-DD)`
 
 Single-phase plans skip handoff notes — one iteration of the same loop.
 
@@ -128,6 +134,7 @@ Under 5 issues: orchestrator verifies fixes and proceeds.
 | First task starts | Frontmatter: `status: In Development` |
 | Task completes (inside executor) | `- [ ] Task N` → `- [x] Task N` |
 | Phase executor returns | Phase completion report written to plan doc by executor |
+| Review fixes applied | Orchestrating context appends `### Implementation Review Changes` to completion report |
 | Phase review passes | Phase status: `Complete (YYYY-MM-DD)` |
 | All phases done | Frontmatter: `status: Complete` |
 
