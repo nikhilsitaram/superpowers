@@ -13,7 +13,7 @@ Eval framework for measuring and comparing Claude Code skill behavior. Runs skil
 
 The eval pipeline has five stages:
 
-```
+```text
 Prompts (evals.json)
         |
         v
@@ -45,7 +45,7 @@ Prompts (evals.json)
 
 Eval data lives at `~/.claude/skill-evals/` — outside any project repo, so it works regardless of CWD and persists across plugin upgrades.
 
-```
+```text
 ~/.claude/skill-evals/
 └── {skill-name}/
     ├── evals.json                     # eval prompts + assertions (shared across iterations)
@@ -172,7 +172,7 @@ python3 $AGGREGATE_SCRIPT \
 
 Writes `benchmark.json` and `benchmark.md` into the iteration directory. The markdown table shows pass rate, time, and delta between before and after:
 
-```
+```markdown
 | Metric    | Before     | After      | Delta  |
 |-----------|------------|------------|--------|
 | Pass Rate | 35% ± 8%   | 84% ± 12%  | +0.49  |

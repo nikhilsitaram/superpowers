@@ -62,7 +62,7 @@ Every task gets a fresh implementer. Every review gets a fresh reviewer. No agen
 
 In a Claude Code session:
 
-```
+```bash
 /plugin marketplace add nikhilsitaram/claude-caliper
 /plugin install claude-caliper
 ```
@@ -80,10 +80,10 @@ Skills fire automatically as your work progresses through each stage.
 | Skill | Triggers when | Does |
 |-------|---------------|------|
 | [brainstorming](skills/brainstorming/) | You describe something to build | Challenges assumptions, proposes 2-3 approaches, gets design sign-off before any code |
-| [writing-plans](skills/writing-plans/) | Design is approved | Produces a task checklist with exact file paths, TDD steps, and runnable verification commands |
+| [writing-plans](skills/writing-plans/) | Design is approved | Produces a task checklist with exact file paths, TDD steps, and runnable verification commands; supports phased plans when tasks have dependency layers |
 | [plan-review](skills/plan-review/) | Plan is written | Validates completeness — catches vague steps and missing paths before execution starts |
-| [orchestrating](skills/orchestrating/) | Plan passes review | Dispatches parallel subagents per task, each running full RED→GREEN→REFACTOR; spec + code review after every task |
-| [implementation-review](skills/implementation-review/) | All tasks complete | Cross-task holistic review — catches inconsistencies a per-task reviewer can't see |
+| [orchestrating](skills/orchestrating/) | Plan passes review | Dispatches parallel subagents per task, each running full RED→GREEN→REFACTOR; spec + code review after every task; per-phase implementation review before advancing |
+| [implementation-review](skills/implementation-review/) | Phase or all tasks complete | Cross-task holistic review — catches inconsistencies a per-task reviewer can't see |
 | [ship](skills/ship/) | Implementation passes review | Commits, pushes, opens PR with summary |
 | [merge-pr](skills/merge-pr/) | PR is reviewed | Addresses feedback, merges, cleans up branch and worktree |
 
@@ -97,7 +97,7 @@ Most review tools look at diffs. `codebase-review` audits the whole repo in para
 
 Findings are triaged by fix complexity, not severity: a critical one-liner goes straight to `writing-plans`; a medium refactor across 10 files becomes a GitHub issue. No manual sorting.
 
-```
+```bash
 /codebase-review          # entire repo
 /codebase-review src/     # scoped to a directory
 ```
@@ -113,7 +113,7 @@ Skills degrade silently. A prompt tweak that looks like an improvement might dro
 - **Adversarial scenarios** — deadline pressure, "skip this step" prompts; these surface enforcement gaps that positive evals miss entirely
 - **Variance analysis** — 3 runs per scenario, mean ± stddev; distinguishes real improvements from noise
 
-```
+```bash
 /skill-eval               # interactive: picks skill, runs evals, reports delta
 ```
 

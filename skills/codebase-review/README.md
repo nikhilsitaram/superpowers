@@ -12,7 +12,7 @@ Whole-repo code quality audit. Catches DRY violations, dead code, over-abstracti
 
 ## How it works
 
-```
+```text
 Phase 1: Resolve scope → discover review units (top-level directories)
          |
          v
