@@ -50,9 +50,11 @@ For each phase (letter A, B, C...):
    - Extract current phase section (from `## Phase X` through end of that phase's tasks, before next `## Phase`)
    - Dispatcher does NOT receive the plan header/goal/architecture or other phases' task details — context isolation prevents the dispatcher from being overwhelmed by irrelevant details
 4. Dispatch phase dispatcher (`./phase-dispatcher-prompt.md`) with: prior completion notes as PRIOR_COMPLETION_NOTES, current phase section (checklist + tasks), PHASE_BASE_SHA
-5. After dispatcher returns: dispatch implementation-review (`skills/implementation-review/reviewer-prompt.md`)
-   - BASE_SHA = PHASE_BASE_SHA, HEAD_SHA = `git rev-parse HEAD`
-6. Triage findings through deviation rules (see `./phase-dispatcher-prompt.md` for full table) — dispatch implementer for Rule 1-3. Rule 4 violations: dispatcher writes BLOCKED to plan, orchestrator terminates.
+5. After dispatcher returns:
+   - If it reported Rule 4 → ask the user directly and pause execution (see Rule 4 Handling). Do not proceed to implementation-review on partial work.
+   - Otherwise → dispatch implementation-review (`skills/implementation-review/reviewer-prompt.md`)
+     - BASE_SHA = PHASE_BASE_SHA, HEAD_SHA = `git rev-parse HEAD`
+6. Triage review findings through deviation rules (see `./phase-dispatcher-prompt.md` for full table) — dispatch implementer for Rule 1-3; Rule 4 → ask user and pause (see Rule 4 Handling)
 7. Re-Review Gate: >5 issues from any reviewer → re-review after all fixes applied
 8. Append implementation review changes to `### Phase X Completion Notes` (dispatcher already wrote its summary there; orchestrator appends review fixes below it)
 9. Emit phase summary: "Phase A complete. [N tasks]. Review: X issues — [brief list]. [All fixed / N deferred]."
@@ -91,6 +93,17 @@ Phase B BASE_SHA = $(git rev-parse HEAD)
 
 Handoff notes live as blockquotes on individual tasks, not as separate sections. The plan author places placeholders on target tasks (e.g., `> **Handoff from A2:** [TBD]` on B2). The Phase A dispatcher fills in actual details (real function signatures, file paths, config keys) after completing the producing task. The orchestrator does not write separate handoff notes sections.
 
+## Rule 4 Handling
+
+When a phase dispatcher reports a Rule 4 violation, ask the user directly — orchestrate runs in the main agent context. Present:
+
+- **What:** The architectural change needed
+- **Where:** Phase X, Task XN — task title
+- **Why:** What the implementer tried and why the plan doesn't cover it
+- **Options:** Update the plan to include the change, or adjust task scope to avoid it
+
+Do not attempt subsequent tasks or phases until the user decides.
+
 ## Plan Doc Updates
 
 | When | Update |
@@ -102,7 +115,7 @@ Handoff notes live as blockquotes on individual tasks, not as separate sections.
 | Phase review passes | Phase status: `Complete (YYYY-MM-DD)` |
 | Phase PR shipped | Ship creates PR with stacked base branch |
 | All phases done | Frontmatter: `status: Complete` |
-| Rule 4 violation | Frontmatter: `status: BLOCKED` + blocked_by + blocked_at |
+| Rule 4 violation | Ask user, pause execution until resolved |
 
 ## Key Constraints
 
@@ -113,7 +126,7 @@ Handoff notes live as blockquotes on individual tasks, not as separate sections.
 | Dispatch implementation-review from orchestrate context | Phase completion and any issues must be visible before advancing — prevents bugs compounding |
 | Fix review issues before next phase | Phase N bugs compound into Phase N+1 complexity |
 | Ship per-phase PR with stacked base | Each PR shows only its phase's diff, making review manageable |
-| Escalate Rule 4 immediately | Architectural changes need user input, not guessing |
+| Escalate Rule 4 immediately | Ask the user — architectural changes need human judgment |
 
 ## Integration
 

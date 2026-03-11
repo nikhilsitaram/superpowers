@@ -7,7 +7,7 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 Write implementation plans assuming the executor has zero codebase context. Document everything: which files to touch, exact code, how to test, what to avoid and why.
 
-**Context:** Runs as a fresh subagent dispatched by design after design approval. All needed context comes from the design doc — no live conversation context is carried over.
+**Context:** Runs after design approval. All needed context comes from the design doc.
 
 **Save to:** `docs/plans/YYYY-MM-DD-<topic>/plan-<topic>.md`
 
@@ -19,7 +19,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 4. **Write tasks** — Each task follows required structure
 5. **Save plan** — Write to plan file with frontmatter
 6. **Run plan review** — Dispatch reviewer, fix issues until clean
-7. **Hand off to execution** — Dispatch fresh orchestrator
+7. **Hand off to execution** — Report plan path to user
 
 ## Plan Document Structure
 
@@ -141,19 +141,6 @@ After saving, dispatch plan-review before execution. Plans with issues get fixed
 
 Skipping review risks plans with missing paths or ordering bugs reaching execution where they're harder to fix.
 
-## Execution Handoff
+## After Review Passes
 
-After review passes, dispatch a fresh Opus orchestrator with zero planning context (automatic `/clear`).
-
-Prompt includes: plan file path, working directory, instruction to use `orchestrate`, instruction to use `ship` when complete.
-
-```text
-Agent(
-  subagent_type: "general-purpose",
-  model: "opus",
-  prompt: "Read the plan at docs/plans/<folder>/plan-<topic>.md and execute
-    using orchestrate. When complete, use
-    implementation-review then ship.
-    Working directory: <worktree-path>"
-)
-```
+Report the plan file path to the user. Run orchestrate in the main context where it can interact with the user for Rule 4 escalations and ship decisions.
