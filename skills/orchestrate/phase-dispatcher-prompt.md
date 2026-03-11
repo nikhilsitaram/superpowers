@@ -78,7 +78,7 @@ Task tool (general-purpose):
     | 1: Auto-fix bug | Code doesn't work as intended | Dispatch implementer to fix, document |
     | 2: Auto-add critical | Missing validation, auth, error handling | Dispatch implementer to fix, document |
     | 3: Auto-fix blocker | Missing dep, broken import, wrong types | Dispatch implementer to fix, document |
-    | 4: STOP | Architectural change (new table, library swap, breaking API) | Stop immediately — report to orchestrate context with: what change is needed, which task triggered it, and why the plan doesn't cover it |
+    | 4: STOP | Architectural change (new table, library swap, breaking API) | Stop immediately — report to orchestrate context with: what change is needed, which task triggered it, and why the plan doesn't cover it. Orchestrate will ask the user directly. |
 
     Only fix issues caused by the current task. Pre-existing issues go to the deferred
     list. After 3 failed fix attempts on the same issue, stop and document.
