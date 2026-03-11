@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: Complete
 ---
 
 # Tighten Phasing Model Implementation Plan
@@ -16,20 +16,22 @@ status: Not Yet Started
 
 ## Phase A — Rewrite Skill Files
 
-**Status:** Not Started
+**Status:** Complete (2026-03-10)
 **Rationale:** All four files can change independently since they are prompt templates with no runtime dependencies. The only cross-file constraint is consistent labeling conventions, which a single phase handles naturally.
 
 ### Phase A Checklist
 
-- [ ] A1: Rewrite draft-plan SKILL.md
-- [ ] A2: Rewrite orchestrate SKILL.md
-- [ ] A3: Rewrite phase-dispatcher-prompt.md
-- [ ] A4: Rewrite implementer-prompt.md
-- [ ] A5: Update plan-review reviewer-prompt.md
+- [x] A1: Rewrite draft-plan SKILL.md
+- [x] A2: Rewrite orchestrate SKILL.md
+- [x] A3: Rewrite phase-dispatcher-prompt.md
+- [x] A4: Rewrite implementer-prompt.md
+- [x] A5: Update plan-review reviewer-prompt.md
 
 ### Phase A Completion Notes
-<!-- Written by dispatcher after all tasks complete.
-     Implementation review changes appended here by orchestrator. -->
+
+**Date:** 2026-03-10
+**Summary:** Rewrote all five skill/prompt files to use letter-based phasing (A/B/C phases, A1/A2/B1 tasks), new plan document structure with Phase X Checklist/Completion Notes/Tasks subsections, inline handoff note placeholders on target tasks, context isolation model for dispatcher (receives only prior completion notes + current phase section), stacked per-phase PR flow with `git checkout -b` branching, and updated plan-review validation for the new structure.
+**Deviations:** None — plan followed exactly.
 
 ### Phase A Tasks
 
