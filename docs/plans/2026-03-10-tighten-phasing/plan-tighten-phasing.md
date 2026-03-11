@@ -55,16 +55,16 @@ Replace the current plan document structure template with the design doc's struc
 - Task details live inside their phase (under `### Phase X Tasks`) not in a separate flat `## Task Details` section
 - Task headers use `#### A1: [name]` format
 - Completion notes section has a comment explaining it's written by the dispatcher post-completion
-- Handoff note placeholder syntax: `> **Handoff for B2:** [description — written by dispatcher after this task completes]`
+- Handoff note placeholders live on the *target* task, not the source: `> **Handoff from A2:** [TBD — Phase A dispatcher fills in actual details after completing A2]` appears in B2's task block
 - Phase status line format: `**Status:** Not Started | **Rationale:** ...`
-- Remove the `> **For Claude:** REQUIRED SUB-SKILL: Use orchestrate` line from the template (move it to a note that the planner should include it)
+- Keep the `> **For Claude:** REQUIRED SUB-SKILL: Use orchestrate` line in the template — it belongs in every generated plan (not in the SKILL.md body)
 - Single-phase plans still use A-prefix (A1, A2, etc.)
 
 **Step 3: Update the Task Structure section**
 - Change task template heading from `### Task N: [Component Name]` to `#### A1: [Component Name]`
 - Remove the standalone "Task 0" concept. Instead, note that the first task in a phase can be broad integration tests when cross-task data flow exists, labeled A1 (or whatever the first task ID is)
 - Keep all 5 required fields (Files, Verification, Done when, Avoid+WHY, Steps)
-- Add guidance about handoff note placeholders: when a task produces output consumed by a future phase, end the task block with a handoff placeholder blockquote tagged with the target task ID
+- Add guidance about handoff note placeholders: when a task *consumes* output from a prior phase, its task block should start with a handoff placeholder blockquote (`> **Handoff from A2:** [TBD]`) that the source phase's dispatcher fills in after completing the producing task
 
 **Step 4: Update the Phasing section**
 - Replace "Phase N" / "Phase N+1" language with letter-based "Phase A" / "Phase B"
@@ -162,7 +162,12 @@ Phase B BASE_SHA = $(git rev-parse HEAD)
 - Add constraint: "Ship per-phase PR with stacked base" with why: "Each PR shows only its phase's diff, making review manageable"
 
 **Step 8: Verify word count**
-Count words. Must be under 1,000. The current file is ~950 words. Aggressively cut anything the model already knows to make room for new concepts. Candidates for cutting: the full deviation rules table (already in dispatcher prompt), the full Rule 4 Handling section (move critical details to dispatcher prompt, keep only a brief reference here), verbose re-review gate details.
+Count words. Must be under 1,000. The current file is ~950 words. To make room for new concepts, cut these specific sections:
+- Deviation Rules table (~12 lines) — already exists in `phase-dispatcher-prompt.md`, keep one-sentence reference
+- Rule 4 Handling section (~25 lines) — already in dispatcher prompt, keep one sentence: "Rule 4 violations: dispatcher writes BLOCKED to plan, orchestrator terminates"
+- Re-Review Gate details (~6 lines) — compress to one sentence
+- Old Handoff Notes Format section (~10 lines) — being replaced entirely
+This frees ~50 lines for new stacked PR and context extraction content.
 
 **Step 9: Commit**
 ```bash
@@ -206,7 +211,7 @@ Replace the current "## Plan" and "## Phase {PHASE_NUMBER}" sections with:
 
 **Step 4: Update "Your Process" section**
 - Change "Task N" references to letter+number format
-- Add step after implementer returns: if this task's output feeds a future phase (indicated by a handoff placeholder blockquote in the task block), write the actual handoff note replacing the placeholder. Use real outputs: actual function signatures, file paths, config keys — not predictions.
+- Add step after implementer returns: if this task produced output that a future phase consumes (identifiable by a handoff placeholder on the *target* task in a future phase), write the actual handoff note by filling in the placeholder on the target task in the plan file. Use real outputs: actual function signatures, file paths, config keys — not predictions. The placeholder `> **Handoff from A2:** [TBD]` on B2's task block becomes `> **Handoff from A2:** UserRepo exported at src/repos/user.ts:15...`
 - Update checkbox format: `- [ ] A1` → `- [x] A1`
 
 **Step 5: Update "When All Tasks Are Done" section**
@@ -243,7 +248,7 @@ git commit -m "refactor: update dispatcher prompt for context isolation and inli
 
 **Verification:** Read the file and confirm it clarifies single-task-block input and uses letter+number labels.
 
-**Done when:** The implementer prompt makes clear it receives only a single task block (#### AX: ...) including any inline handoff notes, uses letter+number labels, and does not reference phase structure or other tasks.
+**Done when:** The implementer prompt makes clear it receives only a single task block (#### AX: ...) including any inline handoff notes, uses letter+number labels, has a Task Context section restricted to task-derivable info, and does not reference phase structure or other tasks.
 
 **Avoid:** Do not make unnecessary changes. The current implementer prompt is already close to the target — it receives a single task and implements it. Only adjust what the design doc requires.
 
@@ -256,7 +261,7 @@ Read `skills/orchestrate/implementer-prompt.md` and the design doc's Context Iso
 
 **Step 3: Update the Task Description section**
 - Change `[FULL TEXT of task from plan - paste it here, don't make subagent read file]` to clarify: this is a single task block extracted from `#### {TASK_ID}: [name]` through the next `####` header. It includes any inline handoff notes (blockquotes) targeting this task from prior phases.
-- Remove the separate `## Context` section with `[Scene-setting: where this fits, dependencies, architectural context]`. The handoff notes inline in the task block serve this purpose. Adding a separate context section risks leaking phase-level information that violates isolation.
+- Keep the `## Context` section but rename to `## Task Context` and restrict its content to information derivable from the task block itself (e.g., "this implements the auth module"). It should not contain phase-level information, other task details, or completion notes — those violate isolation.
 
 **Step 4: Verify no references to phase structure**
 Confirm the prompt does not reference phase numbers, other tasks, completion notes, or phase-level concepts. The implementer should only know about its single task block.
@@ -306,5 +311,3 @@ Read `skills/plan-review/reviewer-prompt.md`.
 git add skills/plan-review/reviewer-prompt.md
 git commit -m "refactor: update plan-review for letter-based labeling and new phase structure"
 ```
-
-> **Handoff for evals:** After Phase A completes, the skill-eval system should be used to verify the rewritten skills produce correct output. The eval scenarios should test: plan generation with new format, orchestration with context isolation, dispatcher receiving scoped context. Written by dispatcher after task completion.

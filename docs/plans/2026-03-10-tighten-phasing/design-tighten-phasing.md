@@ -14,7 +14,7 @@ Restructure the phasing system to enforce strict context isolation at each orche
 ## Key Decisions
 
 1. **Labeling:** Phases use letters (A, B, C), tasks use letter+number (A1, A2, B1, B2). Grep-friendly, visually distinct from version numbers.
-2. **Handoff notes:** Written by the phase dispatcher after task completion with actual outputs (real function signatures, file paths) — not by the plan author as predictions.
+2. **Handoff notes:** Plan author places placeholders on *target* tasks (e.g., B2 gets a placeholder "Handoff from A2: [TBD]"). Phase A's dispatcher fills in the actual details (real function signatures, file paths) by writing into B2's task block after completing A2. Phase B's dispatcher then naturally sees the handoff when extracting B2.
 3. **Stacked per-phase PRs:** Each phase ships its own PR. Branches stack (phase-b branches from phase-a tip). All PRs merged in order at the end. Main stays clean until user is ready.
 4. **Same worktree:** All phases work in the same worktree, creating new branches with `git checkout -b` rather than separate worktrees per phase.
 5. **Completion notes:** Single section per phase between checklist and task details. Contains dispatcher summary + implementation review changes (appended by orchestrator).
@@ -56,8 +56,6 @@ Steps: ...
 Files: ...
 Steps: ...
 
-> **Handoff for B2:** [Actual interface/output that B2 depends on — written by dispatcher after A2 completes]
-
 ---
 
 ## Phase B — [Name]
@@ -75,7 +73,10 @@ Steps: ...
 ...
 
 #### B2: [name]
-...
+
+> **Handoff from A2:** [placeholder — Phase A dispatcher fills this in with actual interface/output after completing A2]
+
+Steps: ...
 ```
 
 ### Section Purposes
@@ -83,7 +84,7 @@ Steps: ...
 - **Phase Checklist:** Quick progress view. Orchestrator updates checkboxes.
 - **Phase Completion Notes:** Dispatcher writes summary after all tasks pass. Orchestrator appends implementation review changes. Next dispatcher receives this as context.
 - **Phase Tasks:** Full task specifications. Dispatcher passes individual tasks to implementers.
-- **Inline Handoff Notes:** Dispatcher writes these on tasks whose output feeds future phases. Tagged with target (e.g., "Handoff for B2"). Already inline when implementer of the target task receives its task block.
+- **Inline Handoff Notes:** Plan author places placeholders on *target* tasks (e.g., `> **Handoff from A2:** [TBD]` on B2). Source phase's dispatcher fills in actual details after completing the producing task. Already inline on the target task when the consuming phase's dispatcher extracts it.
 
 ## Context Isolation Model
 
@@ -144,7 +145,7 @@ User merges in order: phase-a → main, phase-b → main, phase-c → main
 |------------|----------------|
 | `skills/draft-plan/SKILL.md` | New plan format: letter labeling, phase sections with checklist/completion/tasks subsections, handoff note placeholder syntax, single-phase plans still use A-prefix |
 | `skills/orchestrate/SKILL.md` | Per-phase PR flow with stacked branches, context extraction logic for dispatcher, handoff note orchestration, completion note append logic |
-| `skills/orchestrate/phase-dispatcher-prompt.md` | Receives only completion notes + phase plan, writes handoff notes inline after task completion, writes completion notes section |
+| `skills/orchestrate/phase-dispatcher-prompt.md` | Receives only completion notes + phase plan, writes handoff notes on target tasks in future phases after completing producing tasks, writes completion notes section |
 | `skills/orchestrate/implementer-prompt.md` | Clarify it receives single task block only (already close to this) |
 | `skills/implementation-review/SKILL.md` | No structural changes — already supports phase-scoped review via BASE_SHA/HEAD_SHA |
 | `skills/ship/SKILL.md` | No changes — already handles current branch |
