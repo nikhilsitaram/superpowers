@@ -15,7 +15,7 @@ status: In Development
 ---
 
 ## Phase A — Validation Script & Schema
-**Status:** Not Started | **Rationale:** Skills in Phase B invoke the validation script and follow the schema defined here. Must exist before skill integration.
+**Status:** Complete (2026-03-19) | **Rationale:** Skills in Phase B invoke the validation script and follow the schema defined here. Must exist before skill integration.
 
 ### Phase A Checklist
 - [x] A1: Write validate-plan script with --schema mode
@@ -31,6 +31,9 @@ status: In Development
 - A1 — added duplicate task ID and phase letter validation (checks 13-14 in test_schema.sh) — Rule 2 (missing validation identified in code review) — duplicate IDs would cause ambiguous dependency resolution.
 - A2 — added atomic write to do_render (temp file + mv) — Rule 1 (code doesn't work correctly under failure) — direct redirect would leave partial plan.md on crash.
 - A3 — added mktemp/jq/mv error checks to all three do_update_status_* functions and added phase existence check to do_update_status_phase — Rule 1/Rule 2 — silent failures would corrupt plan.json or silently no-op on unknown phase letters.
+
+**Implementation Review Changes:**
+- Added uppercase letter format validation (`invalid_phase_letter_format`) to `do_schema` — Rule 2 (missing validation). Phase B skills depend on letter being uppercase A-Z for directory path construction.
 
 ### Phase A Tasks
 
