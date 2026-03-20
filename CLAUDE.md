@@ -63,4 +63,4 @@ This repo uses its own skills. The typical flow: design -> worktree -> draft-pla
 
 - Use `nikhil5890@gmail.com` for commits (personal repo)
 - Feature branches, squash merge, delete branch after merge
-- Bump `version` in `.claude-plugin/marketplace.json` in any PR that adds, removes, or renames a skill directory — the plugin installer compares cached vs declared version, so without a bump users stay on stale cache
+- Bump `version` in `.claude-plugin/marketplace.json` in any PR that changes skill behavior — the plugin installer compares cached vs declared version, so without a bump users stay on stale cache
