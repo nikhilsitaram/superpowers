@@ -59,19 +59,16 @@ Handled by `validate-plan --schema`:
 | Missing tasks | Design specifies auth middleware, no auth task | Lost during decomposition |
 | Implied context | "Modify the handler" without specifying file | Planner has context executor won't |
 | Prose completeness | Steps too vague or avoid sections missing reasoning | Assumes executor will fill gaps |
-| Different Claude Test failure | Task references "the handler" without path | Planner has context executor won't |
+| Different Claude Test | Task references "the handler" without path | Planner has context executor won't |
 
 ## 6-Point Checklist
 
-**Schema-validated (pre-checked by validate-plan):**
-1. **Dependency Ordering** — Forward dependencies flagged, cycles detected *(LLM still checks semantic coherence)*
-5. **Completeness** — Required JSON fields present, task files exist, H1 headers match *(LLM checks prose quality)*
-
-**LLM reviewer focus:**
-2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere
-3. **Design Doc Alignment** — Scope, architecture, tech stack match design (skip if no design doc)
-4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match
-6. **Different Claude Test** — Each task executable by fresh Claude with zero context
+1. **Dependency Ordering** — *(schema validates graph; LLM checks semantic coherence)*
+2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere *(LLM focus)*
+3. **Design Doc Alignment** — Scope, architecture, tech stack match design (skip if no design doc) *(LLM focus)*
+4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match *(LLM focus)*
+5. **Completeness** — *(schema validates field presence; LLM checks prose quality)*
+6. **Different Claude Test** — Each task executable by fresh Claude with zero context *(LLM focus)*
 
 **For multi-phase plans:**
 - Phase boundaries at meaningful verification points *(schema validates completion.md exists)*
