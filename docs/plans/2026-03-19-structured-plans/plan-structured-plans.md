@@ -904,18 +904,24 @@ Commit: "test: add end-to-end lifecycle test for validate-plan"
 **Status:** Not Started | **Rationale:** All skills invoke validate-plan (Phase A) and must adopt the split-file format atomically — the pipeline requires all skills to use the same format.
 
 ### Phase B Checklist
-- [ ] B1: Rewrite draft-plan SKILL.md for structured output
-- [ ] B2: Rewrite plan-review SKILL.md and reviewer-prompt.md
-- [ ] B3: Rewrite orchestrate SKILL.md for plan.json consumption
-- [ ] B4: Rewrite phase-dispatcher-prompt.md for structured task dispatch
-- [ ] B5: Rewrite implementer-prompt.md and spec-reviewer-prompt.md
-- [ ] B6: Update implementation-review SKILL.md and reviewer-prompt.md
-- [ ] B7: Bump plugin version in marketplace.json
-- [ ] B8: Create GitHub issue for --criteria mode follow-up
+- [x] B1: Rewrite draft-plan SKILL.md for structured output
+- [x] B2: Rewrite plan-review SKILL.md and reviewer-prompt.md
+- [x] B3: Rewrite orchestrate SKILL.md for plan.json consumption
+- [x] B4: Rewrite phase-dispatcher-prompt.md for structured task dispatch
+- [x] B5: Rewrite implementer-prompt.md and spec-reviewer-prompt.md
+- [x] B6: Update implementation-review SKILL.md and reviewer-prompt.md
+- [x] B7: Bump plugin version in marketplace.json
+- [x] B8: Create GitHub issue for --criteria mode follow-up
 
 ### Phase B Completion Notes
-<!-- Written by dispatcher after all tasks complete.
-     Implementation review changes appended here by orchestrator. -->
+
+**Date:** 2026-03-20
+**Summary:** Rewrote all six skill files and prompt templates to produce and consume the new structured plan format (plan.json + split task files). draft-plan now generates the split-file directory structure and calls validate-plan; plan-review adds two-stage validation; orchestrate reads plan.json via jq and calls validate-plan for all status updates; phase-dispatcher receives {PHASE_TASKS_JSON} and dispatches {TASK_METADATA} + {TASK_PROSE} to implementers; implementation-review reads {PLAN_DIR}/plan.json and {PHASE_DIR}/completion.md. Also bumped plugin version to 1.2.0 and created GitHub issue #80 for --criteria runner follow-up.
+**Deviations:**
+- B2 — fixed 6-point checklist numbering (was out of sequence: 1, 5, then 2-4, 6) — Rule 1 (content didn't work as intended) — out-of-order numbering created reader confusion about the 6-point structure.
+- B3 — added CROSS_PHASE_HANDOFF_TARGETS format spec, PLAN_DIR derivation, and PRIOR_COMPLETIONS concatenation method — Rule 2 (missing critical implementation guidance) — orchestrator would stall building these variables without concrete examples.
+- B4 — clarified TASK_ID substitution, integration test terminology, and within-phase handoff format — Rule 1 (content didn't work as intended) — implicit substitution and vague "similarly" reference would cause dispatcher to guess.
+- B5 — fixed field name (verification not verification_command) and added variable descriptions to spec-reviewer — Rule 1 (incorrect field name, missing context) — field mismatch and missing descriptions caused inconsistency between implementer and reviewer prompts.
 
 ### Phase B Tasks
 
@@ -1183,7 +1189,7 @@ Commit: "refactor: rewrite phase-dispatcher-prompt.md for structured task dispat
 
 #### B5: Rewrite implementer-prompt.md and spec-reviewer-prompt.md
 
-> **Handoff from B4:** [TBD — Phase B dispatcher fills in actual details after completing B4, specifically the {TASK_METADATA} and {TASK_PROSE} variable format]
+> **Handoff from B4:** The phase-dispatcher-prompt.md passes two variables to both the implementer and spec-reviewer: `{TASK_METADATA}` (the JSON task object extracted from `{PHASE_TASKS_JSON}` — contains id, name, files, verification, done_when, depends_on, success_criteria) and `{TASK_PROSE}` (the full content of `{PHASE_DIR}/{task_id_lower}.md` — contains Avoid+WHY, Steps, and any handoff notes). Both templates must replace the old single-block task description with these two variables.
 
 **Files:**
 - Modify: `skills/orchestrate/implementer-prompt.md`
@@ -1245,7 +1251,7 @@ Commit: "refactor: update implementer and spec-reviewer prompts for structured i
 
 #### B6: Update implementation-review SKILL.md and reviewer-prompt.md
 
-> **Handoff from B3:** [TBD — Phase B dispatcher fills in actual details after completing B3, specifically how orchestrate passes plan.json path and completion.md path to implementation-review]
+> **Handoff from B3:** Orchestrate passes implementation-review two paths at step 5: `plan.json` (absolute path, derived as `$(dirname "$(realpath plan.json)")"/plan.json`) and `${PHASE_DIR}/completion.md` (where `PHASE_DIR=${PLAN_DIR}/phase-{letter_lower}`). The reviewer receives these as `{PLAN_DIR}` and `{PHASE_DIR}` variables. See skills/orchestrate/SKILL.md line 57 for the exact dispatch call.
 
 **Files:**
 - Modify: `skills/implementation-review/SKILL.md`
