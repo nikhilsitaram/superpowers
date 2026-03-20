@@ -54,6 +54,7 @@ For each phase (letter A, B, C...):
    - If it reported Rule 4 → ask the user directly and pause execution (see Rule 4 Handling). Do not proceed to implementation-review on partial work.
    - Otherwise → dispatch implementation-review (`skills/implementation-review/reviewer-prompt.md`)
      - BASE_SHA = PHASE_BASE_SHA, HEAD_SHA = `git rev-parse HEAD`
+     - DESIGN_DOC_PATH = `design-doc` from plan frontmatter (or "None" if absent)
 6. Triage review findings through deviation rules (see `./phase-dispatcher-prompt.md` for full table) — dispatch implementer for Rule 1-3; Rule 4 → ask user and pause (see Rule 4 Handling)
 7. Re-Review Gate: >5 issues from any reviewer → re-review after all fixes applied
 8. Append implementation review changes to `### Phase X Completion Notes` (dispatcher already wrote its summary there; orchestrator appends review fixes below it)
