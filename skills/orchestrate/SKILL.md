@@ -56,9 +56,27 @@ Before first phase:
 - `PLAN_BASE_SHA=$(git rev-parse HEAD)` — saved for final cross-phase review
 - Push integration branch: `git push -u origin integrate/<feature>`
 
-## Per-Phase Execution
+## Phase DAG Construction
 
-For each phase (sequentially for now — Phase B of this plan adds parallel dispatch):
+Build the dependency graph from plan.json before dispatching any phases:
+
+```bash
+jq -r '.phases[] | "\(.letter):\(.depends_on | join(","))"' plan.json
+```
+
+Identify the initial wave: phases with empty `depends_on`. Sequential plans (A→B→C) produce waves of size 1 — no special-casing needed.
+
+## Per-Phase Execution (Wave Loop)
+
+```text
+LOOP until all phases complete:
+  a. Ready phases: depends_on all in completed set
+  b. Dispatch ready phases IN PARALLEL (one Agent per phase)
+  c. Process completions SERIALLY: review → triage → rebase → ship → merge → mark complete
+  d. Repeat
+```
+
+For each phase being dispatched:
 
 1. Create phase worktree from integration branch:
    ```bash
@@ -69,8 +87,8 @@ For each phase (sequentially for now — Phase B of this plan adds parallel disp
    - `PHASE_TASKS_JSON=$(jq '.phases[N].tasks' plan.json)`
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
    - `PHASE_DIR=${PLAN_DIR}/phase-{letter_lower}`
-   - `PRIOR_COMPLETIONS` — concatenate `completion.md` files from the transitive closure of this phase's `depends_on` chain. Phase D (depends_on: [B, C]) receives completions from A, B, and C (since B and C both depend on A). Empty for phases with no dependencies.
-   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to array of target paths. Scan: `jq '.phases[(N+1):][].tasks[] | select(.depends_on[]?)'`. Arrays handle fan-out.
+   - `PRIOR_COMPLETIONS` — concatenate `completion.md` from the transitive `depends_on` closure. Phase D (deps: B, C) receives A+B+C. Empty when no dependencies.
+   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target paths. Scan: `jq '.phases[(N+1):][].tasks[] | select(.depends_on[]?)'`.
 4. Dispatch phase dispatcher (`./phase-dispatcher-prompt.md`) with: `PHASE_LETTER`, `PHASE_NAME`, `PHASE_TASKS_JSON`, `PLAN_DIR`, `PHASE_DIR`, `PRIOR_COMPLETIONS`, `CROSS_PHASE_HANDOFF_TARGETS`, `REPO_PATH` (= phase worktree path)
 5. After dispatcher returns:
    - Rule 4 violation → ask user, pause (see Rule 4 Handling)
@@ -90,7 +108,7 @@ For each phase (sequentially for now — Phase B of this plan adds parallel disp
     git branch -D phase-{letter}
     ```
 
-Single-phase plans: one iteration of the same loop. Skip final cross-phase review.
+Single-phase plans: one iteration. Skip final cross-phase review.
 
 ## After All Phases
 
@@ -104,30 +122,22 @@ Single-phase plans: one iteration of the same loop. Skip final cross-phase revie
 
 **Continuity:** Execute all phases, reviews, and shipping in one continuous flow. Do not pause between phases or wait for user confirmation unless a Rule 4 violation occurs. The only human touchpoints are Rule 4 escalations.
 
-## Example Workflow
+## Example Workflow (Diamond: A→B+C→D)
 
-```bash
-# Setup
-WORKFLOW=$(jq -r '.workflow' plan.json)
-PLAN_BASE_SHA=$(git rev-parse HEAD)
-git push -u origin integrate/<feature>
+```text
+Wave 1: A (no deps)          → dispatch phase-a
+Wave 2: B (dep: A), C (dep: A) → dispatch phase-b + phase-c IN PARALLEL
+         phase-b returns first → process serially: review, rebase, merge
+         phase-c returns next  → process serially: rebase on updated integration, merge
+Wave 3: D (dep: B, C)        → dispatch phase-d
 
-# Phase A
-git worktree add .claude/worktrees/<feature>-phase-a -b phase-a integrate/<feature>
-PHASE_BASE_SHA=$(git rev-parse HEAD)  # in phase worktree
-# Dispatch dispatcher with REPO_PATH=.claude/worktrees/<feature>-phase-a
-# Implementation review: PHASE_BASE_SHA..HEAD
-# Ship: --base integrate/<feature>
-# gh pr merge, git pull in integration worktree
-# git worktree remove + git branch -D phase-a
-
-# Phase B (after A merges into integration)
-git worktree add .claude/worktrees/<feature>-phase-b -b phase-b integrate/<feature>
-# ... same flow, PRIOR_COMPLETIONS from dependency chain ...
-
-# Final
-# Cross-phase review: PLAN_BASE_SHA..HEAD on integration
-# If workflow=="ship": gh pr create integrate/<feature> → main, merge
+Setup: PLAN_BASE_SHA=$(git rev-parse HEAD); git push -u origin integrate/<feature>
+Each phase: git worktree add .claude/worktrees/<feature>-phase-{x} -b phase-{x} integrate/<feature>
+           PHASE_BASE_SHA=$(git rev-parse HEAD)  # in phase worktree
+           Dispatch with REPO_PATH=.claude/worktrees/<feature>-phase-{x}
+           Review, ship --base integrate/<feature>, gh pr merge, git pull in integration worktree
+           git worktree remove + git branch -D phase-{x}
+Final: cross-phase review PLAN_BASE_SHA..HEAD; if workflow==ship: gh pr create → main
 ```
 
 ## Rule 4 Handling
