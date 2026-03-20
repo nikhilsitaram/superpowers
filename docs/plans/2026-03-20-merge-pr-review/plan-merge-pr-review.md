@@ -51,7 +51,7 @@ cp skills/merge-pr/SKILL.md ~/.claude/skill-evals/merge-pr/snapshot-before/SKILL
 
 Create `skills/merge-pr/reviewer-prompt.md` with the following content. Follow the existing pattern from `skills/implementation-review/reviewer-prompt.md` (dispatch block with yaml-like metadata, then structured prompt body).
 
-```markdown
+````markdown
 # PR Review Prompt Template
 
 Dispatch a fresh-eyes Opus subagent to review the full PR diff before reading external feedback.
@@ -69,9 +69,7 @@ Agent tool (general-purpose):
 
     The code is at {REPO_PATH}
 
-    ```bash
-    git diff {DIFF_RANGE}
-    ```
+    Run: git diff {DIFF_RANGE}
 
     Read the full diff first, then read surrounding code in any file where
     you need context to evaluate a change.
@@ -94,7 +92,7 @@ Agent tool (general-purpose):
     |---|----------|-----------|---------|
 
     If zero issues found, output the table header with a single row:
-    `| — | — | — | No issues found |`
+    | — | — | — | No issues found |
 
     ### Summary
 
@@ -105,11 +103,7 @@ Agent tool (general-purpose):
     ## Post Review
 
     After completing your review, post your full findings (the table and summary
-    above) as a comment on the PR:
-
-    ```bash
-    gh pr comment {PR_NUMBER} --body "<your findings markdown>"
-    ```
+    above) as a comment on the PR using gh pr comment {PR_NUMBER}.
 
     This creates a visible audit trail on the PR regardless of session state.
 
@@ -120,11 +114,11 @@ Agent tool (general-purpose):
     - If zero issues, say so — do not invent problems
     - Do not review test coverage or commit messages — out of scope
 ```
-```
+````
 
 **Step 3: Verify word count and structure**
 
-Run `wc -w skills/merge-pr/reviewer-prompt.md` to confirm under 300 words. Read the file to verify the template parses correctly — the outer fenced block uses triple-backtick with `text` language label, and the inner bash block uses triple-backtick with `bash`. Verify no `@filename` references that would force-load files.
+Run `wc -w skills/merge-pr/reviewer-prompt.md` to confirm under 300 words. Read the file to verify the template parses correctly — the outer fence uses 4-backtick (`````markdown`) and the inner fence uses triple-backtick (` ```text `). No nested bash fences inside the prompt — use plain text for commands to avoid triple-backtick nesting. Verify no `@filename` references that would force-load files.
 
 ---
 
@@ -147,7 +141,7 @@ Insert a new `### Step 2: PR Review` section after Step 1 (Setup). Content:
 
 Skip if `--skip-review` was passed.
 
-Dispatch a fresh-eyes reviewer subagent using `reviewer-prompt.md` with:
+Read `reviewer-prompt.md` (same directory as SKILL.md) and dispatch a fresh-eyes reviewer subagent with:
 - `{DIFF_RANGE}` = `$DEFAULT_BRANCH..HEAD`
 - `{REPO_PATH}` = repository root path
 - `{PR_NUMBER}` = PR number from Step 1
@@ -188,13 +182,26 @@ Insert a new `### Step 4: Present & Confirm` section after Step 3:
 Show the user a summary table of all findings with source, category, and planned action (fix / dismiss / no action). Ask the user to confirm before proceeding to fixes.
 ```
 
-**Step 4: Renumber existing Steps 3-7 to Steps 5-9**
+**Step 4: Renumber existing steps and expand Step 6**
 
-- Current "Step 3: Fix, Test, Push" becomes "Step 5: Fix, Test, Push"
-- Current "Step 4: Comment on PR" becomes "Step 6: Comment on PR" — expand to post unified assessment (all sources: subagent + external), listing what was fixed, what was dismissed with reasons, and what needed no action
-- Current "Step 5: Merge" becomes "Step 8: Merge" (Step 7 is the new confirm gate)
-- Current "Step 6: Clean Up" becomes "Step 9: Clean Up"
-- Current "Step 7: Summary" becomes "Step 10: Summary"
+The offset is NOT uniform — it's +2 for Steps 3-4, then +3 for Steps 5-7 because the new Step 7 (Confirm Merge) is inserted between them.
+
+| Old # | Old Name | New # | Notes |
+|-------|----------|-------|-------|
+| 3 | Fix, Test, Push | **5** | No content change |
+| 4 | Comment on PR | **6** | Replace body (see below) |
+| — | *(new)* | **7** | Confirm Merge (added in Step 5) |
+| 5 | Merge | **8** | No content change |
+| 6 | Clean Up | **9** | No content change |
+| 7 | Summary | **10** | No content change |
+
+Replace the body of Step 6 (Comment on PR) with:
+
+```markdown
+### Step 6: Comment on PR
+
+Post a `gh pr comment` with the unified assessment covering all sources (subagent review + external reviewers). Include: what was fixed, what was dismissed (with reasons), and what needed no action. Omit empty sections.
+```
 
 **Step 5: Add Step 7 (Confirm Merge)**
 
@@ -228,7 +235,11 @@ Run `wc -w skills/merge-pr/SKILL.md`. If over 1,000 words, trim prose in the new
 
 **Step 10: Verify step numbering consistency**
 
-Read the full file and confirm all internal cross-references (Pitfalls "Step 9", `--skip-review` pointing to Step 2) are correct and no step numbers are duplicated or skipped.
+Read the full file and confirm all internal cross-references (Pitfalls "Step 9", `--skip-review` pointing to Step 2, `--skip-fixes` targeting Step 5) are correct and no step numbers are duplicated or skipped.
+
+**Step 11: Bump plugin version**
+
+Bump the `version` field in `.claude-plugin/marketplace.json`. The plugin installer compares cached vs declared version — without a bump, users stay on stale cache and won't get the updated SKILL.md or new reviewer-prompt.md.
 
 ---
 
@@ -314,46 +325,39 @@ Create `~/.claude/skill-evals/merge-pr/iteration-1/config.json`:
 }
 ```
 
-**Step 3: Resolve eval script paths**
+**Step 3: Resolve eval script paths and run both variants**
+
+Shell state does not persist between Bash tool calls. Resolve all paths inline in each command. The pattern:
 
 ```bash
-PLUGIN_ROOT=$(python3 -c "
-import json, os
-p = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
-print(p['plugins']['claude-caliper@claude-caliper'][0]['installPath'])
-")
-EVAL_ROOT=~/.claude/skill-evals
-SKILL_EVAL_SCRIPT=$PLUGIN_ROOT/skills/skill-eval/scripts/run_eval.py
-AGGREGATE_SCRIPT=$PLUGIN_ROOT/skills/skill-eval/scripts/aggregate_benchmark.py
+PLUGIN_ROOT=$(python3 -c "import json, os; p = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json'))); print(p['plugins']['claude-caliper@claude-caliper'][0]['installPath'])")
 ```
 
-**Step 4: Run both variants in parallel**
-
-Spawn "after" and "before" eval runs simultaneously (3 runs each):
+Then inline `$PLUGIN_ROOT` into each eval command. Spawn "after" and "before" runs in parallel (3 runs each):
 
 ```bash
-python3 $SKILL_EVAL_SCRIPT \
-  --evals-path $EVAL_ROOT/merge-pr/evals.json \
-  --output-dir $EVAL_ROOT/merge-pr/iteration-1/ \
+PLUGIN_ROOT=$(...as above...) && python3 $PLUGIN_ROOT/skills/skill-eval/scripts/run_eval.py \
+  --evals-path ~/.claude/skill-evals/merge-pr/evals.json \
+  --output-dir ~/.claude/skill-evals/merge-pr/iteration-1/ \
   --variant after \
   --skill-path skills/merge-pr/SKILL.md \
   --runs 3
 ```
 
 ```bash
-python3 $SKILL_EVAL_SCRIPT \
-  --evals-path $EVAL_ROOT/merge-pr/evals.json \
-  --output-dir $EVAL_ROOT/merge-pr/iteration-1/ \
+PLUGIN_ROOT=$(...as above...) && python3 $PLUGIN_ROOT/skills/skill-eval/scripts/run_eval.py \
+  --evals-path ~/.claude/skill-evals/merge-pr/evals.json \
+  --output-dir ~/.claude/skill-evals/merge-pr/iteration-1/ \
   --variant before \
-  --skill-path $EVAL_ROOT/merge-pr/snapshot-before/SKILL.md \
+  --skill-path ~/.claude/skill-evals/merge-pr/snapshot-before/SKILL.md \
   --runs 3
 ```
 
-**Step 5: Grade and aggregate**
+**Step 4: Grade and aggregate**
 
 Follow the skill-eval workflow: dispatch grader subagents per eval, then run the aggregate script to produce benchmark.json and benchmark.md.
 
-**Step 6: Analyze results**
+**Step 5: Analyze results**
 
 Verify after-variant pass rate >= before-variant on all evals. The key signal: evals 1 and 3 should show clear improvement (new review behavior present in after, absent in before). Eval 2 tests the skip-review flag which only exists in after.
 
