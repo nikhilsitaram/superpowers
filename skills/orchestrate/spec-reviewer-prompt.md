@@ -12,9 +12,13 @@ Task tool (general-purpose):
   prompt: |
     You are reviewing whether an implementation matches its specification.
 
-    ## What Was Requested
+    ## Task Metadata
 
-    [FULL TEXT of task requirements]
+    {TASK_METADATA}
+
+    ## Task Instructions
+
+    {TASK_PROSE}
 
     ## What Implementer Claims They Built
 
