@@ -16,9 +16,15 @@ Task tool (general-purpose):
 
     {TASK_METADATA}
 
+    This JSON contains: id, name, files (create/modify/test), verification,
+    done_when, depends_on, success_criteria.
+
     ## Task Instructions
 
     {TASK_PROSE}
+
+    This contains: Avoid+WHY section, Steps, and any handoff notes from
+    prior phases.
 
     ## What Implementer Claims They Built
 
