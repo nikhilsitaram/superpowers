@@ -128,7 +128,7 @@
         {
           "id": "A5",
           "name": "Add --base argument to ship SKILL.md",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -143,7 +143,7 @@
         {
           "id": "A6",
           "name": "Update orchestrate SKILL.md for integration branch model",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A5"
           ],
@@ -160,7 +160,7 @@
         {
           "id": "A7",
           "name": "Update phase-dispatcher-prompt.md for integration branch PR targeting",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
