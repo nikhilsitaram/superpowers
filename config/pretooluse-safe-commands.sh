@@ -6,7 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 input=$(cat)
 
 tool_name=$(echo "$input" | jq -r '.tool_name // empty')
-[[ "$tool_name" == "Bash" ]] || exit 0
+
+case "$tool_name" in
+  Read|Glob|Grep|Skill|WebFetch|WebSearch|ToolSearch)
+    printf '{"permissionDecision":"allow"}\n'
+    exit 0
+    ;;
+  Bash) ;;
+  *) exit 0 ;;
+esac
 
 cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
 [[ -n "$cmd" ]] || exit 0

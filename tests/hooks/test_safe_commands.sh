@@ -223,6 +223,23 @@ printf 'git\ncargo\nbrew\n' > "$USER18"
 OUT18=$(run_hook_override "cargo build && brew install jq" "$BUNDLED18" "$USER18" "$LOG18")
 assert_output_contains "user file with custom commands returns allow" "$OUT18" "allow"
 
+run_hook_tool() {
+  local tool="$1"
+  local json
+  json=$(jq -n --arg t "$tool" '{tool_name: $t, tool_input: {}, session_id: "test-session"}')
+  echo "$json" | bash "$HOOK" 2>/dev/null || true
+}
+
+echo "Test 19: Read-only built-in tools auto-approved"
+for tool in Read Glob Grep Skill WebFetch WebSearch ToolSearch; do
+  OUT19=$(run_hook_tool "$tool")
+  assert_output_contains "$tool auto-approved" "$OUT19" "allow"
+done
+
+echo "Test 20: Non-safe built-in tools not auto-approved"
+OUT20=$(run_hook_tool "Edit")
+assert_output_empty "Edit not auto-approved" "$OUT20"
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
