@@ -20,11 +20,11 @@ Enable parallel phase execution via per-phase worktrees and an integration branc
 
 ## Success Criteria
 
-1. Independent phases (no shared `depends_on`) execute concurrently in separate worktrees
+1. Given a plan with independent phases, total execution time is proportional to the longest dependency chain, not the total number of phases
 2. A `workflow` field in plan.json controls whether orchestrate auto-ships, stops after review, or stops after planning — no implicit signal passing
 3. Phase PRs target the integration branch; one final PR merges integration → main
 4. Fully sequential plans (A→B→C) degrade gracefully to current behavior — one phase at a time, each in its own worktree
-5. validate-plan enforces the new schema fields (`workflow`, phase `depends_on`) and rejects circular phase dependencies
+5. Plans with invalid workflow values, missing phase dependency declarations, or circular phase dependencies are rejected before execution begins
 
 ## Architecture
 
@@ -51,7 +51,7 @@ main repo (on main)
 ├── .claude/worktrees/<feature>-phase-c/         (phase-c worktree)
 ```
 
-Multiple features can coexist — each has its own integration branch and phase worktrees with namespaced paths.
+Multiple features can coexist — each has its own integration branch and phase worktrees with namespaced paths. This is a change from the current convention of `.worktrees/` — the new root is `.claude/worktrees/` for all worktrees (design, phase, and any future use).
 
 ### Orchestrator Execution Flow
 
@@ -66,11 +66,18 @@ Multiple features can coexist — each has its own integration branch and phase 
       git worktree add .claude/worktrees/<feature>-phase-{letter} \
         -b phase-{letter} integrate/<feature>
    c. Dispatch phase dispatchers IN PARALLEL (one Agent per ready phase)
-   d. As each phase returns:
+   d. Post-completion steps are serialized — the orchestrator processes one
+      completing phase at a time, even when multiple phases finish concurrently.
+      This prevents race conditions on the integration branch.
+      As each phase returns:
       - Dispatch implementation review (from orchestrate context)
       - Triage findings, fix issues
       - Rebase phase on latest integration (picks up parallel phases that merged first)
-      - Resolve conflicts if any, escalate to user if non-trivial
+      - Resolve conflicts: trivial (additive changes to different sections of the
+        same file, e.g. both phases add imports or route registrations) — rebase
+        and verify tests pass. Non-trivial (overlapping edits to the same function
+        or conflicting structural changes) — pause and present both versions to
+        the user.
       - Ship phase PR (--base integrate/<feature>)
       - Merge phase PR into integration (gh pr merge)
       - Update integration worktree (git pull in integration worktree)
@@ -134,7 +141,7 @@ Values:
 - `"review-only"` — same execution, but creates final PR without merging. User reviews and merges manually.
 - `"plan-only"` — design skill stops after plan creation. Orchestrate never invoked.
 
-**Why in plan.json:** The signal needs to survive the prompt boundary between design and orchestrate. A structured field in the plan manifest is explicit, validated by schema, and inspectable. This replaces the implicit "note in context" approach from PR #77.
+**Why in plan.json:** The signal needs to survive the prompt boundary between design and orchestrate. A structured field in the plan manifest is explicit, validated by schema, and inspectable. This replaces the implicit "note in context" approach from PR #77. `"plan-only"` is included in plan.json (rather than being a design-skill-only instruction) so the intent is inspectable by any tool or human reading the plan, without relying on session context.
 
 ### 4. Rebase before merge for parallel phases
 
@@ -147,7 +154,7 @@ Example (diamond: A→B+C→D):
 4. C finishes. Rebase C on updated integration (A+B), resolve conflicts, then merge. Integration now has A+B+C.
 5. D branches from updated integration, starts with everything.
 
-**Why rebase not merge commit:** Keeps phase history linear and diffs clean.
+**Why rebase not merge commit:** Rebase keeps history linear and phase diffs clean, at the cost of potentially more complex conflict resolution when parallel phases touch overlapping files. Merge commits would simplify conflicts but produce a tangled history on the integration branch. Since phase PRs are typically small (one phase of work), rebase conflicts are manageable, and linear history is worth the cost.
 
 ### 5. Design worktree = integration branch worktree
 
@@ -170,11 +177,11 @@ Tasks within a phase run sequentially in the same worktree (current behavior). P
 
 | Skill | Change Summary |
 |-------|----------------|
-| `skills/design/SKILL.md` | Worktree branch becomes `integrate/<feature>`; add workflow routing question after draft-plan; write `workflow` to plan.json |
+| `skills/design/SKILL.md` | Worktree path changes from `.worktrees/` to `.claude/worktrees/`; branch becomes `integrate/<feature>`; add workflow routing question after draft-plan; write `workflow` to plan.json |
 | `skills/draft-plan/SKILL.md` | Add phase-level `depends_on` to plan.json output; document `workflow` field |
 | `skills/orchestrate/SKILL.md` | Integration branch flow; phase DAG; parallel phase dispatch; per-phase worktrees; rebase-before-merge; read `workflow` for ship behavior |
 | `skills/orchestrate/phase-dispatcher-prompt.md` | `{REPO_PATH}` is phase worktree path; PR targets `integrate/<feature>`; prior completions scoped to dependency chain |
-| `skills/ship/SKILL.md` | Support `--base integrate/<feature>` when called from phase context |
+| `skills/ship/SKILL.md` | Add `--base <branch>` argument to ship's PR creation step (currently ship always targets the default branch). When provided, `gh pr create` uses this as the base branch. |
 | `skills/merge-pr/SKILL.md` | Final integration→main merge (squash); multi-worktree cleanup |
 | `scripts/validate-plan` | Schema validation for `workflow` (enum) and phase `depends_on` (array of letters); circular dependency detection |
 
