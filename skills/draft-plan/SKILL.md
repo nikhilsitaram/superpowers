@@ -26,6 +26,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 ```markdown
 ---
 status: Not Yet Started
+design-doc: docs/plans/YYYY-MM-DD-topic/design-topic.md
 ---
 
 # [Feature Name] Implementation Plan
@@ -90,6 +91,8 @@ status: Not Yet Started
 
 **Step 1: ...**
 ```
+
+Write `design-doc: <path>` in frontmatter when a design doc exists. Downstream skills (plan-review, implementation-review) use this path to verify criteria coverage and fulfillment.
 
 ## Phasing
 
