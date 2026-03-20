@@ -235,6 +235,60 @@ do_schema() {
   exit 0
 }
 
+do_render() {
+  local plan_json="$1"
+  local plan_dir
+  plan_dir="$(dirname "$(realpath "$plan_json")")"
+  local out="$plan_dir/plan.md"
+
+  local goal architecture tech_stack
+  goal=$(jq -r '.goal' "$plan_json")
+  architecture=$(jq -r '.architecture' "$plan_json")
+  tech_stack=$(jq -r '.tech_stack' "$plan_json")
+
+  {
+    printf '# %s Implementation Plan\n\n' "$goal"
+    printf '> **For Claude:** REQUIRED SUB-SKILL: Use orchestrate\n\n'
+    printf '**Goal:** %s\n' "$goal"
+    printf '**Architecture:** %s\n' "$architecture"
+    printf '**Tech Stack:** %s\n' "$tech_stack"
+    printf '\n---\n'
+
+    local phase_count
+    phase_count=$(jq '.phases | length' "$plan_json")
+
+    for ((i=0; i<phase_count; i++)); do
+      local letter name status rationale
+      letter=$(jq -r ".phases[$i].letter" "$plan_json")
+      name=$(jq -r ".phases[$i].name" "$plan_json")
+      status=$(jq -r ".phases[$i].status" "$plan_json")
+      rationale=$(jq -r ".phases[$i].rationale" "$plan_json")
+
+      printf '\n## Phase %s — %s\n' "$letter" "$name"
+      printf '**Status:** %s | **Rationale:** %s\n\n' "$status" "$rationale"
+
+      local task_count
+      task_count=$(jq ".phases[$i].tasks | length" "$plan_json")
+
+      for ((j=0; j<task_count; j++)); do
+        local tid tname tstatus done_when checkbox
+        tid=$(jq -r ".phases[$i].tasks[$j].id" "$plan_json")
+        tname=$(jq -r ".phases[$i].tasks[$j].name" "$plan_json")
+        tstatus=$(jq -r ".phases[$i].tasks[$j].status" "$plan_json")
+        done_when=$(jq -r ".phases[$i].tasks[$j].done_when" "$plan_json")
+
+        if [ "$tstatus" = "complete" ]; then
+          checkbox="[x]"
+        else
+          checkbox="[ ]"
+        fi
+
+        printf -- '- %s %s: %s — *%s*\n' "$checkbox" "$tid" "$tname" "$done_when"
+      done
+    done
+  } > "$out"
+}
+
 MODE=""
 PLAN_JSON=""
 
@@ -248,7 +302,15 @@ while [[ $# -gt 0 ]]; do
         shift
       fi
       ;;
-    --render|--update-status)
+    --render)
+      MODE="render"
+      shift
+      if [[ $# -gt 0 ]]; then
+        PLAN_JSON="$1"
+        shift
+      fi
+      ;;
+    --update-status)
       echo "Not implemented yet"
       exit 1
       ;;
@@ -263,7 +325,7 @@ done
 
 case "$MODE" in
   schema) do_schema "$PLAN_JSON" ;;
-  render) echo "Not implemented yet" ; exit 1 ;;
+  render) do_render "$PLAN_JSON" ;;
   update-status) echo "Not implemented yet" ; exit 1 ;;
   *) usage ;;
 esac
