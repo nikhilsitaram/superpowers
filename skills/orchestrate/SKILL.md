@@ -37,7 +37,9 @@ Why separate subagents per task: each implementer starts with fresh context, pre
 
 ## Per-Phase Execution
 
-Before first phase: `scripts/validate-plan --update-status plan.json --plan --status "In Development"`
+Before first phase:
+- `scripts/validate-plan --update-status plan.json --plan --status "In Development"`
+- `PLAN_BASE_SHA=$(git rev-parse HEAD)` — saved for final cross-phase review
 
 For each phase:
 
@@ -61,9 +63,14 @@ For each phase:
 10. Update status: `scripts/validate-plan --update-status plan.json --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
 11. Ship PR: invoke ship with `--base phase-{prior-letter}` (or `--base main` for Phase A)
 
-Single-phase plans: one iteration of the same loop. Skip handoff notes.
+Single-phase plans: one iteration of the same loop. Skip handoff notes and final cross-phase review.
 
-After the final phase: `scripts/validate-plan --update-status plan.json --plan --status Complete`, then auto-invoke ship.
+After the final phase (multi-phase plans only):
+
+1. Dispatch implementation-review with `PLAN_BASE_SHA` (pre-Phase-A) and `HEAD` — reviewer sees the total diff across all phases, catching cross-phase integration issues that per-phase reviews miss (e.g., Phase A exported an interface that Phase C consumed differently than intended)
+2. Triage findings via deviation rules, fix issues
+3. `scripts/validate-plan --update-status plan.json --plan --status Complete`
+4. Auto-invoke ship
 
 ## Example Workflow
 
@@ -83,7 +90,9 @@ PRIOR_COMPLETIONS=$(cat "${PLAN_DIR}/phase-a/completion.md")
 # Dispatch with: PHASE_TASKS_JSON, PLAN_DIR, PHASE_DIR, PRIOR_COMPLETIONS, CROSS_PHASE_HANDOFF_TARGETS
 # Ship: --base phase-a
 
-# All done
+# Final cross-phase review (multi-phase only)
+# Dispatch implementation-review with PLAN_BASE_SHA..HEAD (total diff)
+# Triage findings, fix issues
 scripts/validate-plan --update-status plan.json --plan --status Complete
 ```
 
@@ -106,7 +115,8 @@ Do not attempt subsequent tasks or phases until the user decides.
 
 | Constraint | Why |
 |------------|-----|
-| Record BASE_SHA before dispatcher | Implementation-review needs the exact phase start SHA |
+| Record PLAN_BASE_SHA before first phase | Final cross-phase review needs the pre-Phase-A SHA to see total diff |
+| Record PHASE_BASE_SHA before each dispatcher | Per-phase implementation-review needs the exact phase start SHA |
 | Pass only PHASE_TASKS_JSON for current phase | Context isolation prevents dispatcher from being overwhelmed by irrelevant phase details |
 | Dispatch implementation-review from orchestrate context | Phase completion and any issues must be visible before advancing — prevents bugs compounding |
 | Fix review issues before next phase | Phase N bugs compound into Phase N+1 complexity |
