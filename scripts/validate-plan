@@ -450,9 +450,9 @@ do_criteria() {
 
     local actual_exit=0
     if [[ -n "$timeout_cmd" ]]; then
-      $timeout_cmd "$timeout_secs" bash -c "$run" > "$stdout_file" 2>&1 || actual_exit=$?
+      $timeout_cmd "$timeout_secs" bash -c "$run" > "$stdout_file" || actual_exit=$?
     else
-      bash -c "$run" > "$stdout_file" 2>&1 || actual_exit=$?
+      bash -c "$run" > "$stdout_file" || actual_exit=$?
     fi
 
     local exit_ok=true
