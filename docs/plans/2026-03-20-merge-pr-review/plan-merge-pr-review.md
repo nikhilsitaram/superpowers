@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: Complete
 ---
 
 # PR-Review Step in merge-pr — Implementation Plan
@@ -15,16 +15,22 @@ status: Not Yet Started
 ---
 
 ## Phase A — Implement PR Review Step
-**Status:** Not Started | **Rationale:** Self-contained single phase — one new file and one modified file with no cross-skill dependencies.
+**Status:** Complete | **Rationale:** Self-contained single phase — one new file and one modified file with no cross-skill dependencies.
 
 ### Phase A Checklist
-- [ ] A1: Snapshot before-version and create reviewer-prompt.md
-- [ ] A2: Update SKILL.md with new workflow steps
-- [ ] A3: Run skill-eval to validate changes
+- [x] A1: Snapshot before-version and create reviewer-prompt.md
+- [x] A2: Update SKILL.md with new workflow steps
+- [x] A3: Run skill-eval to validate changes
 
 ### Phase A Completion Notes
-<!-- Written by dispatcher after all tasks complete.
-     Implementation review changes appended here by orchestrator. -->
+
+**Date:** 2026-03-20
+**Summary:** Created `skills/merge-pr/reviewer-prompt.md` (295 words) with a complete Opus subagent dispatch template accepting `{DIFF_RANGE}`, `{REPO_PATH}`, and `{PR_NUMBER}` variables. Updated `skills/merge-pr/SKILL.md` (896 words, under cap) to add 3 new steps: Step 2 (PR Review subagent dispatch), Step 4 (Present & Confirm), Step 7 (Confirm Merge), renumbered old steps to 3/5/6/8/9/10, added `--skip-review` flag, and updated Pitfalls table. Skill-eval benchmark across 3 evals × 3 runs per variant shows after: 95.2% pass rate vs before: 29.9%, delta +0.65.
+**Deviations:** A3 — initial evals.json used hardcoded "PR #42" prompts (plan said to avoid this). All iteration-1 runs hit the PR's "already merged" early-exit path and produced no useful behavioral signal. Fixed in iteration-2 by reformulating prompts to description-mode ("walk me through how you would handle..."). Rule 1 (auto-fix bug — eval prompts triggered wrong code path). Plugin version was already at 1.2.0 (pre-bumped in an earlier commit); no additional bump needed.
+
+#### Implementation Review Changes
+- Updated skill description trigger: "has been reviewed and is ready to merge" → "is ready to merge or needs review before merging" (skill now does its own review)
+- Added skip-review clause to Step 3: "If Step 2 was skipped, process external comments only"
 
 ### Phase A Tasks
 
