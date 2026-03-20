@@ -60,21 +60,19 @@ Handled by `validate-plan --schema`:
 | Implied context | "Modify the handler" without specifying file | Planner has context executor won't |
 | Missing fields | No verification command or measurable done | Assumes executor will figure it out |
 | Prose completeness | Steps too vague or avoid sections missing reasoning | Assumes executor will fill gaps |
+| Different Claude Test | Task references "the handler" without path | Planner has context executor won't |
 | Phase boundary issues | 9 tasks in single phase, no verification gates | Didn't apply complexity gates |
 | Orphaned criteria | Design says "users can X" but no task verifies it | Lost during decomposition |
 
 ## 7-Point Checklist
 
-**Schema-validated (pre-checked by validate-plan):**
-1. **Dependency Ordering** — Forward dependencies flagged, cycles detected *(LLM still checks semantic coherence)*
-5. **Completeness** — Required JSON fields present, task files exist, H1 headers match *(LLM checks prose quality)*
-
-**LLM reviewer focus:**
-2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere
-3. **Design Doc Alignment** — Scope, architecture, tech stack match design (skip if no design doc)
-4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match
-6. **Different Claude Test** — Each task executable by fresh Claude with zero context
-7. **Success Criteria Coverage** — Every criterion in the design doc maps to at least one task's "done when" field (skip if no design doc)
+1. **Dependency Ordering** — *(schema validates graph; LLM checks semantic coherence)*
+2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere *(LLM focus)*
+3. **Design Doc Alignment** — Scope, architecture, tech stack match design (skip if no design doc) *(LLM focus)*
+4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match *(LLM focus)*
+5. **Completeness** — *(schema validates field presence; LLM checks prose quality)*
+6. **Different Claude Test** — Each task executable by fresh Claude with zero context *(LLM focus)*
+7. **Success Criteria Coverage** — Every criterion in the design doc maps to at least one task's "done when" field (skip if no design doc) *(LLM focus)*
 
 **For multi-phase plans:**
 - Phase boundaries at meaningful verification points *(schema validates completion.md exists)*
