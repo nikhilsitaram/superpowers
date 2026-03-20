@@ -5,9 +5,9 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Orchestrate
 
-Execute plan phase by phase using per-phase worktrees and an integration branch. Dispatch a fresh phase dispatcher subagent per phase, then dispatch implementation-review from the orchestrate context, and advance. Workflow routing from plan.json controls ship behavior.
+Execute plan phase by phase using per-phase worktrees and an integration branch. Dispatch a fresh phase dispatcher per phase, then implementation-review, and advance. Workflow routing from plan.json controls ship behavior.
 
-**Core principle:** Every level is a dispatcher. Orchestrate dispatches phase dispatchers. Phase dispatchers dispatch implementers and reviewers. No level writes application code itself — only the implementer subagent touches code.
+**Core principle:** Every level is a dispatcher — only the implementer subagent touches code.
 
 ## When to Use
 
@@ -29,9 +29,9 @@ Orchestrate (you)           — 1 per plan
 | Template | Purpose |
 |----------|---------|
 | `./phase-dispatcher-prompt.md` | Dispatch phase dispatcher subagent |
-| `./implementer-prompt.md` | Dispatch individual task implementer (used inside phase dispatcher and for post-review fixes) |
-| `./task-reviewer-prompt.md` | Per-task reviewer (used inside phase dispatcher) |
-| `skills/implementation-review/reviewer-prompt.md` | Holistic cross-task reviewer (dispatched from orchestrate context) |
+| `./implementer-prompt.md` | Task implementer (phase dispatcher + post-review fixes) |
+| `./task-reviewer-prompt.md` | Per-task reviewer (phase dispatcher) |
+| `skills/implementation-review/reviewer-prompt.md` | Cross-task reviewer (orchestrate context) |
 
 ## Progress Tracking
 
@@ -71,9 +71,10 @@ Identify the initial wave: phases with empty `depends_on`. Sequential plans (A�
 ```text
 LOOP until all phases complete:
   a. Ready phases: depends_on all in completed set
-  b. Dispatch ready phases IN PARALLEL (one Agent per phase)
-  c. Process completions SERIALLY: review → triage → rebase → ship → merge → mark complete
-  d. Repeat
+  b. Reconciliation (non-root phases): run `git diff --name-only` against each completed dep; detect file overlap or semantic impacts vs this phase's tasks; skip declared depends_on; inject `## Reconciliation: Impact from Phase {X}` into affected task .md files; log injections
+  c. Dispatch ready phases IN PARALLEL (one Agent per phase)
+  d. Process completions SERIALLY: review → triage → rebase → ship → merge → mark complete
+  e. Repeat
 ```
 
 For each phase being dispatched:
@@ -130,19 +131,15 @@ Single-phase plans: one iteration. Skip final cross-phase review.
 ## Example Workflow (Diamond: A→B+C→D)
 
 ```text
-Wave 1: A (no deps)          → dispatch phase-a
-Wave 2: B (dep: A), C (dep: A) → dispatch phase-b + phase-c IN PARALLEL
-         phase-b returns first → process serially: review, rebase, merge
-         phase-c returns next  → process serially: rebase on updated integration, merge
-Wave 3: D (dep: B, C)        → dispatch phase-d
+Wave 1: A (no deps) → dispatch
+Wave 2: B (dep:A), C (dep:A) → Reconciliation(B,C) → dispatch in parallel
+         B returns → review, rebase, merge
+         C returns → Reconciliation(C) logged → rebase on updated integration, merge
+         [log] Reconciliation: injected for C-tasks from Phase B
+Wave 3: D (dep:B,C) → dispatch
 
 Setup: PLAN_BASE_SHA=$(git rev-parse HEAD); git push -u origin integrate/<feature>
-Each phase: git worktree add .claude/worktrees/<feature>-phase-{x} -b phase-{x} integrate/<feature>
-           PHASE_BASE_SHA=$(git rev-parse HEAD)  # in phase worktree
-           Dispatch with REPO_PATH=.claude/worktrees/<feature>-phase-{x}
-           Review, ship --base integrate/<feature>, gh pr merge, git pull in integration worktree
-           git worktree remove + git branch -D phase-{x}
-Final: cross-phase review PLAN_BASE_SHA..HEAD; if workflow==ship: gh pr create → main
+Each: worktree add; PHASE_BASE_SHA; dispatch; review; ship --base integrate/<feature>; merge; prune
 ```
 
 ## Rule 4 Handling
@@ -156,7 +153,8 @@ When a phase dispatcher reports a Rule 4 violation, ask the user directly — or
 | Record PLAN_BASE_SHA before first phase | Final cross-phase review needs total diff |
 | Record PHASE_BASE_SHA per phase | Per-phase implementation-review needs exact phase start |
 | Pass only current phase's tasks | Context isolation prevents overload |
-| Fix review issues before next phase | Phase N bugs compound into Phase N+1 |
+| Fix review issues before next phase | Phase N bugs compound into N+1 |
+| Reconciliation before dispatch | Planner may miss deps even without deviations |
 | Use validate-plan for all status updates | Keeps plan.json and plan.md in sync |
 | Escalate Rule 4 immediately | Architectural changes need human judgment |
 
