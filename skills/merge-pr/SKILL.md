@@ -1,6 +1,6 @@
 ---
 name: merge-pr
-description: Use when a PR has been reviewed and is ready to merge, or when triggered by "/merge-pr", "merge the PR", "address review feedback", "review feedback ready".
+description: Use when a PR is ready to merge or needs review before merging, or when triggered by "/merge-pr", "merge the PR", "address review feedback", "review feedback ready".
 ---
 
 # Merge PR
@@ -40,7 +40,7 @@ The subagent posts its findings as a `gh pr comment` on the PR (visible audit tr
 
 Fetch PR conversation comments, inline review comments, and review status via `gh`.
 
-Merge subagent findings (Step 2) with external comments into one table. Each finding is evaluated on merit regardless of source.
+Merge subagent findings (Step 2) with external comments into one table. If Step 2 was skipped, process external comments only. Each finding is evaluated on merit regardless of source.
 
 Categorize each item:
 
