@@ -14,15 +14,15 @@ Task tool (general-purpose):
 
     {TASK_METADATA}
 
-    This JSON contains: id, name, files (create/modify/test), verification
-    command, done_when criteria, depends_on (prior tasks), success_criteria.
+    This JSON contains: id, name, files (create/modify/test), verification,
+    done_when, depends_on, success_criteria.
 
     ## Task Instructions (from task file)
 
     {TASK_PROSE}
 
-    This contains: Avoid+WHY section, Steps with full code, and any handoff
-    notes from prior phases.
+    This contains: Avoid+WHY section, Steps, and any handoff notes from
+    prior phases.
 
     ## Before You Begin
 
