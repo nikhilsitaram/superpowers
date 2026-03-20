@@ -6,11 +6,11 @@ Use this template when dispatching a phase dispatcher subagent. Substitute all {
 - `{PHASE_LETTER}` — the phase letter (A, B, C)
 - `{PHASE_NAME}` — the phase name
 - `{PHASE_TASKS_JSON}` — JSON array of tasks for this phase (from plan.json)
-- `{PRIOR_COMPLETIONS}` — concatenated completion.md content from prior phases (empty for Phase A)
+- `{PRIOR_COMPLETIONS}` — concatenated completion.md content from phases in the dependency chain (transitive closure of depends_on). Empty for phases with no dependencies.
 - `{PLAN_DIR}` — absolute path to plan directory (for validate-plan calls and cross-phase handoff writes)
 - `{PHASE_DIR}` — absolute path to current phase directory (for reading task .md files)
 - `{CROSS_PHASE_HANDOFF_TARGETS}` — JSON object mapping source task IDs to arrays of target task file paths in later phases (e.g., {"A2": ["phase-b/b1.md", "phase-c/c1.md"]}). Empty object {} if no cross-phase dependencies.
-- `{REPO_PATH}` — working directory
+- `{REPO_PATH}` — phase worktree path (e.g., `.claude/worktrees/<feature>-phase-a`)
 
 ```text
 Task tool (general-purpose):
@@ -41,8 +41,8 @@ Task tool (general-purpose):
 
     {PRIOR_COMPLETIONS}
 
-    Completion notes from prior phases — what was built and any deviations.
-    Empty for Phase A.
+    Completion notes from phases in the dependency chain — what was built and any deviations.
+    Empty for phases with no dependencies.
 
     ## Phase {PHASE_LETTER} — {PHASE_NAME}
 
