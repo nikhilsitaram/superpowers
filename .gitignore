@@ -4,5 +4,3 @@
 .claude/*
 !.claude/CLAUDE.md
 .DS_Store
-docs/plans/
-docs/reviews/

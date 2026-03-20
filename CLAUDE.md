@@ -43,6 +43,7 @@ Replace heavy-handed `MUST`/`NEVER`/`ALWAYS` patterns with reasoning that explai
 ```text
 skills/           — One directory per skill (SKILL.md + optional supporting files)
 docs/plans/       — Design docs and implementation plans
+docs/reviews/     — Codebase review reports
 .claude-plugin/   — Plugin manifest and marketplace config
 ```
 
