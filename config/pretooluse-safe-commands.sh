@@ -39,6 +39,7 @@ extract_segments() {
   local len="${#input_cmd}"
   local in_single=0
   local in_double=0
+  local paren_depth=0
   local char=""
   local next=""
 
@@ -73,6 +74,28 @@ extract_segments() {
 
     if [[ "$char" == '"' ]]; then
       in_double=1
+      segment+="$char"
+      i=$((i+1))
+      continue
+    fi
+
+    if [[ "$char" == "(" ]]; then
+      paren_depth=$((paren_depth+1))
+      segment+="$char"
+      i=$((i+1))
+      continue
+    fi
+
+    if [[ "$char" == ")" ]]; then
+      if [[ $paren_depth -gt 0 ]]; then
+        paren_depth=$((paren_depth-1))
+      fi
+      segment+="$char"
+      i=$((i+1))
+      continue
+    fi
+
+    if [[ $paren_depth -gt 0 ]]; then
       segment+="$char"
       i=$((i+1))
       continue
@@ -114,6 +137,7 @@ extract_command_words_from_segment() {
   local -a cmds=()
 
   seg="${seg#"${seg%%[![:space:]]*}"}"
+  seg="${seg%"${seg##*[![:space:]]}"}"
 
   local outer_cmd=""
   local pure_subshell_re='^\$\((.+)\)$'
