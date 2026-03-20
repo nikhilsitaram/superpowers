@@ -64,9 +64,7 @@ run_hook() {
     tool_input: { command: $cmd },
     session_id: "test-session"
   }')
-  SAFE_COMMANDS_FILE="$safe_file" \
-  CLAUDE_SAFE_CMDS_LOG="$log_file" \
-  echo "$json" | bash "$HOOK" 2>/dev/null || true
+  echo "$json" | SAFE_COMMANDS_FILE="$safe_file" CLAUDE_SAFE_CMDS_LOG="$log_file" bash "$HOOK" 2>/dev/null || true
 }
 
 echo "Test 1: Single safe command returns allow"
