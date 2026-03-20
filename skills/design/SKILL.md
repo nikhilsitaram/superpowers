@@ -24,8 +24,8 @@ Complete in order:
 3. **Ask clarifying questions** — smart batches (see below)
 4. **Propose 2-3 approaches** — trade-offs and your recommendation
 5. **Present design** — sections scaled to complexity, approval after each
-6. **Get verbal approval** — explicit "yes" before proceeding
-7. **Set up worktree** — `git worktree add .worktrees/<branch-name> -b <branch-name>`; run tests to establish a clean baseline
+6. **Set up worktree** — `git worktree add .claude/worktrees/<branch-name> -b <branch-name>`; run tests to establish a clean baseline
+7. **Design approval gate** — use AskUserQuestion with options `["Approved", "Needs changes"]`, include `metadata: { source: "design-approval" }` and absolute plan dir path in question text (format: `Plan dir: /absolute/path/.claude/worktrees/branch/docs/plans/YYYY-MM-DD-topic`). If "Needs changes," return to step 5. The PostToolUse hook creates a `.design-approved` sentinel enabling auto-approved edits for the rest of the session.
 8. **Write design doc** — `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`, commit
 9. **Dispatch design-review subagent** — fresh Opus agent validates design before planning (hard gate)
 10. **Dispatch draft-plan subagent** — fresh Opus agent with design doc path and worktree path (zero design context)
@@ -50,6 +50,21 @@ Agent(
     an implementation plan using the draft-plan skill.
     Working directory: <absolute-worktree-path>"
 )
+```
+
+**Approval gate format:**
+
+```json
+{
+  "questions": [{
+    "question": "Design approved? Plan dir: <absolute-worktree-path>/docs/plans/YYYY-MM-DD-topic",
+    "options": [
+      { "label": "Approved", "description": "Write design doc and proceed to review" },
+      { "label": "Needs changes", "description": "Continue iterating on the design" }
+    ]
+  }],
+  "metadata": { "source": "design-approval" }
+}
 ```
 
 ## Challenging Assumptions
