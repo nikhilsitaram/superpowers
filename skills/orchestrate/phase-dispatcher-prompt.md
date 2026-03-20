@@ -103,7 +103,14 @@ Task tool (general-purpose):
        bash scripts/validate-plan --update-status {PLAN_DIR}/plan.json --task {TASK_ID} --status complete
        ```
 
-    10. **Handle cross-phase handoffs:**
+    10. **Run task criteria:**
+        ```bash
+        bash scripts/validate-plan --criteria {PLAN_DIR}/plan.json --task {TASK_ID}
+        ```
+        If exit 1: criteria failed. Report failure to orchestrate context with the failing criteria output. Do not proceed to the next task.
+        If exit 0: criteria passed (or no criteria defined). Continue.
+
+    11. **Handle cross-phase handoffs:**
         - Check if this task ID exists as a key in {CROSS_PHASE_HANDOFF_TARGETS}
         - If yes, iterate each target path in the array and write handoff section to {PLAN_DIR}/{target_path}
         - Format: append after the H1 header, before existing content:
@@ -113,9 +120,9 @@ Task tool (general-purpose):
           [Actual details: function signatures, file paths, config keys, APIs created]
           ```
 
-    11. **Handle within-phase handoffs:**
+    12. **Handle within-phase handoffs:**
         - For each later task in this phase that lists this task ID in its `depends_on`
-        - Write handoff section to {PHASE_DIR}/{target_task_id_lower}.md using the same format as step 10 above (## Handoff from {TASK_ID} section after the H1 header)
+        - Write handoff section to {PHASE_DIR}/{target_task_id_lower}.md using the same format as step 11 above (## Handoff from {TASK_ID} section after the H1 header)
         - Example: if A2 depends on A1, write to {PHASE_DIR}/a2.md
 
     ## Deviation Rules

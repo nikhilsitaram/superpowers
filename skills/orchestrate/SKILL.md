@@ -58,13 +58,14 @@ For each phase:
 6. Triage review findings via deviation rules — dispatch implementer for Rule 1-3; Rule 4 → ask user and pause
 7. Re-Review Gate: >5 issues → re-review after fixes
 8. Append review changes to `${PHASE_DIR}/completion.md`
-9. Emit phase summary: "Phase A complete. [N tasks]. Review: X issues — [brief list]. [Status]."
-10. Update status: `scripts/validate-plan --update-status plan.json --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
-11. Ship PR: invoke ship with `--base phase-{prior-letter}` (or `--base main` for Phase A)
+9. Run phase criteria: `scripts/validate-plan --criteria plan.json --phase {LETTER}`. If exit 1, pause and report failing criteria to user — do not advance to next phase.
+10. Emit phase summary: "Phase A complete. [N tasks]. Review: X issues — [brief list]. [Status]."
+11. Update status: `scripts/validate-plan --update-status plan.json --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
+12. Ship PR: invoke ship with `--base phase-{prior-letter}` (or `--base main` for Phase A)
 
 Single-phase plans: one iteration of the same loop. Skip handoff notes.
 
-After the final phase: `scripts/validate-plan --update-status plan.json --plan --status Complete`, then auto-invoke ship.
+After the final phase: `scripts/validate-plan --criteria plan.json --plan`. If exit 1, do not mark complete — report failing criteria to user. If exit 0: `scripts/validate-plan --update-status plan.json --plan --status Complete`, then auto-invoke ship.
 
 ## Example Workflow
 
