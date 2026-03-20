@@ -55,7 +55,7 @@ Scoped exclusively to single-task concerns. Cross-task issues (inconsistencies, 
 |---|-------|-----------------|
 | 1 | **Spec Fidelity** | Missing requirements, extra features, misinterpretations — compare diff to task spec line by line |
 | 2 | **TDD Discipline** | Commit history shows red→green→refactor, tests exist before implementation, no skipped verification steps |
-| 3 | **Test Quality** | Tests verify behavior not implementation, edge cases covered, no mocking the thing under test, boundary tests present for cross-task seams |
+| 3 | **Test Quality** | Tests verify behavior not implementation, edge cases covered, no mocking the thing under test |
 | 4 | **Code Correctness** | Logic bugs, off-by-ones, unhandled errors, race conditions, incorrect assumptions |
 | 5 | **Security** | Injection risks, missing input validation at boundaries, hardcoded secrets, unsafe deserialization |
 | 6 | **Simplicity** | Over-engineering, YAGNI violations, not following codebase patterns, unnecessary abstraction |
@@ -77,6 +77,31 @@ Variables provided by phase dispatcher:
 | `{IMPLEMENTER_REPORT}` | What the implementer claimed |
 | `{BASE_SHA}` / `{HEAD_SHA}` | Diff range for this task only |
 | `{REPO_PATH}` | Working directory |
+
+### Output Format
+
+Matches the structure used by design-review and plan-review:
+
+| Section | Content |
+|---------|---------|
+| Issues Found | Category (1-6), file:line, problem, suggested fix |
+| Assessment | PASS/FAIL per check (6-row table) |
+| Issue count + severity | Critical (bugs, security) / Important (quality, testing) / Minor (style) |
+| Verdict | "Ready to proceed?" Yes / Yes after fixes / No, needs rework |
+
+### SKILL.md Target State
+
+Hierarchy diagram replaces three reviewer lines with one:
+
+```text
+├── Task Reviewer       — 1 per task (evaluates code cold, single-pass)
+```
+
+Template table replaces two reviewer rows with:
+
+| Template | Purpose |
+|----------|---------|
+| `./task-reviewer-prompt.md` | Per-task reviewer (used inside phase dispatcher) |
 
 ### Phase Dispatcher Flow (simplified)
 
