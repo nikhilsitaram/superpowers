@@ -162,7 +162,28 @@ The design skill creates `.claude/worktrees/<feature>` on branch `integrate/<fea
 
 **Why:** Avoids an extra branch. The user can `cd .claude/worktrees/<feature>` at any time to see the combined state.
 
-### 6. Tasks stay sequential within phases
+### 6. Dependency reconciliation between phases
+
+Static `depends_on` declarations are a planning-time guess. Implementation often creates connections the planner didn't anticipate — Rule 1-3 fixes, new helpers, changed interfaces. The orchestrator runs a reconciliation step when building context for each new phase to detect and bridge these gaps.
+
+**When:** After a phase completes and before dispatching any newly-ready phase — between extracting phase context and dispatching the phase dispatcher.
+
+**How:** For each phase about to be dispatched (skip phases with empty `depends_on`):
+
+1. For each completed dependency phase, run `git diff --name-only` to get files actually touched
+2. Read completion notes (already in `PRIOR_COMPLETIONS`)
+3. Detect file overlaps (dependency diff vs current-phase task `files` lists) and semantic impacts (completion notes mention APIs/exports/config that a task's `done_when` suggests it consumes)
+4. Filter out declared dependencies (already got targeted handoff notes)
+5. Inject `## Reconciliation: Impact from Phase {LETTER}` sections into affected task .md files, after H1 and any existing Handoff sections
+6. Log injections for audit trail
+
+**Why inline, not a subagent:** The orchestrator already holds plan.json, completion notes, and can run `git diff`. A subagent would add dispatch overhead for a lightweight reasoning step.
+
+**Why always run, not just on deviations:** The planner can miss dependencies even when implementation follows the plan exactly.
+
+**Why write to task .md files, not plan.json:** No runtime mutation of the dependency graph — that would invalidate plan-review. Handoff notes achieve the same goal without structural changes.
+
+### 7. Tasks stay sequential within phases
 
 Tasks within a phase run sequentially in the same worktree (current behavior). Parallel task execution would require either per-task worktrees (heavy) or coordinated commits (complex git index management). Phase-level parallelism captures the bigger win — a 4-phase diamond goes from 4 serial steps to 3.
 
@@ -179,7 +200,7 @@ Tasks within a phase run sequentially in the same worktree (current behavior). P
 |-------|----------------|
 | `skills/design/SKILL.md` | Update worktree path from `.worktrees/<branch-name>` to `.claude/worktrees/<feature>/`; branch becomes `integrate/<feature>`; add workflow routing question after draft-plan; write `workflow` to plan.json |
 | `skills/draft-plan/SKILL.md` | Add phase-level `depends_on` to plan.json output; document `workflow` field |
-| `skills/orchestrate/SKILL.md` | Integration branch flow; phase DAG; parallel phase dispatch; per-phase worktrees; rebase-before-merge; read `workflow` for ship behavior |
+| `skills/orchestrate/SKILL.md` | Integration branch flow; phase DAG; parallel phase dispatch; per-phase worktrees; rebase-before-merge; dependency reconciliation between phases; read `workflow` for ship behavior |
 | `skills/orchestrate/phase-dispatcher-prompt.md` | `{REPO_PATH}` is phase worktree path; PR targets `integrate/<feature>`; prior completions scoped to dependency chain |
 | `skills/ship/SKILL.md` | Add `--base <branch>` argument to ship's PR creation step and Arguments table (currently ship always targets the default branch). When provided, `gh pr create --base <branch>` uses this as the base branch. Defaults to `$DEFAULT_BRANCH` when omitted, preserving backward compatibility. |
 | `skills/merge-pr/SKILL.md` | Final integration→main merge (squash); multi-worktree cleanup |
@@ -189,4 +210,4 @@ Tasks within a phase run sequentially in the same worktree (current behavior). P
 
 **Phase A — Schema + routing + integration branch (sequential):** Add `workflow` and phase `depends_on` to plan.json schema. Update validate-plan with new field validation and cycle detection. Update design skill with routing question and integration branch naming. Update orchestrate to use integration branch model with sequential phase dispatch (one at a time, each in own worktree). Update phase-dispatcher PR base. Update ship for integration branch base.
 
-**Phase B — Parallel dispatch + merge flow:** Add DAG logic to orchestrate for wave-based parallel phase dispatch. Add rebase-before-merge step for parallel phases. Update merge-pr for final integration→main merge and multi-worktree cleanup. End-to-end validation with a diamond dependency plan.
+**Phase B — Parallel dispatch + merge flow:** Add DAG logic to orchestrate for wave-based parallel phase dispatch. Add rebase-before-merge step for parallel phases. Add dependency reconciliation step to detect and bridge missed cross-phase impacts. Update merge-pr for final integration→main merge and multi-worktree cleanup.

@@ -1,6 +1,7 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "workflow": "ship",
+  "status": "In Development",
   "goal": "Enable parallel phase execution via per-phase worktrees and integration branches",
   "architecture": "Extend plan.json schema with workflow routing and phase-level depends_on. Update validate-plan for new fields and cycle detection. Update design, draft-plan, orchestrate, ship, and merge-pr skills to use integration branch model with per-phase worktrees. Add DAG-based wave dispatch for concurrent phase execution.",
   "tech_stack": "Bash (validate-plan script), Markdown (SKILL.md files), jq, git worktree, gh CLI",
@@ -190,6 +191,10 @@
         {
           "run": "grep -q 'rebase' skills/orchestrate/SKILL.md",
           "expect_exit": 0
+        },
+        {
+          "run": "grep -q 'Reconciliation' skills/orchestrate/SKILL.md",
+          "expect_exit": 0
         }
       ],
       "tasks": [
@@ -242,6 +247,21 @@
         },
         {
           "id": "B4",
+          "name": "Add dependency reconciliation step to orchestrate",
+          "status": "pending",
+          "depends_on": ["B1", "B2"],
+          "files": {
+            "create": [],
+            "modify": [
+              "skills/orchestrate/SKILL.md"
+            ],
+            "test": []
+          },
+          "verification": "grep -q 'Reconciliation' skills/orchestrate/SKILL.md && grep -q 'git diff --name-only' skills/orchestrate/SKILL.md",
+          "done_when": "Orchestrate SKILL.md includes a Dependency Reconciliation sub-step between phase completion processing and dispatching newly-ready phases: for each non-root phase, run git diff --name-only against dependency phases, detect file overlap and semantic impacts against current phase tasks, filter out declared dependencies, inject Reconciliation sections into affected task .md files after H1 and any Handoff sections, log injections; key constraints table includes reconciliation entry; example workflow shows reconciliation log line"
+        },
+        {
+          "id": "B5",
           "name": "Bump marketplace.json version",
           "status": "pending",
           "depends_on": [],
