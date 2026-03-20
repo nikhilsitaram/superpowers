@@ -11,7 +11,7 @@ Dispatch an Opus subagent to validate a plan before execution. Catches issues th
 
 ## When to Use
 
-- After draft-plan produces a plan document
+- After draft-plan produces a plan directory
 - Before orchestrate begins
 - When resuming work on an idle plan (context may have drifted)
 
@@ -19,8 +19,14 @@ Dispatch an Opus subagent to validate a plan before execution. Catches issues th
 
 ## Dispatch
 
+Two-stage review:
+
+**Stage 1: Structural validation** — Run `scripts/validate-plan --schema {PLAN_DIR}/plan.json`. If errors, report them and stop. No point dispatching LLM reviewer for structurally invalid plans.
+
+**Stage 2: Prose + design review** — If schema passes, dispatch Opus subagent.
+
 Gather inputs:
-- **Plan file** — `docs/plans/YYYY-MM-DD-topic/plan-topic.md`
+- **Plan directory** — `docs/plans/YYYY-MM-DD-topic/` (containing plan.json + task .md files)
 - **Design doc** — if one exists (or "None")
 - **Repo root** — the worktree the plan targets
 
@@ -30,29 +36,48 @@ Dispatch with `model: "opus"` — consistency checking requires strong reasoning
 
 ## What It Catches
 
+### Structural Validation (schema check)
+
+Handled by `validate-plan --schema`:
+- Missing required fields (goal, architecture, tech_stack, success_criteria, phases, tasks)
+- Invalid status values (plan/phase/task status)
+- Duplicate task IDs or phase letters
+- Dependency cycles and forward dependencies
+- Duplicate file paths in creates lists
+- Task file existence (phase-{letter}/{task_id_lower}.md)
+- H1 header matching task name
+- Missing phase completion files
+- Empty success_criteria run commands
+- Missing expect fields
+
+### Prose + Design Review (LLM reviewer)
+
 | Category | Example | Why Planners Miss It |
 |----------|---------|---------------------|
-| Dependency ordering | Task 4 imports util created in Task 6 | Thinks about tasks as units, not sequence |
 | Artifact drift | Creates `utils.ts`, imports from `helpers.ts` | Renamed during planning without updating refs |
 | Design mismatch | Design says REST, plan implements GraphQL | Diverged during decomposition |
 | Missing tasks | Design specifies auth middleware, no auth task | Lost during decomposition |
 | Implied context | "Modify the handler" without specifying file | Planner has context executor won't |
 | Missing fields | No verification command or measurable done | Assumes executor will figure it out |
+| Prose completeness | Steps too vague or avoid sections missing reasoning | Assumes executor will fill gaps |
 | Phase boundary issues | 9 tasks in single phase, no verification gates | Didn't apply complexity gates |
 | Orphaned criteria | Design says "users can X" but no task verifies it | Lost during decomposition |
 
 ## 7-Point Checklist
 
-1. **Dependency Ordering** — Everything a task USES is CREATED by a prior task or exists in codebase
+**Schema-validated (pre-checked by validate-plan):**
+1. **Dependency Ordering** — Forward dependencies flagged, cycles detected *(LLM still checks semantic coherence)*
+5. **Completeness** — Required JSON fields present, task files exist, H1 headers match *(LLM checks prose quality)*
+
+**LLM reviewer focus:**
 2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere
 3. **Design Doc Alignment** — Scope, architecture, tech stack match design (skip if no design doc)
 4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match
-5. **Completeness** — All 5 task fields present (Files, Verification, Done, Avoid+WHY, Steps), commands runnable
 6. **Different Claude Test** — Each task executable by fresh Claude with zero context
 7. **Success Criteria Coverage** — Every criterion in the design doc maps to at least one task's "done when" field (skip if no design doc)
 
-**For multi-phase plans, also verify:**
-- Phase boundaries at meaningful verification points
+**For multi-phase plans:**
+- Phase boundaries at meaningful verification points *(schema validates completion.md exists)*
 - Complexity gates respected (8+ tasks → needs phasing, 7+ per phase → examine cut points)
 - Interface-first ordering (contracts defined before implementations)
 

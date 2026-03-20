@@ -15,26 +15,38 @@ Agent tool (general-purpose):
 
     ## Inputs
 
-    **Plan:** {PLAN_PATH}
+    **Plan directory:** {PLAN_DIR} (contains plan.json + phase-{letter}/{task_id_lower}.md files)
     **Design doc:** {DESIGN_DOC_PATH} (if "None", skip design checks)
     **Codebase:** {REPO_PATH} (read existing files to verify paths/imports)
+
+    Read {PLAN_DIR}/plan.json for structured metadata (goal, architecture, tech_stack,
+    dependencies, file paths). Read individual task files for prose (steps, avoid, verification).
+
+    **Note:** Structural validation (missing fields, dependency cycles, duplicate IDs, file
+    existence, H1 headers) already completed by validate-plan --schema. Focus on prose quality,
+    design alignment, and Different Claude Test.
 
     ## 7-Point Checklist
 
     Work through each systematically. Read ALL tasks and cross-reference.
 
     ### 1. Dependency Ordering
-    For each task, list what it USES (imports, calls, extends) and CREATES
-    (files, functions, types). Verify everything USED is CREATED earlier
-    or exists in codebase.
+    **Structural validation already verified:** Task dependency graph is acyclic, all depends_on
+    references are backward-only (no forward dependencies), all referenced task IDs exist.
 
-    - Flag: A2 uses X, but X created in A3 (later task)
-    - Flag: A2 uses X, but nothing creates X and it doesn't exist
+    **LLM reviewer checks:** Semantic coherence — do the task steps actually use what the
+    dependencies claim? Are there implicit dependencies not declared in depends_on? Does the
+    prose reference artifacts that don't exist or aren't created by prior tasks?
+
+    - Flag: A2 depends_on A1 but steps don't use any A1 output (over-specified dependency)
+    - Flag: A2 imports X but no depends_on declaration and X not in codebase (under-specified)
     - Flag: B1 consumes output from Phase A but has no handoff placeholder
 
     ### 2. Artifact Consistency
-    Extract every file path, function name, and variable across all tasks.
-    Verify the same artifact is referenced consistently everywhere.
+    **Structural validation already verified:** H1 headers in task files match task names from plan.json.
+
+    **LLM reviewer checks:** Extract every file path, function name, and variable across all task
+    prose. Verify the same artifact is referenced consistently everywhere.
 
     - Flag: Same file with different paths (`utils.ts` vs `helpers.ts`)
     - Flag: Same concept with different names (`UserService` vs `userService`)
@@ -66,32 +78,22 @@ Agent tool (general-purpose):
     - Flag: Multi-task plan with cross-task flow missing broad integration tests
 
     ### 5. Completeness
-    Verify every task (format: `#### A1: [name]`) has all 5 required fields:
+    **Structural validation already verified:** plan.json contains all required fields (goal,
+    architecture, tech_stack, success_criteria, phases array with tasks). Each task has id, name,
+    status, depends_on, files (create/modify/test), verification, done_when. Task files exist at
+    phase-{letter}/{task_id_lower}.md. Phase completion files exist at phase-{letter}/completion.md.
+    Success criteria have non-empty run commands and expect fields.
 
-    | Field | Check |
-    |-------|-------|
-    | Files | Exact paths (create/modify/test) — not "the auth files" |
-    | Verification | Runnable command <60s — not "check it works" |
-    | Done when | Measurable — not "authentication complete" |
-    | Avoid + WHY | Pitfall with reasoning — not just "don't use X" |
-    | Steps | TDD cycle with actual code — not "add validation" |
+    **LLM reviewer checks:** Are task steps detailed enough to execute? Is verification runnable
+    and <60s? Is done_when measurable? Do avoid sections include reasoning (not just "don't use X")?
+    Are steps complete code (not "add validation")? Do commands reference correct paths and match
+    project tooling?
 
-    Verify plan structure:
-    - Each phase has three subsections: `### Phase X Checklist`, `### Phase X Completion Notes`, `### Phase X Tasks`
-    - Completion notes section exists with placeholder comment
-    - Task headers use `#### A1: [name]` format (letter+number)
-    - Tasks within each phase use correct letter prefix (Phase A → A1, A2; Phase B → B1, B2)
-
-    Also verify:
-    - Commands reference correct file paths
-    - Commands match project tooling (npm vs yarn vs pnpm)
-    - Every "Create" file gets populated
-    - Every "Modify" file exists in codebase
-
-    - Flag: Task missing required field
-    - Flag: Phase missing Checklist, Completion Notes, or Tasks subsection
-    - Flag: Task uses wrong letter prefix for its phase
-    - Flag: `pytest tests/path.py` but file at different path
+    - Flag: Steps say "add validation" without showing the validation code
+    - Flag: Verification says "check it works" (not runnable)
+    - Flag: Done when says "authentication complete" (not measurable)
+    - Flag: Avoid says "don't use X" without explaining why
+    - Flag: Command uses `npm test` but project uses `yarn`
     - Flag: File in "Modify" doesn't exist or wrong line range
 
     ### 6. Different Claude Test
@@ -122,19 +124,18 @@ Agent tool (general-purpose):
     - Flag: Design doc has Success Criteria section but plan has no tasks covering them
 
     ### Phase Checks (multi-phase plans only)
-    If plan has multiple phases:
+    **Structural validation already verified:** phase-{letter}/completion.md files exist.
+
+    **LLM reviewer checks:** If plan has multiple phases:
     - Phase boundaries at meaningful verification points?
     - Each phase ends with verification task?
-    - Phase rationale sentence present? (format: `**Status:** Not Started | **Rationale:** ...`)
     - Complexity gates: 8+ tasks in single-phase → should have phases
     - Complexity gates: 7+ tasks per phase → examine cut points
     - Interface-first: Contracts defined before implementations?
-    - Inline handoff placeholders exist on tasks that consume output from prior phases?
-    - Handoff placeholders reference valid task IDs from the producing phase?
+    - Inline handoff placeholders exist in task prose for tasks that consume prior phase output?
 
     - Flag: 10 tasks with no phases
-    - Flag: Phase B task consumes Phase A output but has no `> **Handoff from A2:** [TBD]` placeholder
-    - Flag: Handoff placeholder references non-existent task ID
+    - Flag: Phase B task consumes Phase A output but prose has no handoff placeholder
     - Flag: Phase B starts without Phase A verification complete
 
     ## Output
