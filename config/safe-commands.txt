@@ -1,4 +1,5 @@
 awk
+bash
 cat
 cd
 chmod
@@ -9,6 +10,7 @@ echo
 env
 file
 find
+gh
 git
 grep
 head
@@ -27,6 +29,7 @@ readlink
 realpath
 ruff
 sed
+sh
 sort
 stat
 tail
@@ -37,3 +40,20 @@ uvx
 wc
 which
 xargs
+case
+declare
+do
+done
+elif
+else
+esac
+export
+false
+fi
+for
+if
+local
+set
+then
+true
+while
