@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  validate-plan --schema <plan.json>
+  validate-plan --render <plan.json>
+  validate-plan --update-status <plan.json> --task <ID> --status <STATUS>
+  validate-plan --update-status <plan.json> --phase <LETTER> --status <STATUS>
+  validate-plan --update-status <plan.json> --plan --status <STATUS>
+USAGE
+  exit 1
+}
+
+ERRORS=()
+err() { ERRORS+=("$1"); }
+
+do_schema() {
+  local plan_json="$1"
+  local plan_dir
+  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+
+  local json
+  json=$(cat "$plan_json")
+
+  local schema status goal architecture tech_stack
+  schema=$(echo "$json" | jq -r '.schema // empty')
+  status=$(echo "$json" | jq -r '.status // empty')
+  goal=$(echo "$json" | jq -r '.goal // empty')
+  architecture=$(echo "$json" | jq -r '.architecture // empty')
+  tech_stack=$(echo "$json" | jq -r '.tech_stack // empty')
+
+  [[ -z "$schema" ]] && err "ERROR: missing_field: schema"
+  [[ -z "$status" ]] && err "ERROR: missing_field: status"
+  [[ -z "$goal" ]] && err "ERROR: missing_field: goal"
+  [[ -z "$architecture" ]] && err "ERROR: missing_field: architecture"
+  [[ -z "$tech_stack" ]] && err "ERROR: missing_field: tech_stack"
+
+  if [[ -n "$status" ]]; then
+    case "$status" in
+      "Not Yet Started"|"In Development"|"Complete") ;;
+      *) err "ERROR: invalid_plan_status: '$status' (expected: Not Yet Started, In Development, or Complete)" ;;
+    esac
+  fi
+
+  local plan_criteria_count
+  plan_criteria_count=$(echo "$json" | jq '(.success_criteria // []) | length')
+  for ((i=0; i<plan_criteria_count; i++)); do
+    local run expect_exit expect_output
+    run=$(echo "$json" | jq -r ".success_criteria[$i].run // empty")
+    expect_exit=$(echo "$json" | jq -r ".success_criteria[$i].expect_exit // empty")
+    expect_output=$(echo "$json" | jq -r ".success_criteria[$i].expect_output // empty")
+
+    [[ -z "$run" ]] && err "ERROR: empty_run: plan success_criteria[$i]"
+    [[ -z "$expect_exit" && -z "$expect_output" ]] && err "ERROR: missing_expect: plan success_criteria[$i] has neither expect_exit nor expect_output"
+  done
+
+  local phase_count
+  phase_count=$(echo "$json" | jq '(.phases // []) | length')
+
+  local all_task_ids=()
+  local all_create_paths=()
+
+  for ((p=0; p<phase_count; p++)); do
+    local letter name phase_status rationale
+    letter=$(echo "$json" | jq -r ".phases[$p].letter // empty")
+    name=$(echo "$json" | jq -r ".phases[$p].name // empty")
+    phase_status=$(echo "$json" | jq -r ".phases[$p].status // empty")
+    rationale=$(echo "$json" | jq -r ".phases[$p].rationale // empty")
+
+    [[ -z "$letter" ]] && err "ERROR: missing_field: phases[$p].letter"
+    [[ -z "$name" ]] && err "ERROR: missing_field: phases[$p].name"
+    [[ -z "$phase_status" ]] && err "ERROR: missing_field: phases[$p].status"
+    [[ -z "$rationale" ]] && err "ERROR: missing_field: phases[$p].rationale"
+
+    if [[ -n "$phase_status" ]]; then
+      case "$phase_status" in
+        "Not Started"|"In Progress") ;;
+        Complete\ \(20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]\)) ;;
+        *) err "ERROR: invalid_phase_status: phases[$p].status='$phase_status' (expected: Not Started, In Progress, or Complete (YYYY-MM-DD))" ;;
+      esac
+    fi
+
+    local phase_criteria_count
+    phase_criteria_count=$(echo "$json" | jq "(.phases[$p].success_criteria // []) | length")
+    for ((c=0; c<phase_criteria_count; c++)); do
+      local run expect_exit expect_output
+      run=$(echo "$json" | jq -r ".phases[$p].success_criteria[$c].run // empty")
+      expect_exit=$(echo "$json" | jq -r ".phases[$p].success_criteria[$c].expect_exit // empty")
+      expect_output=$(echo "$json" | jq -r ".phases[$p].success_criteria[$c].expect_output // empty")
+
+      [[ -z "$run" ]] && err "ERROR: empty_run: phase $letter success_criteria[$c]"
+      [[ -z "$expect_exit" && -z "$expect_output" ]] && err "ERROR: missing_expect: phase $letter success_criteria[$c] has neither expect_exit nor expect_output"
+    done
+
+    local letter_lower
+    letter_lower=$(echo "$letter" | tr '[:upper:]' '[:lower:]')
+    local phase_dir="phase-$letter_lower"
+    if [[ ! -f "$plan_dir/$phase_dir/completion.md" ]]; then
+      err "ERROR: missing_completion_file: $phase_dir/completion.md"
+    fi
+
+    local task_count
+    task_count=$(echo "$json" | jq "(.phases[$p].tasks // []) | length")
+
+    for ((t=0; t<task_count; t++)); do
+      local id task_name task_status depends_on verification done_when
+      id=$(echo "$json" | jq -r ".phases[$p].tasks[$t].id // empty")
+      task_name=$(echo "$json" | jq -r ".phases[$p].tasks[$t].name // empty")
+      task_status=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
+      verification=$(echo "$json" | jq -r ".phases[$p].tasks[$t].verification // empty")
+      done_when=$(echo "$json" | jq -r ".phases[$p].tasks[$t].done_when // empty")
+
+      [[ -z "$id" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].id"
+      [[ -z "$task_name" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].name"
+      [[ -z "$task_status" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].status"
+      [[ -z "$verification" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].verification"
+      [[ -z "$done_when" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].done_when"
+
+      if [[ -n "$task_status" ]]; then
+        case "$task_status" in
+          pending|in_progress|complete|skipped) ;;
+          *) err "ERROR: invalid_task_status: task $id status='$task_status' (expected: pending, in_progress, complete, or skipped)" ;;
+        esac
+      fi
+
+      local files_exists
+      files_exists=$(echo "$json" | jq ".phases[$p].tasks[$t] | has(\"files\")")
+      if [[ "$files_exists" != "true" ]]; then
+        err "ERROR: missing_field: phases[$p].tasks[$t].files"
+      else
+        local create_exists modify_exists test_exists
+        create_exists=$(echo "$json" | jq ".phases[$p].tasks[$t].files | has(\"create\")")
+        modify_exists=$(echo "$json" | jq ".phases[$p].tasks[$t].files | has(\"modify\")")
+        test_exists=$(echo "$json" | jq ".phases[$p].tasks[$t].files | has(\"test\")")
+
+        [[ "$create_exists" != "true" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].files.create"
+        [[ "$modify_exists" != "true" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].files.modify"
+        [[ "$test_exists" != "true" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].files.test"
+      fi
+
+      local depends_on_count
+      depends_on_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].depends_on // []) | length")
+      if [[ "$depends_on_count" -gt 0 ]]; then
+        for ((d=0; d<depends_on_count; d++)); do
+          local dep_id
+          dep_id=$(echo "$json" | jq -r ".phases[$p].tasks[$t].depends_on[$d]")
+
+          local found=0
+          if [[ ${#all_task_ids[@]} -gt 0 ]]; then
+            for existing_id in "${all_task_ids[@]}"; do
+              if [[ "$existing_id" == "$dep_id" ]]; then
+                found=1
+                break
+              fi
+            done
+          fi
+
+          if [[ $found -eq 0 ]]; then
+            err "ERROR: invalid_dependency: task $id depends_on $dep_id which doesn't exist in same or prior phase"
+          fi
+        done
+      fi
+
+      local create_count
+      create_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].files.create // []) | length")
+      for ((f=0; f<create_count; f++)); do
+        local create_path
+        create_path=$(echo "$json" | jq -r ".phases[$p].tasks[$t].files.create[$f]")
+
+        if [[ ${#all_create_paths[@]} -gt 0 ]]; then
+          for existing_path in "${all_create_paths[@]}"; do
+            if [[ "$existing_path" == "$create_path" ]]; then
+              err "ERROR: duplicate_create_path: $create_path appears in multiple tasks"
+            fi
+          done
+        fi
+        all_create_paths+=("$create_path")
+      done
+
+      local task_criteria_count
+      task_criteria_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].success_criteria // []) | length")
+      for ((c=0; c<task_criteria_count; c++)); do
+        local run expect_exit expect_output
+        run=$(echo "$json" | jq -r ".phases[$p].tasks[$t].success_criteria[$c].run // empty")
+        expect_exit=$(echo "$json" | jq -r ".phases[$p].tasks[$t].success_criteria[$c].expect_exit // empty")
+        expect_output=$(echo "$json" | jq -r ".phases[$p].tasks[$t].success_criteria[$c].expect_output // empty")
+
+        [[ -z "$run" ]] && err "ERROR: empty_run: task $id success_criteria[$c]"
+        [[ -z "$expect_exit" && -z "$expect_output" ]] && err "ERROR: missing_expect: task $id success_criteria[$c] has neither expect_exit nor expect_output"
+      done
+
+      local id_lower
+      id_lower=$(echo "$id" | tr '[:upper:]' '[:lower:]')
+      local task_file="$plan_dir/$phase_dir/$id_lower.md"
+      if [[ ! -f "$task_file" ]]; then
+        err "ERROR: missing_task_file: $phase_dir/$id_lower.md"
+      else
+        local first_line
+        first_line=$(head -n 1 "$task_file")
+        local expected_h1="# $id: $task_name"
+        if [[ "$first_line" != "$expected_h1" ]]; then
+          err "ERROR: h1_mismatch: $phase_dir/$id_lower.md first line is '$first_line', expected '$expected_h1'"
+        fi
+      fi
+
+      all_task_ids+=("$id")
+    done
+  done
+
+  if [ ${#ERRORS[@]} -gt 0 ]; then
+    for e in "${ERRORS[@]}"; do echo "$e" >&2; done
+    exit 1
+  fi
+  exit 0
+}
+
+MODE=""
+PLAN_JSON=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --schema)
+      MODE="schema"
+      shift
+      if [[ $# -gt 0 ]]; then
+        PLAN_JSON="$1"
+        shift
+      fi
+      ;;
+    --render|--update-status)
+      echo "Not implemented yet"
+      exit 1
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+
+[[ -z "$MODE" ]] && usage
+[[ -z "$PLAN_JSON" ]] && usage
+
+case "$MODE" in
+  schema) do_schema "$PLAN_JSON" ;;
+  render) echo "Not implemented yet" ; exit 1 ;;
+  update-status) echo "Not implemented yet" ; exit 1 ;;
+  *) usage ;;
+esac

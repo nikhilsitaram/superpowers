@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+VALIDATE="$REPO_ROOT/scripts/validate-plan"
+FIXTURES="$SCRIPT_DIR/fixtures"
+PASS=0
+FAIL=0
+
+assert_pass() {
+  local desc="$1"; shift
+  if "$@" > /dev/null 2>&1; then
+    echo "PASS: $desc"
+    ((PASS++)) || true
+  else
+    echo "FAIL: $desc"
+    ((FAIL++)) || true
+  fi
+}
+
+assert_fail() {
+  local desc="$1"; shift
+  local expected_error="$1"; shift
+  local output
+  if output=$("$@" 2>&1); then
+    echo "FAIL: $desc (expected failure, got success)"
+    ((FAIL++)) || true
+  elif echo "$output" | grep -q "$expected_error"; then
+    echo "PASS: $desc"
+    ((PASS++)) || true
+  else
+    echo "FAIL: $desc (expected '$expected_error' in output, got: $output)"
+    ((FAIL++)) || true
+  fi
+}
+
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+echo "Test 1: Valid plan passes"
+assert_pass "valid plan passes schema check" \
+  "$VALIDATE" --schema "$FIXTURES/valid-plan/plan.json"
+
+echo "Test 2: Missing required field (remove goal)"
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq 'del(.goal)' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "missing goal field" "missing_field" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 3: depends_on references future phase"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.phases[0].tasks[0].depends_on = ["B1"]' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "depends_on references future phase" "invalid_dependency" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 4: Duplicate create paths"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.phases[1].tasks[0].files.create = ["src/core.ts"]' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "duplicate create path" "duplicate_create_path" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 5: Missing task file"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+cp "$FIXTURES/valid-plan/plan.json" "$TMPDIR/plan.json"
+rm "$TMPDIR/phase-a/a1.md"
+assert_fail "missing task file" "missing_task_file" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 6: H1 header mismatch"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+cp "$FIXTURES/valid-plan/plan.json" "$TMPDIR/plan.json"
+echo "# A1: Wrong Name" > "$TMPDIR/phase-a/a1.md"
+assert_fail "H1 header mismatch" "h1_mismatch" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 7: Missing completion.md"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+cp "$FIXTURES/valid-plan/plan.json" "$TMPDIR/plan.json"
+rm "$TMPDIR/phase-a/completion.md"
+assert_fail "missing completion.md" "missing_completion_file" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 8: Invalid task status"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.phases[0].tasks[0].status = "invalid"' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "invalid task status" "invalid_task_status" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 9: Empty run string in success_criteria"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.success_criteria[0].run = ""' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "empty run string" "empty_run" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 10: success_criteria missing both expect_exit and expect_output"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.success_criteria = [{"run": "echo ok"}]' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "criteria missing expect" "missing_expect" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 11: Invalid plan status"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.status = "bogus"' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "invalid plan status" "invalid_plan_status" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 12: Invalid phase status"
+rm -rf "$TMPDIR/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '.phases[0].status = "bogus"' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "invalid phase status" "invalid_phase_status" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+[ "$FAIL" -eq 0 ]

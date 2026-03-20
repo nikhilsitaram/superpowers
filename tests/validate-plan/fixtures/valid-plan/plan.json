@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "status": "Not Yet Started",
+  "goal": "Build a sample feature",
+  "architecture": "Two-phase plan for testing validation",
+  "tech_stack": "Bash, jq",
+  "success_criteria": [
+    {
+      "run": "echo ok",
+      "expect_exit": 0,
+      "timeout": 60,
+      "severity": "blocking"
+    }
+  ],
+  "phases": [
+    {
+      "letter": "A",
+      "name": "Foundation",
+      "status": "Not Started",
+      "rationale": "Core layer needed first",
+      "success_criteria": [
+        {
+          "run": "echo phase-a-ok",
+          "expect_exit": 0
+        }
+      ],
+      "tasks": [
+        {
+          "id": "A1",
+          "name": "Create core module",
+          "status": "pending",
+          "depends_on": [],
+          "files": {
+            "create": ["src/core.ts"],
+            "modify": [],
+            "test": ["tests/core.test.ts"]
+          },
+          "verification": "npm test -- tests/core.test.ts",
+          "done_when": "Core module exports, 2/2 tests pass",
+          "success_criteria": [
+            {
+              "run": "npm test -- tests/core.test.ts",
+              "expect_exit": 0,
+              "expect_output": "2 passed"
+            }
+          ]
+        },
+        {
+          "id": "A2",
+          "name": "Add validation layer",
+          "status": "pending",
+          "depends_on": ["A1"],
+          "files": {
+            "create": ["src/validate.ts"],
+            "modify": [],
+            "test": ["tests/validate.test.ts"]
+          },
+          "verification": "npm test -- tests/validate.test.ts",
+          "done_when": "Validation rejects bad input, 3/3 tests pass",
+          "success_criteria": []
+        }
+      ]
+    },
+    {
+      "letter": "B",
+      "name": "Consumer",
+      "status": "Not Started",
+      "rationale": "Depends on Phase A foundation",
+      "tasks": [
+        {
+          "id": "B1",
+          "name": "Build dashboard",
+          "status": "pending",
+          "depends_on": ["A2"],
+          "files": {
+            "create": ["src/dashboard.ts"],
+            "modify": [],
+            "test": ["tests/dashboard.test.ts"]
+          },
+          "verification": "npm test -- tests/dashboard.test.ts",
+          "done_when": "Dashboard renders, 2/2 tests pass",
+          "success_criteria": []
+        }
+      ]
+    }
+  ]
+}
