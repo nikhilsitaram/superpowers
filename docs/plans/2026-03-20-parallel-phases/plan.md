@@ -13,7 +13,7 @@ status: Not Yet Started
 ---
 
 ## Phase A — Schema, Routing, and Integration Branch Model
-**Status:** Not Started | **Rationale:** Foundation layer: schema validation, workflow routing, and the integration branch model must exist before Phase B can add parallel dispatch on top. All skill updates in this phase switch to the integration branch model with sequential phase dispatch.
+**Status:** Complete (2026-03-20) | **Rationale:** Foundation layer: schema validation, workflow routing, and the integration branch model must exist before Phase B can add parallel dispatch on top. All skill updates in this phase switch to the integration branch model with sequential phase dispatch.
 
 - [x] A1: Add workflow and phase depends_on validation to validate-plan — *validate-plan --schema validates workflow enum (ship|review-only|plan-only), phase-level depends_on arrays (valid letters only, backward references), and detects circular phase dependencies; all new schema tests pass*
 - [x] A2: Update test fixture for new schema fields — *Valid plan fixture includes workflow field and phase depends_on arrays; all test suites pass with updated fixture*

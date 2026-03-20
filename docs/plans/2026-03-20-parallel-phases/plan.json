@@ -40,7 +40,7 @@
     {
       "letter": "A",
       "name": "Schema, Routing, and Integration Branch Model",
-      "status": "Not Started",
+      "status": "Complete (2026-03-20)",
       "rationale": "Foundation layer: schema validation, workflow routing, and the integration branch model must exist before Phase B can add parallel dispatch on top. All skill updates in this phase switch to the integration branch model with sequential phase dispatch.",
       "depends_on": [],
       "success_criteria": [
