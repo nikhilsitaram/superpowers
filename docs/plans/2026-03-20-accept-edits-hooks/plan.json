@@ -52,7 +52,7 @@
         {
           "id": "A1",
           "name": "Write test suites for both hooks",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [
@@ -71,7 +71,7 @@
         {
           "id": "A2",
           "name": "Create PostToolUse hook script",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
@@ -90,7 +90,7 @@
         {
           "id": "A3",
           "name": "Create PermissionRequest hook script",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
@@ -109,7 +109,7 @@
         {
           "id": "A4",
           "name": "Create hooks.json and wire into marketplace.json",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2",
             "A3"
@@ -132,7 +132,7 @@
         {
           "id": "A5",
           "name": "Update design skill with structured approval gate",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A4"
           ],
@@ -152,7 +152,7 @@
         {
           "id": "A6",
           "name": "Version bump in marketplace.json",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A4",
             "A5"
