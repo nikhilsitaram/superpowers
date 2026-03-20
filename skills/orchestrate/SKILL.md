@@ -89,7 +89,7 @@ For each phase being dispatched:
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
    - `PHASE_DIR=${PLAN_DIR}/phase-{letter_lower}`
    - `PRIOR_COMPLETIONS` — concatenate `completion.md` from the transitive `depends_on` closure. Phase D (deps: B, C) receives A+B+C. Empty when no dependencies.
-   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target paths. Scan: `jq '.phases[(N+1):][].tasks[] | select(.depends_on[]?)'`.
+   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target paths. Scan phases that transitively depend on the current phase (not positional — in a DAG, later-indexed phases may be siblings, not dependents).
 4. Dispatch phase dispatcher (`./phase-dispatcher-prompt.md`) with: `PHASE_LETTER`, `PHASE_NAME`, `PHASE_TASKS_JSON`, `PLAN_DIR`, `PHASE_DIR`, `PRIOR_COMPLETIONS`, `CROSS_PHASE_HANDOFF_TARGETS`, `REPO_PATH` (= phase worktree path)
 5. After dispatcher returns:
    - Rule 4 violation → ask user, pause (see Rule 4 Handling)
@@ -103,6 +103,7 @@ For each phase being dispatched:
 11. Update status: `scripts/validate-plan --update-status plan.json --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
 12. Rebase on latest integration:
     ```bash
+    git -C .claude/worktrees/<feature>-phase-{letter} fetch origin integrate/<feature>
     git -C .claude/worktrees/<feature>-phase-{letter} rebase origin/integrate/<feature>
     ```
     Clean → run tests → continue. Conflict markers → `git rebase --abort`, escalate to user. First to merge: no-op.
@@ -132,11 +133,10 @@ Single-phase plans: one iteration. Skip final cross-phase review.
 
 ```text
 Wave 1: A (no deps) → dispatch
-Wave 2: B (dep:A), C (dep:A) → Reconciliation(B,C) → dispatch in parallel
+Wave 2: Reconciliation(B,C) from Phase A → dispatch B,C in parallel
          B returns → review, rebase, merge
-         C returns → Reconciliation(C) logged → rebase on updated integration, merge
-         [log] Reconciliation: injected for C-tasks from Phase B
-Wave 3: D (dep:B,C) → dispatch
+         C returns → review, rebase on updated integration (has B), merge
+Wave 3: Reconciliation(D) from Phases A,B,C → dispatch D
 
 Setup: PLAN_BASE_SHA=$(git rev-parse HEAD); git push -u origin integrate/<feature>
 Each: worktree add; PHASE_BASE_SHA; dispatch; review; ship --base integrate/<feature>; merge; prune
