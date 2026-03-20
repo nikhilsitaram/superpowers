@@ -113,7 +113,7 @@
         {
           "id": "A4",
           "name": "Update design SKILL.md for integration branch and workflow routing",
-          "status": "in_progress",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
