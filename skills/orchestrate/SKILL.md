@@ -20,8 +20,7 @@ Execute plan phase by phase: dispatch a fresh phase dispatcher subagent per phas
 Orchestrate (you)           — 1 per plan
 ├── Phase Dispatcher        — 1 per phase (dispatches implementers + reviewers, never writes code)
 │   ├── Implementer         — 1 per task (fresh context, writes code via TDD)
-│   ├── Spec Reviewer       — 1 per task (evaluates code cold)
-│   └── Code Quality Rev.   — 1 per task (evaluates code cold)
+│   └── Task Reviewer       — 1 per task (evaluates code cold, single-pass)
 └── Implementation Review   — 1 per phase (cross-task holistic, dispatched by you)
 ```
 
@@ -33,8 +32,7 @@ Why separate subagents per task: each implementer starts with fresh context, pre
 |----------|---------|
 | `./phase-dispatcher-prompt.md` | Dispatch phase dispatcher subagent |
 | `./implementer-prompt.md` | Dispatch individual task implementer (used inside phase dispatcher and for post-review fixes) |
-| `./spec-reviewer-prompt.md` | Spec compliance reviewer (used inside phase dispatcher) |
-| `./code-quality-reviewer-prompt.md` | Code quality reviewer (used inside phase dispatcher) |
+| `./task-reviewer-prompt.md` | Per-task reviewer (used inside phase dispatcher) |
 | `skills/implementation-review/reviewer-prompt.md` | Holistic cross-task reviewer (dispatched from orchestrate context) |
 
 ## Per-Phase Execution

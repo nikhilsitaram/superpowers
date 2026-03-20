@@ -29,14 +29,11 @@ flowchart TD
     D --> T2[Task 2]
     D --> TN[Task N]
 
-    T1 --> S1[Spec Review]
-    S1 --> C1[Code Review]
-    T2 --> S2[Spec Review]
-    S2 --> C2[Code Review]
-    TN --> SN[Spec Review]
-    SN --> CN[Code Review]
+    T1 --> R1[Task Review]
+    T2 --> R2[Task Review]
+    TN --> RN[Task Review]
 
-    C1 & C2 & CN --> IR[Implementation Review]
+    R1 & R2 & RN --> IR[Implementation Review]
     IR --> Ship([Ship PR])
 
     style A    fill:#ef4444,stroke:#dc2626,color:#fff
@@ -46,12 +43,9 @@ flowchart TD
     style T1   fill:#f97316,stroke:#ea580c,color:#fff
     style T2   fill:#f97316,stroke:#ea580c,color:#fff
     style TN   fill:#f97316,stroke:#ea580c,color:#fff
-    style S1   fill:#eab308,stroke:#ca8a04,color:#000
-    style C1   fill:#eab308,stroke:#ca8a04,color:#000
-    style S2   fill:#eab308,stroke:#ca8a04,color:#000
-    style C2   fill:#eab308,stroke:#ca8a04,color:#000
-    style SN   fill:#eab308,stroke:#ca8a04,color:#000
-    style CN   fill:#eab308,stroke:#ca8a04,color:#000
+    style R1   fill:#eab308,stroke:#ca8a04,color:#000
+    style R2   fill:#eab308,stroke:#ca8a04,color:#000
+    style RN   fill:#eab308,stroke:#ca8a04,color:#000
     style IR   fill:#eab308,stroke:#ca8a04,color:#000
     style Ship fill:#22c55e,stroke:#16a34a,color:#fff
 ```
@@ -89,7 +83,7 @@ Skills fire automatically as your work progresses through each stage. You intera
 | [design](skills/design/) | 👤 You — describe something to build | Challenges assumptions, proposes 2-3 approaches, gets design sign-off; then dispatches the rest of the pipeline |
 | [draft-plan](skills/draft-plan/) | 🤖 design (subagent) | Produces a task checklist with exact file paths, TDD steps, and runnable verification commands; supports phased plans when tasks have dependency layers |
 | [plan-review](skills/plan-review/) | 🤖 draft-plan (subagent) | Validates completeness — catches vague steps and missing paths before execution starts |
-| [orchestrate](skills/orchestrate/) | 🤖 draft-plan (subagent) | Dispatches fresh subagents per task, each running full RED→GREEN→REFACTOR; spec + code review after every task; per-phase implementation review before advancing |
+| [orchestrate](skills/orchestrate/) | 🤖 draft-plan (subagent) | Dispatches fresh subagents per task, each running full RED→GREEN→REFACTOR; task review after every task; per-phase implementation review before advancing |
 | [implementation-review](skills/implementation-review/) | 🤖 orchestrate (subagent) | Cross-task holistic review — catches inconsistencies a per-task reviewer can't see |
 | [ship](skills/ship/) | 🤖 orchestrate (subagent) | Commits, pushes, opens PR with summary |
 | [merge-pr](skills/merge-pr/) | 👤 You — after reviewing the PR | Addresses feedback, merges, cleans up branch and worktree |

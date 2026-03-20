@@ -54,16 +54,13 @@ Task tool (general-purpose):
        - Include in the implementer prompt: if this task consumes output from a prior
          task (imports a module, reads config, calls an API created earlier), write a
          boundary integration test using real components — not mocks
-    2. After implementer returns: dispatch spec compliance reviewer
-       (`./spec-reviewer-prompt.md`)
-       - Issues found → dispatch new implementer to fix → re-review spec
-    3. After spec passes: dispatch code quality reviewer
-       (`./code-quality-reviewer-prompt.md`)
-       - Issues found → dispatch new implementer to fix → re-review quality
-    4. Re-Review Gate: if reviewer found >5 issues, dispatch fresh same-scope reviewer
+    2. After implementer returns: dispatch task reviewer
+       (`./task-reviewer-prompt.md`)
+       - Issues found → dispatch new implementer to fix → re-review
+    3. Re-Review Gate: if reviewer found >5 issues, dispatch fresh reviewer
        after all fixes are applied
-    5. Update plan doc: `- [ ] A1` → `- [x] A1` (use actual task ID)
-    6. After completing a task: if this task produced output that a future phase
+    4. Update plan doc: `- [ ] A1` → `- [x] A1` (use actual task ID)
+    5. After completing a task: if this task produced output that a future phase
        consumes (identifiable by a handoff placeholder `> **Handoff from {TASK_ID}:**
        [TBD]` on a target task in a later phase), fill in that placeholder in the plan
        file with actual details — real function signatures, file paths, config keys.
