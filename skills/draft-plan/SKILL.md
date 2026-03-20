@@ -26,7 +26,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 ```markdown
 ---
 status: Not Yet Started
-design-doc: docs/plans/YYYY-MM-DD-topic/design-topic.md
+design-doc: docs/plans/YYYY-MM-DD-topic/design-topic.md  # omit if no design doc
 ---
 
 # [Feature Name] Implementation Plan

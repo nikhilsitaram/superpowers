@@ -336,13 +336,13 @@ Read `skills/design/SKILL.md` to confirm the exact current text of the sections 
 Replace the current steps 8-9 in the checklist:
 
 Current:
-```
+```text
 8. **Write design doc** — `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`, commit
 9. **Dispatch draft-plan subagent** — fresh Opus agent with design doc path and worktree path (zero design context)
 ```
 
 New:
-```
+```text
 8. **Write design doc** — `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`, commit
 9. **Dispatch design-review subagent** — fresh Opus agent validates design before planning (hard gate)
 10. **Dispatch draft-plan subagent** — fresh Opus agent with design doc path and worktree path (zero design context)
