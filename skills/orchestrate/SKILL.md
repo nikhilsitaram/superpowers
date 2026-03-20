@@ -47,8 +47,8 @@ For each phase:
    - `PHASE_TASKS_JSON=$(jq '.phases[N].tasks' plan.json)`
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
    - `PHASE_DIR=${PLAN_DIR}/phase-{letter_lower}`
-   - `PRIOR_COMPLETIONS=$(cat "${PLAN_DIR}"/phase-*/completion.md 2>/dev/null | cat)` — concatenate in phase order
-   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target path, e.g. `{"A2": "phase-b/b2.md"}`. Scan: `jq '.phases[(N+1):][].tasks[] | select(.depends_on[]? == "A2")'`
+   - `PRIOR_COMPLETIONS` — concatenate only `completion.md` files for phases before the current one (indices `0..N-1`), in manifest order. Do not glob `phase-*/completion.md` — that includes the current/future phase stubs.
+   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to array of target paths, e.g. `{"A2": ["phase-b/b2.md", "phase-c/c1.md"]}`. Scan: `jq '.phases[(N+1):][].tasks[] | select(.depends_on[]? == "A2")'`. Arrays handle fan-out (multiple later tasks depending on the same source).
 4. Dispatch phase dispatcher (`./phase-dispatcher-prompt.md`) with: `PHASE_TASKS_JSON`, `PLAN_DIR`, `PHASE_DIR`, `PRIOR_COMPLETIONS`, `CROSS_PHASE_HANDOFF_TARGETS`, `PHASE_BASE_SHA`
 5. After dispatcher returns:
    - Rule 4 violation → ask user, pause (see Rule 4 Handling)
@@ -72,14 +72,14 @@ After the final phase: `scripts/validate-plan --update-status plan.json --plan -
 git checkout -b phase-a; PHASE_BASE_SHA=$(git rev-parse HEAD)
 PHASE_TASKS_JSON=$(jq '.phases[0].tasks' plan.json)
 # Dispatch with: PHASE_TASKS_JSON, PLAN_DIR, PHASE_DIR, no prior completions
-# Implementation-review: pass plan.json, phase-a/completion.md
+# Implementation-review: pass PLAN_DIR, PHASE_DIR
 scripts/validate-plan --update-status plan.json --phase A --status "Complete (2026-03-20)"
 # Ship: --base main
 
 # Phase B
 git checkout -b phase-b; PHASE_BASE_SHA=$(git rev-parse HEAD)
 PHASE_TASKS_JSON=$(jq '.phases[1].tasks' plan.json)
-PRIOR_COMPLETIONS=$(cat phase-a/completion.md)
+PRIOR_COMPLETIONS=$(cat "${PLAN_DIR}/phase-a/completion.md")
 # Dispatch with: PHASE_TASKS_JSON, PLAN_DIR, PHASE_DIR, PRIOR_COMPLETIONS, CROSS_PHASE_HANDOFF_TARGETS
 # Ship: --base phase-a
 
