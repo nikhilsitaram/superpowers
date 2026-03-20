@@ -39,8 +39,9 @@ Dispatch with `model: "opus"` — consistency checking requires strong reasoning
 | Implied context | "Modify the handler" without specifying file | Planner has context executor won't |
 | Missing fields | No verification command or measurable done | Assumes executor will figure it out |
 | Phase boundary issues | 9 tasks in single phase, no verification gates | Didn't apply complexity gates |
+| Orphaned criteria | Design says "users can X" but no task verifies it | Lost during decomposition |
 
-## 6-Point Checklist
+## 7-Point Checklist
 
 1. **Dependency Ordering** — Everything a task USES is CREATED by a prior task or exists in codebase
 2. **Artifact Consistency** — Same file/function/variable referenced with same name everywhere
@@ -48,6 +49,7 @@ Dispatch with `model: "opus"` — consistency checking requires strong reasoning
 4. **Test-Implementation Coherence** — TDD structure intact, Task 0 present (or justified skip), signatures match
 5. **Completeness** — All 5 task fields present (Files, Verification, Done, Avoid+WHY, Steps), commands runnable
 6. **Different Claude Test** — Each task executable by fresh Claude with zero context
+7. **Success Criteria Coverage** — Every criterion in the design doc maps to at least one task's "done when" field (skip if no design doc)
 
 **For multi-phase plans, also verify:**
 - Phase boundaries at meaningful verification points
