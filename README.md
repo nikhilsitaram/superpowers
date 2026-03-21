@@ -55,10 +55,11 @@ Steps 3-9 run without any input from you.
 ## How It Works
 
 ```mermaid
+%%{init: {'flowchart': {'nodeSpacing': 15, 'rankSpacing': 25}}}%%
 flowchart TD
-    A([You: describe what to build]) --> B[design]
+    A([You: describe a feature]) --> B[design]
     B --> BR[design-review]
-    BR --> C{You: approve design}
+    BR --> C([You: approve design])
     C --> D[draft-plan]
     D --> DR[plan-review]
 
@@ -66,14 +67,13 @@ flowchart TD
     DR --> T2[Task 2]
     DR --> TN[Task N]
 
-    T1 --> R1[Task Review]
-    T2 --> R2[Task Review]
-    TN --> RN[Task Review]
+    T1 --> R1[Review]
+    T2 --> R2[Review]
+    TN --> RN[Review]
 
     R1 & R2 & RN --> IR[implementation-review]
-    IR --> S[ship]
-    S --> PR([PR opened])
-    PR --> M{You: merge}
+    IR --> S[ship PR]
+    S --> M([You: review & merge])
     M --> MP[merge-pr]
 
     style A    fill:#3b82f6,stroke:#2563eb,color:#fff
@@ -90,7 +90,6 @@ flowchart TD
     style RN   fill:#eab308,stroke:#ca8a04,color:#000
     style IR   fill:#eab308,stroke:#ca8a04,color:#000
     style S    fill:#22c55e,stroke:#16a34a,color:#fff
-    style PR   fill:#22c55e,stroke:#16a34a,color:#fff
     style M    fill:#3b82f6,stroke:#2563eb,color:#fff
     style MP   fill:#22c55e,stroke:#16a34a,color:#fff
 ```
