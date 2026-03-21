@@ -70,11 +70,12 @@ EOF
 )"
 ```
 
-### Step 6: Rebase on Main
+### Step 6: Rebase on Target Base
 
 ```bash
-git fetch origin $DEFAULT_BRANCH
-git rebase origin/$DEFAULT_BRANCH
+REBASE_BASE="${BASE_BRANCH:-$DEFAULT_BRANCH}"
+git fetch origin "$REBASE_BASE"
+git rebase "origin/$REBASE_BASE"
 ```
 
 If conflicts occur, resolve them and re-run tests before continuing.
@@ -90,7 +91,9 @@ If branch was rebased and already has remote, use `git push --force-with-lease`.
 ### Step 8: Create PR
 
 ```bash
-gh pr create --title "<commit subject>" --body "$(cat <<'EOF'
+BASE_FLAG=""
+if [ -n "$BASE_BRANCH" ]; then BASE_FLAG="--base $BASE_BRANCH"; fi
+gh pr create $BASE_FLAG --title "<commit subject>" --body "$(cat <<'EOF'
 ## Summary
 <1-3 bullet points>
 
@@ -101,6 +104,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 ```
+
+When `--base` is provided (e.g., from orchestrate for phase PRs), the PR targets that branch instead of `$DEFAULT_BRANCH`. This enables the integration branch model where phase PRs target `integrate/<feature>`.
 
 ### Step 9: Summary
 
@@ -120,6 +125,7 @@ If running inside a worktree, tell the user:
 | `--no-push` | Commit only |
 | `--skip-tests` `-T` | Skip tests |
 | `-m "..."` | Use provided message |
+| `--base <branch>` | Target specific base branch for PR (default: `$DEFAULT_BRANCH`) |
 
 ## Common Mistakes
 
