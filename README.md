@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/caliper-icon.png" alt="caliper icon" width="120">
+
 # claude-caliper
 
 **Measure twice, cut once.**
