@@ -47,6 +47,8 @@ Then the pipeline runs:
 | 8 | Implementation review does a cross-task holistic pass | Fresh subagent |
 | 9 | Ship opens a PR | Automated |
 | 10 | You review the PR and run `/merge-pr` | **You** |
+| 11 | Fresh-eyes review reads the diff cold before any external feedback | Fresh subagent |
+| 12 | Fixes applied, PR merged, branch cleaned up | Automated |
 
 Steps 3-9 run without any input from you.
 
