@@ -9,7 +9,7 @@ tool_name=$(echo "$input" | jq -r '.tool_name // empty')
 
 case "$tool_name" in
   Read|Glob|Grep|Skill|WebFetch|WebSearch|ToolSearch)
-    printf '{"permissionDecision":"allow"}\n'
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\n'
     exit 0
     ;;
   Bash) ;;
@@ -220,7 +220,7 @@ for seg in "${segments[@]+"${segments[@]}"}"; do
 done
 
 if [[ $all_safe -eq 1 ]]; then
-  printf '{"permissionDecision":"allow"}\n'
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\n'
 else
   for nm in "${non_matching[@]}"; do
     printf '%s\n' "$nm" >> "$LOG_FILE"
