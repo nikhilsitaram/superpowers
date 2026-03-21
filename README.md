@@ -74,7 +74,8 @@ flowchart TD
     R1 & R2 & RN --> IR[implementation-review]
     IR --> S[ship PR]
     S --> M([You: review & merge])
-    M --> MP[merge-pr]
+    M --> MR[Fresh-eyes review]
+    MR --> MP[merge-pr]
 
     style A    fill:#3b82f6,stroke:#2563eb,color:#fff
     style B    fill:#8b5cf6,stroke:#7c3aed,color:#fff
@@ -91,6 +92,7 @@ flowchart TD
     style IR   fill:#eab308,stroke:#ca8a04,color:#000
     style S    fill:#22c55e,stroke:#16a34a,color:#fff
     style M    fill:#3b82f6,stroke:#2563eb,color:#fff
+    style MR   fill:#eab308,stroke:#ca8a04,color:#000
     style MP   fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
