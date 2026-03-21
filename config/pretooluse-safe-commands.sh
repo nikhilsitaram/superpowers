@@ -154,7 +154,14 @@ extract_command_words_from_segment() {
     inner="${inner#"${inner%%[![:space:]]*}"}"
     outer_cmd="${inner%% *}"
   elif [[ "$seg" =~ $var_literal_re ]]; then
-    outer_cmd=""
+    local after_assign="${seg#*=[^ ]* }"
+    if [[ "$after_assign" != "$seg" ]]; then
+      after_assign="${after_assign#"${after_assign%%[![:space:]]*}"}"
+      local trailing_word="${after_assign%% *}"
+      outer_cmd="${trailing_word##*/}"
+    else
+      outer_cmd=""
+    fi
   else
     local word="${seg%% *}"
     outer_cmd="${word##*/}"

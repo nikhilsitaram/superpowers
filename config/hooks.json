@@ -1,6 +1,6 @@
 {
   "PreToolUse": [{
-    "matcher": "Bash",
+    "matcher": "*",
     "hooks": [{
       "type": "command",
       "command": "${CLAUDE_PLUGIN_ROOT}/config/pretooluse-safe-commands.sh"
