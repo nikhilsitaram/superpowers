@@ -79,9 +79,11 @@ For each phase being dispatched:
    | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
    | `Cargo.toml` | `cargo fetch` |
    | `go.mod` | `go mod download` |
-   | None of the above | Skip (no deps to install) |
+   | None of the above | Symlink fallback (see below) |
 
-   This ensures bare commands (`pytest`, `node`, `cargo test`) resolve correctly inside the worktree. Only runs once per phase — tasks inherit the environment.
+   **Symlink fallback:** If no manifest is detected, check the main repo root for existing environment directories (`.venv`, `node_modules`). If found, symlink them into the worktree (`ln -s /abs/path/to/main-repo/.venv .venv`). This handles repos with manually-configured environments. Symlinking works because binaries resolve their runtime via `pyvenv.cfg` / `node_modules` resolution, not the venv's absolute path. If neither manifest nor existing environment is found, log a warning and continue — bare commands may fail on missing deps.
+
+   Only runs once per phase — tasks inherit the environment.
 4. Extract context from plan.json:
    - `PHASE_TASKS_JSON=$(jq '.phases[N].tasks' plan.json)`
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
