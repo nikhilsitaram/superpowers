@@ -166,24 +166,165 @@ No agent ever reviews its own work.
 
 ---
 
+## Spec-Driven + Test-Driven Development
+
+claude-caliper chains two disciplines that are usually practiced separately: **spec-driven development** (validate *what* to build) and **test-driven development** (validate *that* it works). The design doc defines observable success criteria; the plan maps those criteria to tasks; every task follows RED-GREEN-REFACTOR; the implementation review verifies the criteria are met by the final code.
+
+### The Traceability Chain
+
+```text
+Design doc         → Success criteria (human-verifiable outcomes, not implementation details)
+  ↓
+Design review      → Validates criteria are complete, necessary, and implementation-independent
+  ↓
+Draft plan         → Maps each criterion to one or more tasks with verification commands
+  ↓
+Plan review        → Checks every criterion is covered by at least one task
+  ↓
+Task execution     → RED: write failing test → GREEN: make it pass → REFACTOR: clean up
+  ↓
+Task review        → Fresh subagent checks spec fidelity + code quality per task
+  ↓
+Implementation review → Verifies all success criteria met by the combined implementation
+```
+
+### What Success Criteria Look Like
+
+In the design doc:
+
+```markdown
+## Success Criteria
+- Users can authenticate via OAuth and receive a session token
+- Rate-limited endpoints return 429 with a Retry-After header
+- Failed auth attempts are logged with client IP and timestamp
+```
+
+These are behavioral outcomes — "users can X", "system does Y" — not implementation details like "JWT middleware installed." This matters because it lets the implementation review verify fulfillment without being anchored to a specific approach.
+
+### How TDD Executes Per Task
+
+Each task's `.md` file contains explicit RED-GREEN-REFACTOR cycles:
+
+```markdown
+### Step 1: Rate limit middleware
+
+**RED:** Write test expecting 429 after 10 requests in 1 minute
+  → Run: `npm test -- --grep "rate limit"` → expect FAIL (middleware doesn't exist)
+
+**GREEN:** Implement sliding window rate limiter in src/middleware/rate-limit.ts
+  → Run: `npm test -- --grep "rate limit"` → expect PASS
+
+**REFACTOR:** Extract config to src/config/rate-limits.ts
+  → Run: `npm test` → expect all PASS (no regressions)
+```
+
+The implementer subagent follows these cycles exactly — it writes the failing test first, confirms it fails, implements, confirms it passes. The task reviewer then verifies the test actually covers the behavior, not just the happy path.
+
+### Automated Criteria Validation
+
+Beyond TDD, `plan.json` supports machine-runnable success criteria at three levels:
+
+```json
+{
+  "success_criteria": [
+    {
+      "run": "curl -s -o /dev/null -w '%{http_code}' localhost:3000/health",
+      "expect_output": "200",
+      "timeout": 10,
+      "severity": "blocking"
+    }
+  ]
+}
+```
+
+The orchestrator runs these automatically: task-level criteria after each task, phase-level after each phase, plan-level before marking the plan complete. A blocking failure stops the pipeline.
+
+---
+
 ## Structured Plans
 
-Plans aren't freeform text. They're machine-readable artifacts with human-readable companions:
+Plans aren't freeform text. They're machine-readable artifacts validated by a schema checker before any LLM reviewer sees them.
+
+### Directory Layout
 
 ```text
 docs/plans/2026-03-21-rate-limiter/
-├── plan.json             # Source of truth: tasks, deps, files, verification commands
-├── plan.md               # Auto-rendered from plan.json (never hand-edited)
+├── design-rate-limiter.md  # Design doc with success criteria
+├── plan.json               # Machine-readable manifest (source of truth)
+├── plan.md                 # Auto-rendered from plan.json (never hand-edited)
 ├── phase-a/
-│   ├── a1.md             # Full TDD steps, pitfalls, exact file paths
+│   ├── a1.md               # Full TDD steps, pitfalls + why, exact file paths
 │   ├── a2.md
-│   └── completion.md     # Filled by dispatcher after execution
+│   └── completion.md       # Filled by dispatcher after phase execution
 └── phase-b/
     ├── b1.md
     └── completion.md
 ```
 
-The litmus test: *could a fresh Claude with zero codebase context execute this task without asking a single clarifying question?*
+### plan.json — The Machine-Readable Manifest
+
+Every task specifies exact files, a verification command, and a measurable end state:
+
+```json
+{
+  "schema": 1,
+  "status": "Not Yet Started",
+  "workflow": "ship",
+  "goal": "Add rate limiting with per-route config",
+  "architecture": "Sliding window counter in Redis, middleware per route group",
+  "tech_stack": "Node.js, Redis, Express",
+  "phases": [
+    {
+      "letter": "A",
+      "name": "Core middleware",
+      "status": "Not Started",
+      "depends_on": [],
+      "tasks": [
+        {
+          "id": "A1",
+          "name": "Rate limit middleware",
+          "status": "pending",
+          "depends_on": [],
+          "files": {
+            "create": ["src/middleware/rate-limit.ts", "src/config/rate-limits.ts"],
+            "modify": ["src/app.ts"],
+            "test": ["tests/middleware/rate-limit.test.ts"]
+          },
+          "verification": "npm test -- --grep 'rate limit'",
+          "done_when": "10 requests in 1 min returns 429 with Retry-After header, 5/5 tests pass"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Schema Validation
+
+Before an LLM reviewer ever sees the plan, `scripts/validate-plan --schema` runs structural checks:
+
+- All required fields present at every level
+- Phase dependency graph is a valid DAG (BFS cycle detection)
+- Task dependencies only reference same or earlier phases
+- No duplicate task IDs or file paths across the entire plan
+- Every task `.md` file exists and its H1 header matches `# {id}: {name}` exactly
+- Every phase has a `completion.md` stub
+
+This catches structural errors deterministically — no tokens spent on an LLM noticing a missing field.
+
+### Auto-Rendered plan.md
+
+`plan.md` is generated deterministically from `plan.json` — never hand-edited. It updates automatically whenever task or phase status changes during execution, giving you a live progress view:
+
+```markdown
+## Phase A — Core middleware
+**Status:** In Progress
+
+- [x] A1: Rate limit middleware — *429 with Retry-After, 5/5 tests pass*
+- [ ] A2: Per-route config — *Routes load limits from config, 3/3 tests pass*
+```
+
+The litmus test for every task: *could a fresh Claude with zero codebase context execute this without asking a single clarifying question?*
 
 ---
 
