@@ -123,6 +123,20 @@ Start a new session and describe something you want to build. The design skill f
 
 If Claude immediately starts discussing approaches and trade-offs instead of writing code, the plugin is working.
 
+### Packages
+
+Install only what you need:
+
+| Package | What you get | Install command |
+|---------|-------------|-----------------|
+| **claude-caliper** | All 10 skills | `/plugin install claude-caliper@claude-caliper` |
+| **claude-caliper-workflow** | Design-to-merge pipeline (8 skills) | `/plugin install claude-caliper-workflow@claude-caliper` |
+| **claude-caliper-tooling** | Codebase review + skill eval (2 skills) | `/plugin install claude-caliper-tooling@claude-caliper` |
+
+### Updating
+
+Re-run the install command to update to the latest version. Claude Code compares your cached version against the declared version and pulls the new one.
+
 ---
 
 ## Skills Reference
@@ -151,7 +165,10 @@ These skills chain automatically. You trigger the first one by describing what t
 
 ---
 
-## Why Fresh Context Matters
+## How It Works Under the Hood
+
+<details>
+<summary><strong>Why Fresh Context Matters</strong></summary>
 
 When an agent reviews code it just wrote, it rationalizes problems away. It remembers *why* it made every choice, so every choice seems reasonable. This is the same bias code review between humans exists to counter.
 
@@ -164,9 +181,10 @@ claude-caliper spawns a **fresh subagent for every review**:
 
 No agent ever reviews its own work.
 
----
+</details>
 
-## Spec-Driven + Test-Driven Development
+<details>
+<summary><strong>Spec-Driven + Test-Driven Development</strong></summary>
 
 claude-caliper chains two disciplines that are usually practiced separately: **spec-driven development** (validate *what* to build) and **test-driven development** (validate *that* it works). The design doc defines observable success criteria; the plan maps those criteria to tasks; every task follows RED-GREEN-REFACTOR; the implementation review verifies the criteria are met by the final code.
 
@@ -239,9 +257,10 @@ Beyond TDD, `plan.json` supports machine-runnable success criteria at three leve
 
 The orchestrator runs these automatically: task-level criteria after each task, phase-level after each phase, plan-level before marking the plan complete. A blocking failure stops the pipeline.
 
----
+</details>
 
-## Structured Plans
+<details>
+<summary><strong>Structured Plans</strong></summary>
 
 Plans aren't freeform text. They're machine-readable artifacts validated by a schema checker before any LLM reviewer sees them.
 
@@ -326,9 +345,10 @@ This catches structural errors deterministically — no tokens spent on an LLM n
 
 The litmus test for every task: *could a fresh Claude with zero codebase context execute this without asking a single clarifying question?*
 
----
+</details>
 
-## Parallel Phase Execution
+<details>
+<summary><strong>Parallel Phase Execution</strong></summary>
 
 When a plan has independent phases, they don't wait in line. The orchestrator builds a dependency DAG from `plan.json` and dispatches independent phases concurrently:
 
@@ -339,9 +359,10 @@ When a plan has independent phases, they don't wait in line. The orchestrator bu
 
 Sequential plans execute one phase at a time. No special-casing needed — the DAG handles both cases.
 
----
+</details>
 
-## Codebase Review
+<details>
+<summary><strong>Codebase Review</strong></summary>
 
 Most review tools look at diffs. `codebase-review` audits the whole repo in parallel — one Explore subagent per top-level directory, then a cross-scope reconciliation pass that catches duplication and naming drift the per-directory reviewers can't see.
 
@@ -360,9 +381,10 @@ Findings are routed by **fix complexity**, not severity:
 
 Categories: DRY, YAGNI, Simplicity & Efficiency, Refactoring Opportunities, Consistency.
 
----
+</details>
 
-## Skill Eval
+<details>
+<summary><strong>Skill Eval</strong></summary>
 
 Skills degrade silently. A prompt tweak that looks better might fail on edge cases you didn't test. `skill-eval` quantifies the difference.
 
@@ -375,19 +397,7 @@ Skills degrade silently. A prompt tweak that looks better might fail on edge cas
 /skill-eval
 ```
 
----
-
-## Packages
-
-Install only what you need:
-
-| Package | What you get | Install command |
-|---------|-------------|-----------------|
-| **claude-caliper** | All 10 skills | `/plugin install claude-caliper@claude-caliper` |
-| **claude-caliper-workflow** | Design-to-merge pipeline (8 skills) | `/plugin install claude-caliper-workflow@claude-caliper` |
-| **claude-caliper-tooling** | Codebase review + skill eval (2 skills) | `/plugin install claude-caliper-tooling@claude-caliper` |
-
-All packages require adding the marketplace source first: `/plugin marketplace add nikhilsitaram/claude-caliper`
+</details>
 
 ---
 
@@ -419,6 +429,12 @@ The design can be a few sentences. "Single phase, two tasks, no dependency layer
 
 **Does it modify my git workflow?**
 It uses feature branches, worktrees for isolation, and squash merges. It never commits directly to main. All changes go through PRs.
+
+**The design skill isn't firing — Claude just starts coding.**
+Restart Claude Code after installing, then start a **new session**. Existing sessions don't pick up plugin changes. If it still doesn't fire, verify the plugin is loaded: run `/plugin` and check that claude-caliper appears in the list.
+
+**How do I update to a newer version?**
+Re-run `/plugin install claude-caliper@claude-caliper`. Claude Code compares your cached version against the declared version and pulls the update. Check the [releases page](https://github.com/nikhilsitaram/claude-caliper/releases) for changelogs.
 
 ---
 
