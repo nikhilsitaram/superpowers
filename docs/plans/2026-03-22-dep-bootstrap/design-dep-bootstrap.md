@@ -35,7 +35,7 @@ skills/orchestrate/SKILL.md step 3     ← replaces inline table + symlink prose
 
 **What changes in each SKILL.md:**
 
-- **design/SKILL.md step 6** currently reads: "Set up worktree — `git worktree add ...`; run tests to establish a clean baseline." It becomes two sub-steps: (a) create worktree, (b) bootstrap dependencies per `**See:** ./dependency-bootstrap.md`, (c) run tests. No new top-level step is added.
+- **design/SKILL.md step 6** currently reads: "Set up worktree — `git worktree add ...`; run tests to establish a clean baseline." It becomes three sub-steps: (a) create worktree, (b) bootstrap dependencies per `**See:** ./dependency-bootstrap.md`, (c) run tests. No new top-level step is added.
 - **orchestrate/SKILL.md step 3** currently has the full install table (lines 72-86, ~180 words) and symlink fallback prose. These are replaced by a one-line summary ("Bootstrap dependencies in the phase worktree") with `**See:** skills/design/dependency-bootstrap.md` for the full procedure. This frees ~150 words of token budget.
 
 ### Detection Order
