@@ -168,6 +168,20 @@ jq '. + {"workflow": "auto"} | .phases[0] += {"depends_on": []} | .phases[1] += 
 assert_fail "invalid workflow auto fails" "invalid_workflow" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
 
+echo "Test 18b: Old workflow value 'ship' is rejected"
+rm -rf "${TMPDIR:?}/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '. + {"workflow": "ship"}' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "old workflow ship is rejected" "invalid_workflow" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 18c: Old workflow value 'review-only' is rejected"
+rm -rf "${TMPDIR:?}/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '. + {"workflow": "review-only"}' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "old workflow review-only is rejected" "invalid_workflow" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
 echo "Test 19: Missing workflow field fails"
 rm -rf "${TMPDIR:?}/"*
 cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
