@@ -69,21 +69,7 @@ For each phase being dispatched:
    git worktree add .claude/worktrees/<feature>-phase-{letter} -b phase-{letter} integrate/<feature>
    ```
 2. `PHASE_BASE_SHA=$(git rev-parse HEAD)` in the phase worktree
-3. **Bootstrap dependencies** in the phase worktree — detect lockfiles/manifests and run the matching install command. Common patterns:
-   | Detected file | Install command |
-   |---------------|-----------------|
-   | `pyproject.toml` with `[project]` | `uv venv && uv pip install -e '.[dev]'` (or `python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'`) |
-   | `requirements.txt` | `uv venv && uv pip install -r requirements.txt` |
-   | `package-lock.json` | `npm ci` |
-   | `yarn.lock` | `yarn install --frozen-lockfile` |
-   | `pnpm-lock.yaml` | `pnpm install --frozen-lockfile` |
-   | `Cargo.toml` | `cargo fetch` |
-   | `go.mod` | `go mod download` |
-   | None of the above | Symlink fallback (see below) |
-
-   **Symlink fallback:** If no manifest is detected, check the main repo root for existing environment directories (`.venv`, `node_modules`). If found, symlink them into the worktree (`ln -s /abs/path/to/main-repo/.venv .venv`). This handles repos with manually-configured environments. Symlinking works because binaries resolve their runtime via `pyvenv.cfg` / `node_modules` resolution, not the venv's absolute path. If neither manifest nor existing environment is found, log a warning and continue — bare commands may fail on missing deps.
-
-   Only runs once per phase — tasks inherit the environment.
+3. **Bootstrap dependencies** in the phase worktree. **See:** skills/design/dependency-bootstrap.md
 4. Extract context from plan.json:
    - `PHASE_TASKS_JSON=$(jq '.phases[N].tasks' plan.json)`
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
