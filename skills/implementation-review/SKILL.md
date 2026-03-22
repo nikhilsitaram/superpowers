@@ -76,4 +76,4 @@ Under 5 issues, the orchestrator verifies fixes and proceeds without re-review.
 
 **Auto-dispatched by:** orchestrate (after all tasks complete)
 
-**Leads to:** ship (once review passes)
+**Leads to:** create-pr (once review passes)

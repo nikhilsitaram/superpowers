@@ -6,12 +6,12 @@
 
 **Measure twice, cut once.**
 
-A Claude Code plugin that turns your goal into a PR with as little friction as possible. Every step is reviewed with a fresh context subagent. You get a design-reviewed, plan-validated, test-driven PR — with two human decisions.
+A Claude Code plugin that turns your goal into a PR with as little friction as possible. Every step is reviewed with a fresh context subagent. You get a design-reviewed, plan-validated, test-driven PR — with three human decisions.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.9.1-blue)](https://github.com/nikhilsitaram/claude-caliper/releases)
+[![Version](https://img.shields.io/badge/version-1.10.0-blue)](https://github.com/nikhilsitaram/claude-caliper/releases)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-6E40C9?logo=anthropic&logoColor=white)](https://claude.ai/code)
-[![Skills](https://img.shields.io/badge/10%20skills-included-2ea44f)](skills/)
+[![Skills](https://img.shields.io/badge/11%20skills-included-2ea44f)](skills/)
 
 </div>
 
@@ -25,7 +25,7 @@ Many claude workflows are either improperly context engineered, overly complicat
 
 Install claude-caliper. Describe what you want to build. Walk away.
 
-The plugin installs 10 skills that fire automatically at the right moment, enforcing a full development workflow: **design before plan, plan before code, test before merge.** You make two decisions — approve the design, review the PR — and everything between runs as a chain of fresh subagents with zero manual handoffs.
+The plugin installs 11 skills that fire automatically at the right moment, enforcing a full development workflow: **design before plan, plan before code, test before merge.** You make three decisions — approve the design, review the PR, and confirm the merge — and everything between runs as a chain of fresh subagents with zero manual handoffs.
 
 ---
 
@@ -47,10 +47,11 @@ Then the pipeline runs:
 | 6 | Orchestrator dispatches one fresh subagent per task, each running RED-GREEN-REFACTOR | Fresh subagents |
 | 7 | Per-task reviewer checks each task (never the implementer) | Fresh subagents |
 | 8 | Implementation review does a cross-task holistic pass | Fresh subagent |
-| 9 | Ship creates a PR | Automated |
-| 10 | You review the PR and run `/merge-pr` | **You** |
+| 9 | Create PR opens a PR | Automated |
+| 10 | You review the PR and run `/review-pr` | **You** |
 | 11 | Fresh-eyes review reads the diff cold before any external feedback | Fresh subagent |
-| 12 | Fixes applied, PR merged, branch cleaned up | Automated |
+| 12 | Fixes applied, feedback addressed | Automated |
+| 13 | You run `/merge-pr` — squash merge, branch cleaned up | **You** |
 
 Steps 3-9 run without any input from you.
 
@@ -76,10 +77,11 @@ flowchart TD
     TN --> RN[Review]
 
     R1 & R2 & RN --> IR[implementation-review]
-    IR --> S[ship PR]
-    S --> M([You: review & merge])
-    M --> MR[Fresh-eyes review]
-    MR --> MP[merge-pr]
+    IR --> S[create-pr]
+    S --> M([You: review PR])
+    M --> MR[review-pr]
+    MR --> MP([You: merge])
+    MP --> MG[merge-pr]
 
     style A    fill:#3b82f6,stroke:#2563eb,color:#fff
     style B    fill:#8b5cf6,stroke:#7c3aed,color:#fff
@@ -97,10 +99,11 @@ flowchart TD
     style S    fill:#22c55e,stroke:#16a34a,color:#fff
     style M    fill:#3b82f6,stroke:#2563eb,color:#fff
     style MR   fill:#eab308,stroke:#ca8a04,color:#000
-    style MP   fill:#22c55e,stroke:#16a34a,color:#fff
+    style MP   fill:#3b82f6,stroke:#2563eb,color:#fff
+    style MG   fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
-<sup>Blue = human decisions (2 total) · Purple = creative work · Orange = TDD implementation · Yellow = review gates · Green = shipping</sup>
+<sup>Blue = human decisions (3 total) · Purple = creative work · Orange = TDD implementation · Yellow = review gates · Green = shipping</sup>
 
 ---
 
@@ -129,8 +132,8 @@ Install only what you need:
 
 | Package | What you get | Install command |
 |---------|-------------|-----------------|
-| **claude-caliper** | All 10 skills | `/plugin install claude-caliper@claude-caliper` |
-| **claude-caliper-workflow** | Design-to-merge pipeline (8 skills) | `/plugin install claude-caliper-workflow@claude-caliper` |
+| **claude-caliper** | All 11 skills | `/plugin install claude-caliper@claude-caliper` |
+| **claude-caliper-workflow** | Design-to-merge pipeline (9 skills) | `/plugin install claude-caliper-workflow@claude-caliper` |
 | **claude-caliper-tooling** | Codebase review + skill eval (2 skills) | `/plugin install claude-caliper-tooling@claude-caliper` |
 
 ### Updating
@@ -153,8 +156,9 @@ These skills chain automatically. You trigger the first one by describing what t
 | **Plan Gate** | [plan-review](skills/plan-review/) | Catches vague steps, missing file paths, design-plan drift, the "Different Claude Test" |
 | **Execution** | [orchestrate](skills/orchestrate/) | Dispatches fresh subagent per task running RED-GREEN-REFACTOR TDD; parallel phases via git worktrees |
 | **Review Gate** | [implementation-review](skills/implementation-review/) | Cross-task holistic review — catches inconsistencies invisible to per-task reviewers |
-| **Create PR** | [ship](skills/ship/) | Commits, rebases, tests, pushes, opens PR with structured summary |
-| **Merge** | [merge-pr](skills/merge-pr/) | Fresh-eyes review before reading external feedback, addresses comments, squash merges, cleans up |
+| **Create PR** | [create-pr](skills/create-pr/) | Commits, rebases, tests, pushes, opens PR with structured summary |
+| **Review PR** | [review-pr](skills/review-pr/) | Fresh-eyes review before reading external feedback, addresses comments, posts assessment |
+| **Merge** | [merge-pr](skills/merge-pr/) | Confirms merge, squash merges, cleans up branches and worktrees |
 
 ### Standalone Tools
 
@@ -176,7 +180,7 @@ claude-caliper spawns a **fresh subagent for every review**:
 
 - The **task reviewer** never wrote the code it's reviewing
 - The **implementation reviewer** never built any of the tasks it's checking
-- The **merge-pr reviewer** forms its own opinion before seeing external feedback
+- The **review-pr reviewer** forms its own opinion before seeing external feedback
 - The **design reviewer** and **plan reviewer** are always fresh agents with zero prior context
 
 No agent ever reviews its own work.
@@ -409,7 +413,7 @@ Skills degrade silently. A prompt tweak that looks better might fail on edge cas
 
 **Quality gates, not suggestions.** The workflow stops at design review, plan review, and implementation review. These aren't optional checkpoints — they're where the most expensive rework gets prevented.
 
-**Two human decisions.** You confirm the design direction and review the final PR. Everything between is automated. This isn't about removing humans — it's about putting them at the two highest-leverage decision points.
+**Three human decisions.** You confirm the design direction, review the PR after feedback is addressed, and confirm the merge. Everything between is automated. This isn't about removing humans — it's about putting them at the highest-leverage decision points.
 
 ---
 
@@ -419,7 +423,7 @@ Skills degrade silently. A prompt tweak that looks better might fail on edge cas
 Yes. Skills are language-agnostic. They auto-detect test runners, respect project conventions, and work with any git repository.
 
 **Can I stop after the plan?**
-Yes. After approving the design, you choose: **Create PR** (execute and open PR for human review), **Merge PR** (execute, open PR, and auto-merge), or **Plan only** (stop after planning).
+Yes. After approving the design, you choose: **Create PR** (execute and open PR for human review), **Merge PR** (execute, open PR, review, and merge), or **Plan only** (stop after planning).
 
 **What if the design is wrong?**
 The design skill waits for explicit approval. Say "needs changes" and iterate. Nothing proceeds until you approve.

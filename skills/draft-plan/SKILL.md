@@ -76,7 +76,7 @@ docs/plans/YYYY-MM-DD-topic/
 }
 ```
 
-Optional: `success_criteria` array at plan, phase, and task levels for automated verification. `workflow` field controls post-plan behavior: `create-pr` (orchestrate + ship, default), `merge-pr` (orchestrate + ship + merge), `plan-only` (stop after planning). Set by the design skill based on user choice.
+Optional: `success_criteria` array at plan, phase, and task levels for automated verification. `workflow` field controls post-plan behavior: `create-pr` (orchestrate + create-pr, default), `merge-pr` (orchestrate + create-pr + review-pr + merge-pr), `plan-only` (stop after planning). Set by the design skill based on user choice.
 
 **See:** `docs/plans/2026-03-19-structured-plans/design-structured-plans.md` for full schema reference.
 
@@ -162,4 +162,4 @@ Skipping validation or review risks plans with missing paths, ordering bugs, or 
 
 ## After Review Passes
 
-Report the plan file path to the user. Run orchestrate in the main context where it can interact with the user for Rule 4 escalations and ship decisions.
+Report the plan file path to the user. Run orchestrate in the main context where it can interact with the user for Rule 4 escalations and PR decisions.

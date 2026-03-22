@@ -8,7 +8,7 @@
     {
       "name": "claude-caliper",
       "description": "claude-caliper bundle",
-      "version": "1.9.7",
+      "version": "1.10.0",
       "source": "./",
       "author": {
         "name": "Nikhil Sitaram",
@@ -23,15 +23,16 @@
         "./skills/plan-review",
         "./skills/implementation-review",
         "./skills/codebase-review",
-        "./skills/ship",
+        "./skills/create-pr",
+        "./skills/review-pr",
         "./skills/merge-pr",
         "./skills/skill-eval"
       ]
     },
     {
       "name": "claude-caliper-workflow",
-      "description": "End-to-end development workflow: design → draft-plan → orchestrate → review → ship → merge",
-      "version": "1.9.7",
+      "description": "End-to-end development workflow: design → draft-plan → orchestrate → review → create-pr → review-pr → merge-pr",
+      "version": "1.10.0",
       "source": "./",
       "author": {
         "name": "Nikhil Sitaram",
@@ -45,14 +46,15 @@
         "./skills/plan-review",
         "./skills/orchestrate",
         "./skills/implementation-review",
-        "./skills/ship",
+        "./skills/create-pr",
+        "./skills/review-pr",
         "./skills/merge-pr"
       ]
     },
     {
       "name": "claude-caliper-tooling",
       "description": "Standalone tools: codebase audit and skill evaluation",
-      "version": "1.9.7",
+      "version": "1.10.0",
       "source": "./",
       "author": {
         "name": "Nikhil Sitaram",

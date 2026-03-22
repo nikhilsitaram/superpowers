@@ -31,8 +31,8 @@ Complete in order:
 7. **Choose workflow extent** — if not already chosen, ask the user:
 
     AskUserQuestion (header: "Workflow"):
-    - **Create PR** (default) — Orchestrate → ship (PR created, stops for human review)
-    - **Merge PR** — Orchestrate → ship → merge-pr (PR created, reviewed, and merged)
+    - **Create PR** (default) — Orchestrate → create-pr (PR created, stops for human review)
+    - **Merge PR** — Orchestrate → create-pr → review-pr → merge-pr (PR created, reviewed, and merged)
     - **Plan only** — Stop after the plan is written and reviewed (orchestrate will not run)
 
     Store the choice for step 12.

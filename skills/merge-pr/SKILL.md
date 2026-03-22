@@ -1,133 +1,81 @@
 ---
 name: merge-pr
-description: Use when a PR is ready to merge or needs review before merging, or when triggered by "/merge-pr", "merge the PR", "address review feedback", "review feedback ready".
+description: Use when a reviewed PR is ready to merge, or when triggered by "/merge-pr", "merge the PR", "merge it".
 ---
 
 # Merge PR
 
-Address review feedback, comment on the PR, merge with squash, and clean up.
+Confirm, squash merge, and clean up branches and worktrees.
 
-**Prerequisite:** A PR created by `/ship`.
-
-**Review principle:** Verify each suggestion against the codebase before implementing. Push back on incorrect ones with technical reasoning — no performative agreement.
+**Prerequisite:** A PR that has been reviewed (via `/review-pr` or manually). Run this from the main repo, not from inside a worktree.
 
 ## Workflow
 
 ### Step 1: Setup
 
-Identify the PR from argument, current branch (`gh pr view`), or `gh pr list --author @me --state open`. If the list returns multiple candidates and you're not on a branch with an associated PR, ask the user to pick. Store PR number, branch name, and URL.
+**Worktree guard:** Check if the session started inside a worktree:
+
+```bash
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+  MAIN_REPO=$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')
+  echo "STOP: You are inside a worktree. Run: cd $MAIN_REPO && /merge-pr"
+fi
+```
+
+If inside a worktree, tell the user to `cd` to the main repo and re-run `/merge-pr` from there. Merging from inside a worktree bricks the shell when the remote branch is deleted. Do not proceed.
+
+Identify the PR from argument, current branch (`gh pr view`), or `gh pr list --author @me --state open`. If multiple candidates and you're not on a branch with an associated PR, ask the user to pick. Store PR number, branch name, and URL.
 
 Detect environment:
 - `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master)
-- `MAIN_REPO` from `git rev-parse --path-format=absolute --git-common-dir` (strip `/.git`)
-- `IS_WORKTREE` — true when `--git-dir` differs from `--git-common-dir`
-- `WORKTREE_PATH` — look up from `git worktree list` by matching `$BRANCH_NAME` (works regardless of CWD)
 - `IS_INTEGRATION` — true when `$BRANCH_NAME` matches `integrate/*`; extract `FEATURE=${BRANCH_NAME#integrate/}`
 
-If not on the PR branch: look up `WORKTREE_PATH` first — if the branch is in a worktree, `cd` into it (`gh pr checkout` fails when a worktree holds the branch). Otherwise `gh pr checkout $PR_NUMBER`.
+### Step 2: Confirm Merge
 
-### Step 2: PR Review
+Show: PR URL, title, files changed count, any pending review status.
 
-Skip if `--skip-review` was passed.
-
-Read `reviewer-prompt.md` (same directory as SKILL.md) and dispatch a fresh-eyes reviewer subagent with:
-- `{DIFF_RANGE}` = `$DEFAULT_BRANCH..HEAD`
-- `{REPO_PATH}` = repository root path
-- `{PR_NUMBER}` = PR number from Step 1
-
-The subagent posts its findings as a `gh pr comment` on the PR (visible audit trail), then returns findings for use in Step 3.
-
-### Step 3: Collect & Assess All Feedback
-
-Fetch PR conversation comments, inline review comments, and review status via `gh`.
-
-Merge subagent findings (Step 2) with external comments. If Step 2 was skipped, process external only. Evaluate each on merit.
-
-Categorize each item:
-
-| Category | Action |
-|----------|--------|
-| **Actionable fix** — bug, security, correctness | Fix it |
-| **Suggestion** — style, refactor, nice-to-have | Evaluate: fix if it improves correctness/readability, dismiss with reason if not |
-| **Informational** — explanation, praise | Acknowledge, no change |
-| **False positive** — incorrect analysis | Dismiss with technical reasoning |
-
-### Step 4: Present & Confirm
-
-Show the user a summary table with source, category, planned action, and counts per category.
-
-Use AskUserQuestion with options:
-- **Fix all** — actionable + suggestion items (excludes dismissed/false positives)
-- **Fix critical only** — actionable items (bugs, security, correctness)
-- **Skip fixes, merge as-is** — jump to Step 7
-- **Other** — user provides custom instructions (e.g. "fix items 1, 3, 5")
-
-### Step 5: Fix, Test, Push
-
-If `--skip-fixes` was passed, skip this entire step.
-
-For each actionable item: make the fix. Run project tests — do not merge with failing tests. Commit and push with `git push -u origin HEAD`.
-
-### Step 6: Comment on PR
-
-Post a `gh pr comment` with unified assessment: what was fixed, dismissed (with reasons), and no-action. Omit empty sections.
-
-### Step 7: Confirm Merge
-
-Show: PR URL, number of fixes applied, any dismissed items.
+If branch protection requires human approval and the PR lacks it, tell the user and stop with the PR URL.
 
 Use AskUserQuestion with options:
 - **Merge** — proceed with squash merge
 - **Abort** — stop without merging
 
-### Step 8: Merge
+### Step 3: Merge
 
-If branch protection requires human approval and the PR lacks it, tell the user and stop with the PR URL.
-
-**Pre-merge rebase check:** Before merging, verify the PR branch is up-to-date with the default branch:
+**Pre-merge rebase check:** Verify the PR branch is up-to-date with the base branch:
 
 ```bash
 git fetch origin $DEFAULT_BRANCH
 git merge-base --is-ancestor origin/$DEFAULT_BRANCH HEAD
 ```
 
-If behind (non-zero exit): rebase onto default branch, resolve conflicts, run tests, push with `git push -u origin HEAD --force-with-lease`. Always use `origin HEAD` explicitly — worktrees lose upstream tracking after rebase, so bare `git push` fails. Comment on PR with conflict resolution details. Complex conflicts → stop and ask user.
-
-**CWD safety:** Always `cd "$MAIN_REPO"` before merging — merge triggers remote branch deletion which bricks the shell if CWD is inside the worktree.
+If behind (non-zero exit): rebase onto default branch, resolve conflicts, run tests, push with `git push -u origin HEAD --force-with-lease`. Comment on PR with conflict resolution details. Complex conflicts → stop and ask user.
 
 ```bash
-cd "$MAIN_REPO"
 gh pr merge $PR_NUMBER --squash
 ```
 
-Never use `--delete-branch` — branch cleanup is handled in Step 9.
+Never use `--delete-branch` — branch cleanup is handled in Step 4.
 
-### Step 9: Clean Up
+### Step 4: Clean Up
 
-Run each sub-step as a SEPARATE Bash tool call — CWD changes don't persist across chained `&&`.
-
-Derive `WORKTREE_PATH` if not already captured (exact branch match):
-```bash
-git worktree list --porcelain | awk -v b="refs/heads/$BRANCH_NAME" '$1=="worktree"{wt=$2} $1=="branch" && $2==b{print wt; exit}'
-```
-
-**Integration branch** (`IS_INTEGRATION=true`): run each as separate Bash call:
+**Integration branch** (`IS_INTEGRATION=true`):
 1. For each phase worktree `.claude/worktrees/$FEATURE-phase-*`: `git worktree remove <path>`
 2. `git worktree remove .claude/worktrees/$FEATURE`
 3. Delete phase branches: `git branch -D phase-a phase-b ...` (list from plan.json)
 4. `git branch -D $BRANCH_NAME`
-5. `git worktree prune` → `git pull --rebase` → `git remote prune origin`
+5. `git worktree prune && git pull --rebase && git remote prune origin`
 
-**Standard worktree:**
+**Standard worktree** (branch has a worktree but we're in the main repo):
 1. `git worktree remove "$WORKTREE_PATH"` (retry `--force` if untracked files)
 2. `git branch -D $BRANCH_NAME`
-3. `git worktree prune` → `git pull --rebase` → `git remote prune origin`
+3. `git worktree prune && git pull --rebase && git remote prune origin`
 
-**Not in a worktree:** `git checkout $DEFAULT_BRANCH` → `git branch -D $BRANCH_NAME` → `git pull --rebase` → `git remote prune origin`
+**No worktree:** `git checkout $DEFAULT_BRANCH && git branch -D $BRANCH_NAME && git pull --rebase && git remote prune origin`
 
-### Step 10: Summary
+### Step 5: Summary
 
-Report: PR number/URL, review items (fixed/dismissed/informational), merge status, cleanup status.
+Report: PR number/URL, merge status, cleanup status.
 
 ## Arguments
 
@@ -135,16 +83,17 @@ Report: PR number/URL, review items (fixed/dismissed/informational), merge statu
 |-----|--------|
 | `<PR number>` | Target specific PR (`/merge-pr 42`) |
 | *(none)* | Detect from current branch |
-| `--skip-review` / `-R` | Skip subagent review (Step 2) — external feedback still processed |
-| `--skip-fixes` / `-S` | Skip fixing — just comment, merge, clean up |
 
 ## Pitfalls
 
 | Mistake | Why |
 |---------|-----|
-| Merging while CWD is inside worktree | Remote branch deletion bricks the shell. `cd "$MAIN_REPO"` before merge. |
-| Chaining Step 9 with `&&` | CWD change doesn't persist if later command fails. Use separate Bash calls. |
+| Running from inside a worktree | Remote branch deletion bricks the shell. The worktree guard catches this. |
 | Deleting branch before removing worktree | Git refuses. Remove worktree first. |
 | Using `--delete-branch` on `gh pr merge` | Fails in worktree flows. Delete branch manually after. |
-| Blindly implementing review suggestions | Verify each against the codebase, push back on incorrect ones. |
-| Merging without commenting | Always post what was addressed before merging. |
+
+## Integration
+
+**Preceded by:** review-pr (or manual review)
+
+**Auto-invoked by:** orchestrate — in `merge-pr` workflow mode

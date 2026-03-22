@@ -5,7 +5,7 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Orchestrate
 
-Execute phases via per-phase worktrees on an integration branch. Dispatch phase dispatcher → implementation-review → advance. Workflow from plan.json controls ship behavior.
+Execute phases via per-phase worktrees on an integration branch. Dispatch phase dispatcher → implementation-review → advance. Workflow from plan.json controls create-pr behavior.
 
 **Core principle:** Every level is a dispatcher — only the implementer subagent touches code.
 
@@ -24,19 +24,19 @@ Create task list for progress tracking:
 
 1. **Read plan** — identify phases and task counts
 2. **Build task list** — TaskCreate per step:
-   - Per phase: "Phase {X}: Execute tasks ({N} tasks)", "Phase {X}: Implementation review", "Phase {X}: Ship PR"
+   - Per phase: "Phase {X}: Execute tasks ({N} tasks)", "Phase {X}: Implementation review", "Phase {X}: Create PR"
    - Final: "Mark plan complete"
    Set dependencies with `addBlockedBy` so each phase blocks the next.
 3. **Update as you go** — mark tasks `in_progress` / `completed`. After subagents, output progress note:
    - Dispatcher: `Phase A complete — [what was built]`
    - Review: `Phase A review — N issues, all resolved`
-   - Ship: `Phase A PR — [URL]`
-4. **Ship tasks** apply to both `create-pr` and `merge-pr` workflows — the difference is only whether the final PR is merged
+   - Create PR: `Phase A PR — [URL]`
+4. **Create PR tasks** apply to both `create-pr` and `merge-pr` workflows — the difference is only whether the final PR also gets reviewed and merged
 
 ## Setup
 
 Before first phase:
-- Read workflow: `WORKFLOW=$(jq -r '.workflow' plan.json)` — controls ship behavior (`create-pr`, `merge-pr`)
+- Read workflow: `WORKFLOW=$(jq -r '.workflow' plan.json)` — controls post-implementation behavior (`create-pr`, `merge-pr`)
 - `scripts/validate-plan --update-status plan.json --plan --status "In Development"`
 - `PLAN_BASE_SHA=$(git rev-parse HEAD)` — saved for final cross-phase review
 - Push integration branch: `git push -u origin integrate/<feature>`
@@ -58,7 +58,7 @@ LOOP until all phases complete:
   a. Ready phases: depends_on all in completed set
   b. Reconciliation (non-root phases): run `git diff --name-only` against each completed dep; detect file overlap or semantic impacts vs this phase's tasks; skip declared depends_on; inject `## Reconciliation: Impact from Phase {X}` into affected task .md files; log injections
   c. Dispatch ready phases IN PARALLEL (one Agent per phase)
-  d. Process completions SERIALLY: review → triage → rebase → ship → merge → mark complete
+  d. Process completions SERIALLY: review → triage → rebase → create-pr → merge → mark complete
   e. Repeat
 ```
 
@@ -93,7 +93,7 @@ For each phase being dispatched:
     git -C .claude/worktrees/<feature>-phase-{letter} rebase origin/integrate/<feature>
     ```
     Clean → run tests → continue. Conflicts → `git rebase --abort`, escalate. First to merge: no-op.
-14. Ship phase PR: invoke ship with `--base integrate/<feature>`
+14. Create phase PR: invoke create-pr with `--base integrate/<feature>`
 15. Merge phase PR: `gh pr merge --squash`, then update integration worktree: `git pull` in `.claude/worktrees/<feature>/`
 16. Clean up phase worktree:
     ```bash
@@ -110,10 +110,10 @@ Single-phase plans: one iteration. Skip final cross-phase review.
 3. Triage findings, fix issues
 4. `scripts/validate-plan --update-status plan.json --plan --status Complete`
 5. Route on workflow:
-   - `"merge-pr"`: create final PR (`integrate/<feature>` → main), invoke merge-pr, clean up integration worktree
+   - `"merge-pr"`: `cd "$MAIN_REPO"` first (merge-pr's worktree guard blocks execution from inside worktrees), then create final PR (`integrate/<feature>` → main), invoke review-pr then merge-pr, clean up integration worktree
    - `"create-pr"`: create final PR but stop — user reviews and merges manually
 
-**Continuity:** Execute all phases, reviews, and shipping continuously. Pause only for Rule 4 violations.
+**Continuity:** Execute all phases, reviews, and PR creation continuously. Pause only for Rule 4 violations and the merge confirmation in merge-pr (when using the `merge-pr` workflow).
 
 ## Rule 4 Handling
 
@@ -134,6 +134,6 @@ Subagents run in `auto` mode — Claude evaluates permissions with prompt inject
 
 ## Integration
 
-**Workflow:** design (creates integration branch + worktree) → draft-plan → **this skill** → ship → merge-pr
+**Workflow:** design (creates integration branch + worktree) → draft-plan → **this skill** → create-pr (per-phase + final) → review-pr → merge-pr
 
 **See:** `tdd.md` — TDD reference; content is embedded in implementer prompts
