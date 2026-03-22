@@ -6,7 +6,7 @@
 
 **Measure twice, cut once.**
 
-A Claude Code plugin that turns "build me X" into a design-reviewed, plan-validated, test-driven PR — with two human decisions.
+A Claude Code plugin that turns your goal into a PR with as little friction as possible. Every step is reviewed with a fresh context subagent. You get a design-reviewed, plan-validated, test-driven PR — with two human decisions.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.9.1-blue)](https://github.com/nikhilsitaram/claude-caliper/releases)
@@ -19,7 +19,7 @@ A Claude Code plugin that turns "build me X" into a design-reviewed, plan-valida
 
 ## The Problem
 
-You describe a feature to Claude Code. It starts writing code immediately — no design discussion, no plan, no tests. When you ask it to plan first, the plan is vague: "update the relevant files" with no paths, no test strategy, no verification steps. Three files deep, something goes wrong, and you're back to square one.
+Many claude workflows are either improperly context engineered, overly complicated, or don't understand how to effectively use AI agents. This tool tries to be different. We don't lock Claude in a box, but we have fresh agents check work as it goes to ensure perfection.
 
 ## The Fix
 
