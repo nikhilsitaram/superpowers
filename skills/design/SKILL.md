@@ -24,7 +24,10 @@ Complete in order:
 3. **Ask clarifying questions** — smart batches (see below)
 4. **Propose 2-3 approaches** — trade-offs and your recommendation
 5. **Present design** — sections scaled to complexity, approval after each
-6. **Set up worktree** — `git worktree add -b integrate/<feature> .claude/worktrees/<feature>`; run tests to establish a clean baseline. This is the integration branch — phase worktrees are created by orchestrate as siblings.
+6. **Set up worktree** — This is the integration branch — phase worktrees are created by orchestrate as siblings.
+   1. Create worktree: `git worktree add -b integrate/<feature> .claude/worktrees/<feature>`
+   2. Bootstrap dependencies per **See:** ./dependency-bootstrap.md
+   3. Run tests to establish a clean baseline
 7. **Choose workflow extent** — if not already chosen, ask the user:
 
     AskUserQuestion (header: "Workflow"):
