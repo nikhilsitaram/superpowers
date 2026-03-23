@@ -77,8 +77,8 @@ for each wave:
 
   SUPERVISION LOOP (every 60s):
     for each active phase:
-      read plan.json from phase worktree → task completion counts
-      check escalation.json → surface to user if present
+      read plan.json from PLAN_DIR → task completion counts
+      check escalation-*.json in phase worktree → surface to user if present
       TaskOutput(phase_agent_id) → health signals
       git log in phase worktree → commit recency
 
@@ -129,14 +129,14 @@ Each poll cycle checks (cheapest first):
 
 | Signal | How to check | Indicates |
 |--------|-------------|-----------|
-| Escalation file | `cat escalation.json` | L2 escalated to L1 |
+| Escalation file | `ls escalation-*.json` in phase worktree | L2 escalated to L1 |
 | Commit recency | `git log --oneline -1 --format=%ct` | Forward progress |
 | TaskOutput patterns | `TaskOutput(task_id, block: false)` — parse last 50 lines of output text | Error loops, permission blocks |
-| Task status | `jq` on plan.json in worktree | Completion count |
+| Task status | `jq` on plan.json in PLAN_DIR | Completion count |
 
 **Stuck indicators** (any one triggers intervention):
 - TaskOutput shows the same error repeated 3+ times
-- TaskOutput shows "permission" / "denied" / "blocked" language
+- TaskOutput shows Claude Code permission prompt pattern (see Detection Logic)
 - No new commits AND no new tool output for 2 consecutive poll cycles
 - Implementer has returned with an error exit
 
@@ -157,6 +157,8 @@ TaskOutput returns cumulative text. The supervisor stores the previous output le
 **Worst-case detection timing:** At L2 (30s polls): up to 29s before first observation + 2 × 30s for two consecutive no-progress cycles = ~89s. At L1 (60s polls): up to 59s before first observation + 2 × 60s = ~179s. Both within the 3-minute (L2) and 4-minute (L1) success criteria bounds.
 
 **Permission detection fragility:** The interactive prompt pattern depends on the current Claude Code permission prompt format. If the format changes, detection silently degrades to relying on the no-progress signal (2 consecutive polls with no commits and no output change), which catches the same stuck state with ~60s additional delay. This fallback is format-independent and sufficient — no additional hardening is warranted.
+
+**TaskOutput truncation assumption:** TaskOutput returns the full cumulative text output from the background agent. If this assumption is incorrect (output truncated after N characters), the offset-based approach degrades gracefully — the supervisor sees only recent output, which is sufficient for stuck detection since all indicators are based on recent patterns, not historical ones.
 
 **Completion:** `TaskOutput(task_id, block: false)` returns an object with `status` (e.g., `running`, `completed`) and `output` (cumulative text). Completion is detected by `status === 'completed'`. The supervisor then reads the final output for any error signals before proceeding to post-phase processing.
 
@@ -225,7 +227,7 @@ New optional fields in plan.json:
 }
 ```
 
-All fields optional with defaults shown.
+All fields optional with defaults shown. Default intervals balance detection speed against supervision overhead: 30s at L2 gives ~89s worst-case detection (well within the 3-minute bound) with ~500-1500 tokens per cycle. 60s at L1 keeps orchestrator overhead modest for long-running multi-phase plans while staying within the 4-minute bound.
 
 ## Key Decisions
 
@@ -243,8 +245,6 @@ All fields optional with defaults shown.
 - **Parallel task execution within a phase:** Git conflicts make this impractical. Sequential dispatch is intentional.
 - **Token optimization of the polling loop:** Per-cycle cost estimate: ~500-1500 tokens (sleep command ~10, TaskOutput read ~500-1000, git log ~50, jq ~50, progress output ~30, reasoning ~200). For a 60-minute orchestration with 60s polls, that's ~60 cycles × ~1000 tokens = ~60K tokens of supervision overhead. Claude Code's context window (200K) and automatic compression mean this is manageable — older poll cycles get compressed as the context fills. If context pressure becomes an issue, the per-cycle monitor subagent fallback (Key Decision 1) naturally isolates each cycle's tokens.
 
-## Implementation Approach
-
 ## Files Changed
 
 | File | Change | Summary |
@@ -261,4 +261,5 @@ Single phase — this is a fundamental control flow rewrite of both the orchestr
 1. **Update `phase-dispatcher-prompt.md`** — Replace the existing synchronous "For each task" loop in `## Your Process` with a background-dispatch + polling pattern. Add sections: supervision loop (sleep 30s, check signals, evaluate health), intervention protocol (TaskStop + re-dispatch → escalation.json), and escalation file writing. The sequential task constraint remains — background dispatch is for supervision visibility, not parallelism.
 2. **Update `SKILL.md`** — Replace the "Per-Phase Execution (Wave Loop)" pseudocode (current steps a-e) with async dispatch + L1 supervision loop. Steps a-c become: build DAG, dispatch all ready phases with `run_in_background: true`, capture task IDs. Steps d-e become the supervision loop: sleep, poll each active phase (TaskOutput + git log + plan.json + escalation files), evaluate health, output progress, intervene if needed. Existing per-phase post-processing (current steps 6-18: review loop, rebase, create-pr, poll, review-pr, merge, cleanup) remains unchanged but moves inside the supervision loop's completion handler — it runs inline when a phase is detected as complete via TaskOutput status.
 3. **Update `scripts/validate-plan`** — Add schema validation for the optional `supervision` object at plan.json root level (fields: `orchestrator_poll_seconds`, `dispatcher_poll_seconds`, `max_intervention_attempts`, all optional integers with defaults).
-4. **Update SKILL.md phase cleanup** — Add `escalation-*.json` removal to the Per-Phase Execution step 18 (worktree removal) so escalation files don't persist after merge.
+
+Note: escalation files (`escalation-*.json`) are written to the phase worktree root and are automatically cleaned up when step 18 removes the worktree (`git worktree remove`). No explicit cleanup step is needed.
