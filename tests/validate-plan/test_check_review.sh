@@ -65,13 +65,13 @@ assert_fail "missing reviews.json exits 1 with error" "reviews.json not found" \
 echo "Test 2: Empty reviews.json array"
 setup_plan_dir
 echo '[]' > "$TMPDIR/reviews.json"
-assert_fail "empty reviews.json exits 1 with no record error" "no review record found" \
+assert_fail "empty reviews.json exits 1 with no record error" "no review record for" \
   "$VALIDATE" --check-review "$TMPDIR/plan.json" --type impl-review --scope phase-A
 
 echo "Test 3: No matching type+scope"
 setup_plan_dir
 printf '[{"type":"design-review","scope":"design","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
-assert_fail "no matching type+scope exits 1" "no review record found" \
+assert_fail "no matching type+scope exits 1" "no review record for" \
   "$VALIDATE" --check-review "$TMPDIR/plan.json" --type impl-review --scope phase-A
 
 echo "Test 4: Matching record with verdict:fail"

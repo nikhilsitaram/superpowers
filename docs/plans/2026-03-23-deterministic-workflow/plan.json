@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "status": "In Development",
   "workflow": "create-pr",
   "goal": "Enforce workflow gates via scripts so reviews cannot be skipped, findings are tracked, and pipelines reach their endpoint",
   "architecture": "Add --check-review, --check-workflow flags and --update-status review gates to scripts/validate-plan. Standardize all 4 reviewer prompts to output a json review-summary fenced block. Add review loop protocol to orchestrate and phase-dispatcher. Move plan-review dispatch from draft-plan to design. Remove skip-fixes option from review-pr in automated workflows.",
@@ -16,7 +16,7 @@
         {
           "id": "A1",
           "name": "Add --check-review flag to validate-plan",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [
@@ -35,7 +35,7 @@
         {
           "id": "A2",
           "name": "Gate --update-status on review records",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],

@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: In Development
 ---
 
 # Enforce workflow gates via scripts so reviews cannot be skipped, findings are tracked, and pipelines reach their endpoint Implementation Plan
@@ -15,8 +15,8 @@ status: Not Yet Started
 ## Phase A — Deterministic workflow gates
 **Status:** Not Started | **Rationale:** Single phase per design doc. All 10 files are interconnected: script flags are consumed by skill files, reviewer JSON format is consumed by review loop protocol, and the review loop protocol is consumed by --check-workflow. Changes to one file affect validation of others. 8-task complexity gate noted but the dependency chain is linear, not layered — each task builds on the prior with no natural cut point for independent verification.
 
-- [ ] A1: Add --check-review flag to validate-plan — *--check-review flag reads reviews.json from plan directory, finds latest record matching both --type and --scope, checks verdict == pass and remaining == 0. Exit 0 = passed, exit 1 = failed or missing. Usage line updated. All tests pass.*
-- [ ] A2: Gate --update-status on review records — *Phase completion requires impl-review pass for that phase in reviews.json. Plan completion requires: all phases Complete, passing design-review, plan-review, impl-review for each phase, and impl-review scope:final if multi-phase. Errors describe which specific review is missing. All tests pass.*
+- [x] A1: Add --check-review flag to validate-plan — *--check-review flag reads reviews.json from plan directory, finds latest record matching both --type and --scope, checks verdict == pass and remaining == 0. Exit 0 = passed, exit 1 = failed or missing. Usage line updated. All tests pass.*
+- [x] A2: Gate --update-status on review records — *Phase completion requires impl-review pass for that phase in reviews.json. Plan completion requires: all phases Complete, passing design-review, plan-review, impl-review for each phase, and impl-review scope:final if multi-phase. Errors describe which specific review is missing. All tests pass.*
 - [ ] A3: Add --check-workflow flag to validate-plan — *--check-workflow checks based on workflow field: plan-only (design-review + plan-review passed), create-pr (plan Complete + all reviews + PRs exist via gh pr list), merge-pr (everything above + final PR merged). Exit 0 = all gates satisfied, exit 1 = specific missing gates to stderr. Usage line updated. All tests pass.*
 - [ ] A4: Add review-summary JSON output to all 4 reviewer prompts — *All 4 reviewer prompts include instructions to output a json review-summary fenced code block at the end of their response. Block contains: issues_found, severity object (critical/high/medium/low counts), verdict (pass/fail), and issues array (each with id, severity, category, file, problem, fix). The block uses the info string 'json review-summary' so the controller can find it by marker.*
 - [ ] A5: Add review loop protocol to orchestrate SKILL.md — *Orchestrate SKILL.md includes: (1) review loop protocol for implementation-review — extract review-summary JSON, triage issues as fix/dismiss with reasoning, apply >5 re-review gate with MAX_ITERATIONS=3 then escalate, write reviews.json record. (2) --check-review calls before advancing phase status. (3) --check-workflow as final action. (4) reviews.json writing after each review cycle. Word count stays at or under 1000.*
