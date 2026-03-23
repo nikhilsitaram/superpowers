@@ -56,7 +56,7 @@
         {
           "id": "A3",
           "name": "Add --check-workflow flag to validate-plan",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1",
             "A2"
@@ -78,7 +78,7 @@
         {
           "id": "A4",
           "name": "Add review-summary JSON output to all 4 reviewer prompts",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -96,7 +96,7 @@
         {
           "id": "A5",
           "name": "Add review loop protocol to orchestrate SKILL.md",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A4"
           ],
@@ -113,7 +113,7 @@
         {
           "id": "A6",
           "name": "Add review loop protocol to phase-dispatcher-prompt",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A4"
           ],
@@ -130,7 +130,7 @@
         {
           "id": "A7",
           "name": "Move plan-review dispatch from draft-plan to design, add --check-workflow for plan-only",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A3",
             "A4"
@@ -149,7 +149,7 @@
         {
           "id": "A8",
           "name": "Remove skip-fixes option from review-pr in automated workflows",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -164,7 +164,7 @@
         {
           "id": "A9",
           "name": "Bump version in marketplace.json",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1",
             "A2",
@@ -188,7 +188,7 @@
         {
           "id": "A10",
           "name": "Run skill-eval for modified skills",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A5",
             "A6",
