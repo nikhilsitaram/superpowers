@@ -7,7 +7,7 @@ description: Use when executing implementation plans with independent tasks in t
 
 Execute phases via per-phase worktrees on an integration branch. Dispatch phase dispatcher → implementation-review → advance. Workflow from plan.json controls create-pr behavior.
 
-**Core principle:** Every level is a dispatcher — only the implementer subagent touches code.
+**Core principle:** Every level is a dispatcher — only implementer subagents touch code.
 
 ## Prompt Templates
 
@@ -31,7 +31,7 @@ Create task list for progress tracking:
    - Dispatcher: `Phase A complete — [what was built]`
    - Review: `Phase A review — N issues, all resolved`
    - Create PR: `Phase A PR — [URL]`
-4. **Create PR tasks** apply to both `create-pr` and `merge-pr` workflows — the difference is only whether the final PR also gets reviewed and merged
+4. **Create PR tasks** apply to both workflows — difference is whether the final PR also gets reviewed and merged
 
 ## Setup
 
@@ -43,22 +43,22 @@ Before first phase:
 
 ## Phase DAG Construction
 
-Build dependency graph from plan.json before dispatching:
+Build dependency graph from plan.json:
 
 ```bash
 jq -r '.phases[] | "\(.letter):\(.depends_on | join(","))"' plan.json
 ```
 
-Initial wave: phases with empty `depends_on`. Sequential plans produce waves of size 1.
+Initial wave: phases with empty `depends_on`. Sequential plans: waves of size 1.
 
 ## Per-Phase Execution (Wave Loop)
 
 ```text
 LOOP until all phases complete:
   a. Ready phases: depends_on all in completed set
-  b. Reconciliation (non-root phases): run `git diff --name-only` against each completed dep; detect file overlap or semantic impacts vs this phase's tasks; skip declared depends_on; inject `## Reconciliation: Impact from Phase {X}` into affected task .md files; log injections
+  b. Reconciliation (non-root phases): `git diff --name-only` vs each completed dep; detect undeclared file overlap or semantic impacts; inject `## Reconciliation: Impact from Phase {X}` into affected task .md files; log injections
   c. Dispatch ready phases IN PARALLEL (one Agent per phase)
-  d. Process completions SERIALLY: review → triage → rebase → create-pr → merge → mark complete
+  d. Process completions SERIALLY: review → triage → rebase → create-pr → poll checks → review-pr → merge → mark complete
   e. Repeat
 ```
 
@@ -74,8 +74,8 @@ For each phase being dispatched:
    - `PHASE_TASKS_JSON=$(jq '.phases[N].tasks' plan.json)`
    - `PLAN_DIR=$(dirname "$(realpath plan.json)")`
    - `PHASE_DIR=${PLAN_DIR}/phase-{letter_lower}`
-   - `PRIOR_COMPLETIONS` — concatenate `completion.md` from transitive `depends_on` closure. Phase D (deps: B, C) receives A+B+C. Empty if no dependencies.
-   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target paths. Scan phases transitively depending on current phase (not positional — later-indexed phases may be siblings in DAG).
+   - `PRIOR_COMPLETIONS` — concatenate `completion.md` from transitive `depends_on` closure (Phase D with deps B,C receives A+B+C). Empty if none.
+   - `CROSS_PHASE_HANDOFF_TARGETS` — JSON mapping source task to target paths (scan transitive dependents — later-indexed phases may be DAG siblings).
 5. Dispatch phase dispatcher (`./phase-dispatcher-prompt.md`) with: `PHASE_LETTER`, `PHASE_NAME`, `PHASE_TASKS_JSON`, `PLAN_DIR`, `PHASE_DIR`, `PRIOR_COMPLETIONS`, `CROSS_PHASE_HANDOFF_TARGETS`, `REPO_PATH` (phase worktree path)
 6. After dispatcher returns:
    - Rule 4 violation → ask user, pause (see Rule 4 Handling)
@@ -94,14 +94,16 @@ For each phase being dispatched:
     ```
     Clean → run tests → continue. Conflicts → `git rebase --abort`, escalate. First to merge: no-op.
 14. Create phase PR: invoke create-pr with `--base integrate/<feature>`
-15. Merge phase PR: `gh pr merge --squash`, then update integration worktree: `git pull` in `.claude/worktrees/<feature>/`
-16. Clean up phase worktree:
+15. Poll checks: `gh pr checks <NUMBER> --json bucket --jq '[.[] | select(.bucket == "pending")] | length'` every 60s. Max wait: `jq -r '.review_wait_minutes // 10' plan.json` minutes. Timeout → warn and proceed.
+16. Review feedback: invoke review-pr with the phase PR number to read and address all reviewer comments
+17. Merge phase PR: `gh pr merge --squash`, then update integration worktree: `git pull` in `.claude/worktrees/<feature>/`
+18. Clean up phase worktree:
     ```bash
     git worktree remove .claude/worktrees/<feature>-phase-{letter}
     git branch -D phase-{letter}
     ```
 
-Single-phase plans: one iteration. Skip final cross-phase review.
+Single-phase plans: one iteration; skip final cross-phase review.
 
 ## After All Phases
 
@@ -110,10 +112,10 @@ Single-phase plans: one iteration. Skip final cross-phase review.
 3. Triage findings, fix issues
 4. `scripts/validate-plan --update-status plan.json --plan --status Complete`
 5. Route on workflow:
-   - `"merge-pr"`: `cd "$MAIN_REPO"` first (merge-pr's worktree guard blocks execution from inside worktrees), then create final PR (`integrate/<feature>` → main), invoke review-pr then merge-pr, clean up integration worktree
+   - `"merge-pr"`: `cd "$MAIN_REPO"` first, then create final PR (`integrate/<feature>` → main), poll checks (same mechanism as phase PRs), invoke review-pr, then merge-pr (pass `--rebase` for multi-phase plans), clean up integration worktree
    - `"create-pr"`: create final PR but stop — user reviews and merges manually
 
-**Continuity:** Execute all phases, reviews, and PR creation continuously. Pause only for Rule 4 violations and the merge confirmation in merge-pr (when using the `merge-pr` workflow).
+**Continuity:** Run continuously. Pause only for Rule 4 violations and merge confirmation in merge-pr.
 
 ## Rule 4 Handling
 
@@ -121,7 +123,7 @@ When dispatcher reports Rule 4 violation, ask user. Present: what change, which 
 
 ## Permission Model
 
-Subagents run in `auto` mode — Claude evaluates permissions with prompt injection safeguards. PreToolUse hook (`hooks/pretooluse-safe-commands.sh`) intercepts Bash commands and auto-approves those matching safe list prefixes, avoiding per-command AI evaluation. Hook uses `~/.claude/safe-commands.txt` if present (user override), else bundled `hooks/safe-commands.txt`. Non-safe commands fall through to auto mode. Phase dispatcher surfaces non-safe commands after each task for user to grow safe list.
+Subagents run in `auto` mode. PreToolUse hook (`hooks/pretooluse-safe-commands.sh`) auto-approves Bash commands matching safe list prefixes (`~/.claude/safe-commands.txt` if present, else `hooks/safe-commands.txt`). Non-safe commands fall through to auto mode. Phase dispatcher surfaces non-safe commands after each task for user to grow safe list.
 
 ## Key Constraints
 
