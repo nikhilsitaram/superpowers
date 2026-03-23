@@ -12,6 +12,10 @@ Usage:
   validate-plan --criteria <plan.json> --task <ID>
   validate-plan --criteria <plan.json> --phase <LETTER>
   validate-plan --criteria <plan.json> --plan
+  validate-plan --check-review <plan.json> --type <TYPE> --scope <SCOPE>
+
+  Valid types:  design-review, plan-review, task-review, impl-review
+  Valid scopes: design, plan, task-{ID}, phase-{LETTER}, final
 USAGE
   exit 1
 }
@@ -580,11 +584,45 @@ do_criteria() {
   exit "$has_blocking_failure"
 }
 
+do_check_review() {
+  local plan_json="$1" review_type="$2" review_scope="$3"
+  local plan_dir
+  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+
+  local reviews_file="$plan_dir/reviews.json"
+  if [[ ! -f "$reviews_file" ]]; then
+    echo "ERROR: reviews.json not found in $plan_dir" >&2
+    exit 1
+  fi
+
+  local record
+  record=$(jq --arg t "$review_type" --arg s "$review_scope" \
+    '[.[] | select(.type == $t and .scope == $s)] | last' "$reviews_file")
+
+  if [[ "$record" == "null" || -z "$record" ]]; then
+    echo "ERROR: no review record found for type=$review_type scope=$review_scope" >&2
+    exit 1
+  fi
+
+  local verdict remaining
+  verdict=$(echo "$record" | jq -r '.verdict // "missing"')
+  remaining=$(echo "$record" | jq -r '.remaining // 0')
+
+  if [[ "$verdict" == "pass" && "$remaining" -eq 0 ]]; then
+    exit 0
+  fi
+
+  echo "ERROR: review gate failed — type=$review_type scope=$review_scope verdict=$verdict remaining=$remaining" >&2
+  exit 1
+}
+
 MODE=""
 PLAN_JSON=""
 UPDATE_TARGET=""
 UPDATE_ID=""
 UPDATE_STATUS=""
+CHECK_REVIEW_TYPE=""
+CHECK_REVIEW_SCOPE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -647,6 +685,28 @@ while [[ $# -gt 0 ]]; do
         shift
       fi
       ;;
+    --check-review)
+      MODE="check-review"
+      shift
+      if [[ $# -gt 0 ]]; then
+        PLAN_JSON="$1"
+        shift
+      fi
+      ;;
+    --type)
+      shift
+      if [[ $# -gt 0 ]]; then
+        CHECK_REVIEW_TYPE="$1"
+        shift
+      fi
+      ;;
+    --scope)
+      shift
+      if [[ $# -gt 0 ]]; then
+        CHECK_REVIEW_SCOPE="$1"
+        shift
+      fi
+      ;;
     *)
       usage
       ;;
@@ -674,6 +734,13 @@ case "$MODE" in
       plan) do_criteria "$PLAN_JSON" "plan" ;;
       *) echo "ERROR: --criteria requires --task <ID>, --phase <LETTER>, or --plan" >&2; exit 2 ;;
     esac
+    ;;
+  check-review)
+    if [[ -z "$CHECK_REVIEW_TYPE" || -z "$CHECK_REVIEW_SCOPE" ]]; then
+      echo "ERROR: --check-review requires --type <TYPE> and --scope <SCOPE>" >&2
+      exit 2
+    fi
+    do_check_review "$PLAN_JSON" "$CHECK_REVIEW_TYPE" "$CHECK_REVIEW_SCOPE"
     ;;
   *) usage ;;
 esac
