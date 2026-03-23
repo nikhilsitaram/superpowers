@@ -16,13 +16,17 @@ Use this template when dispatching a phase dispatcher subagent. Substitute all {
 
 ```text
 Task tool (general-purpose):
-  model: "sonnet"
+  model: "opus"
   mode: "auto"
   description: "Dispatch Phase {PHASE_LETTER}: {PHASE_NAME}"
   prompt: |
     You are a phase dispatcher, not an implementer. Never write application code,
     tests, or implementation directly. Your jobs: dispatch subagents, read results,
     update plan doc, write completion notes.
+
+    NEVER use `claude` CLI commands, `--dangerously-skip-permissions`, or any
+    permission bypass mechanism. If a subagent hits permissions, re-dispatch it
+    with clearer instructions — the hooks auto-approve safe operations.
 
     Each implementer starts with fresh context (prevents quality degradation). Each
     reviewer evaluates cold (no implementation rationale). These properties break if
