@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "status": "Complete",
   "workflow": "create-pr",
   "goal": "Add polling-based external review gate after each phase PR and conditional merge strategy for final PR",
   "architecture": "Insert check-polling and review-pr invocation into orchestrate SKILL.md between phase PR creation and merge. Add conditional merge strategy (rebase for multi-phase, squash for single-phase) to merge-pr SKILL.md for integration branch PRs. Add review_wait_minutes as optional plan.json field in draft-plan SKILL.md.",
@@ -9,14 +9,14 @@
     {
       "letter": "A",
       "name": "Review gate and merge strategy",
-      "status": "Not Started",
+      "status": "Complete (2026-03-23)",
       "depends_on": [],
       "rationale": "Single phase because all three file edits are tightly coupled: orchestrate references review_wait_minutes (documented by draft-plan) and the merge strategy (implemented by merge-pr). No meaningful verification gate between them — they form one coherent behavior change.",
       "tasks": [
         {
           "id": "A1",
           "name": "Add poll-review-merge sequence to orchestrate SKILL.md",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -31,7 +31,7 @@
         {
           "id": "A2",
           "name": "Add conditional merge strategy to merge-pr SKILL.md",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -46,7 +46,7 @@
         {
           "id": "A3",
           "name": "Add review_wait_minutes to draft-plan SKILL.md schema docs",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -61,7 +61,7 @@
         {
           "id": "A4",
           "name": "Bump version in marketplace.json",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1",
             "A2",
@@ -80,7 +80,7 @@
         {
           "id": "A5",
           "name": "Run skill-eval for orchestrate and merge-pr",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1",
             "A2",
