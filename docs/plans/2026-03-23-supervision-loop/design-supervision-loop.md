@@ -16,23 +16,23 @@ Add a two-level supervision hierarchy to orchestrate:
 
 1. Independent phases in the same wave execute concurrently (dispatched with `run_in_background: true`).
 2. The user sees a progress update every 60s showing task completion counts and health status per active phase.
-3. A stuck task implementer (repeated errors, permission blocks) is detected and receives intervention within 90 seconds of becoming stuck.
-4. A stuck phase dispatcher is detected and the user is alerted via AskUserQuestion within 150 seconds of becoming stuck.
+3. A stuck task implementer is detected within 2 poll cycles and the supervisor initiates a stop-and-redispatch within the same cycle.
+4. A stuck phase dispatcher is detected within 2 poll cycles and the orchestrator either re-dispatches or alerts the user within the same cycle.
 5. An unresolvable task (2 failed interventions) is escalated via `escalation.json`, surfaced to the user on next orchestrator poll, and the phase continues to the next task.
 6. Task implementers within a phase still execute sequentially (one at a time) to avoid git conflicts.
-7. Supervision overhead does not add more than 2 minutes wall-clock time to a plan with 2+ parallel phases compared to unsupervised execution.
+7. Each supervision poll cycle (excluding sleep interval) completes in under 5 seconds of active processing time.
 
 ## Architecture
 
 ### Tool Availability
 
-The supervision loop relies on these Claude Code built-in tools for background agent management (verified available):
+The supervision loop relies on these Claude Code built-in tools for background agent management. These are platform-level tools (not codebase artifacts) — verified via `ToolSearch` which returned their full JSON schemas:
 
-- **`Agent(run_in_background: true)`** — dispatches a subagent that runs independently; returns a task ID immediately. The parent agent continues processing.
-- **`TaskOutput(task_id, block: false)`** — reads output from a running or completed background agent without blocking. Returns output text and status. Used to check for error patterns and progress signals each poll cycle.
-- **`TaskStop(task_id)`** — terminates a running background agent. Used as the primary intervention mechanism — stop the stuck agent, then re-dispatch with additional context.
+- **`Agent(run_in_background: true)`** — dispatches a subagent that runs independently; returns a task ID immediately. The parent agent continues processing. Schema confirms `run_in_background` boolean parameter.
+- **`TaskOutput(task_id, block, timeout)`** — reads output from a running or completed background task. `block: false` returns immediately with current status; `block: true` waits for completion. Used with `block: false` each poll cycle to check for error patterns. Schema: `task_id` (required string), `block` (boolean, default true), `timeout` (number, default 30000ms, max 600000ms).
+- **`TaskStop(task_id)`** — terminates a running background task. Schema: `task_id` (string). Used as the primary intervention mechanism — stop the stuck agent, then re-dispatch with additional context.
 
-**Not available:** `SendMessage` (referenced in Agent tool documentation but not present as a callable tool). This means mid-flight guidance injection is not possible — intervention requires stopping and re-dispatching the agent. The intervention protocol reflects this constraint.
+**Not available:** `SendMessage` (referenced in Agent tool documentation but not present as a callable tool via ToolSearch). This means mid-flight guidance injection is not possible — intervention requires stopping and re-dispatching the agent.
 
 The existing orchestrate skill already uses `Agent` (foreground); the change is adding `run_in_background: true` and using the companion tools for supervision. `TaskOutput` returns the agent's cumulative output text; the supervisor parses the last portion for error patterns using string matching.
 
@@ -130,6 +130,18 @@ Each poll cycle checks (cheapest first):
 - New commits or new tool output since last poll
 - No error patterns in recent output
 
+### Detection Logic
+
+TaskOutput returns cumulative text. The supervisor stores the previous output length and reads only the new portion (characters after the stored offset) each cycle.
+
+**Permission blocks:** Case-insensitive substring match against the new output for: `permission`, `denied`, `blocked`, `approve`, `Do you want to proceed`. Any match → stuck.
+
+**Repeated errors:** Extract lines from new output matching common error patterns (`error:`, `Error:`, `failed`, `FAILED`, `traceback`, `panic`). Deduplicate by exact string match. If any single error line appears 3+ times across the current and previous cycle's output → stuck.
+
+**No progress:** Compare current `git log --format=%H -1` and TaskOutput length against values stored from the previous cycle. If both are unchanged → no progress. Two consecutive no-progress cycles → stuck.
+
+**Completion:** `TaskOutput(task_id, block: false)` returns status information. If the task status indicates completion → complete.
+
 ### Intervention Protocol
 
 Since `SendMessage` is not available, all intervention uses `TaskStop` + re-dispatch. The re-dispatched agent receives the diagnosis and prior output summary as additional context in its prompt, so it can avoid the same failure pattern.
@@ -197,7 +209,7 @@ All fields optional with defaults shown.
 
 ## Key Decisions
 
-1. **Inline polling loop over stop-hook pattern:** The ralph-loop (stop-hook) pattern is designed for iterative re-prompting, not periodic monitoring. Inline polling with `Bash("sleep N")` keeps the supervisor active in the same session with full tool access. Simpler and semantically correct. **Risk:** Sleep-based polling loops are a novel pattern in this codebase. If `Bash("sleep N")` blocks agent responsiveness or the agent fails to continue the loop reliably, the fallback is: replace the sleep-based loop with a single-shot monitor subagent dispatched per poll cycle. Each monitor agent sleeps, checks signals, writes results to a status file, and exits. The supervisor reads the status file and decides whether to intervene. This trades one long-lived loop for N short-lived agents but preserves the same detection/intervention logic. **Validation:** The implementer should test the sleep-based loop with a simple prototype (dispatch a no-op background agent, sleep 10s, check TaskOutput) before building the full supervision logic.
+1. **Inline polling loop over stop-hook pattern and foreground dispatch + monitor:** Three approaches considered: (a) Stop-hook pattern (ralph-loop): fires on exit attempts, not on a timer — semantic mismatch for periodic monitoring. (b) Foreground dispatch + parallel monitor agent: keeps synchronous dispatch but adds a monitoring subagent alongside — avoids TaskOutput/TaskStop dependency but the monitor can't intervene (it has no authority over the foreground-blocking parent). (c) Inline polling with `Bash("sleep N")`: supervisor dispatches background agents and actively polls — full tool access, direct intervention capability. Chose (c). **Risk:** Sleep-based polling loops are a novel pattern in this codebase. If `Bash("sleep N")` blocks agent responsiveness or the agent fails to continue the loop reliably, the fallback is: replace the sleep-based loop with a single-shot monitor subagent dispatched per poll cycle. Each monitor agent sleeps, checks signals, writes results to a status file, and exits. The supervisor reads the status file and decides whether to intervene. This trades one long-lived loop for N short-lived agents but preserves the same detection/intervention logic.
 
 2. **L1 never auto-kills phases:** A phase timeout isn't meaningful because legitimate tasks can run 20+ minutes. The only signal is lack of progress, and even then, the user should decide whether to kill a phase dispatcher — the system can't distinguish "genuinely stuck" from "working on a hard problem slowly."
 
@@ -213,8 +225,9 @@ All fields optional with defaults shown.
 
 ## Implementation Approach
 
-Single phase — prompt-template modifications plus minor schema validation:
+Single phase — prompt-template modifications plus minor schema validation. Async dispatch and supervision are bundled intentionally: supervision without async dispatch is impossible (the supervisor must be free to poll), and async dispatch without supervision recreates the black-box problem at a higher concurrency level. Separating them would mean shipping unmonitored parallel execution as an intermediate state.
 
+0. **Validate polling pattern (prerequisite)** — Before modifying any prompt templates, prototype the sleep-based polling loop: dispatch a no-op background agent (`Agent(run_in_background: true)`), call `Bash("sleep 10")`, then `TaskOutput(task_id, block: false)`. If TaskOutput returns the agent's output and the supervisor can continue processing after sleep, the pattern is validated. If it fails, switch to the per-cycle monitor subagent fallback before proceeding.
 1. **Update `phase-dispatcher-prompt.md`** — Replace the existing synchronous "For each task" loop in `## Your Process` with a background-dispatch + polling pattern. Add sections: supervision loop (sleep 30s, check signals, evaluate health), intervention protocol (TaskStop + re-dispatch → escalation.json), and escalation file writing. The sequential task constraint remains — background dispatch is for supervision visibility, not parallelism.
 2. **Update `SKILL.md`** — Replace the "Per-Phase Execution (Wave Loop)" pseudocode (current steps a-e) with async dispatch + L1 supervision loop. Add: agent ID tracking per dispatched phase, supervision loop protocol (sleep 60s, read plan.json from phase worktrees, check escalation.json, evaluate health), progress update output format, and escalation handling (surface to user). Completion processing (review → merge) triggers when a phase is detected as complete during a poll cycle.
 3. **Update `scripts/validate-plan`** — Add schema validation for the optional `supervision` object at plan.json root level (fields: `orchestrator_poll_seconds`, `dispatcher_poll_seconds`, `max_intervention_attempts`, all optional integers with defaults).
