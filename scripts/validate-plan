@@ -13,6 +13,7 @@ Usage:
   validate-plan --criteria <plan.json> --phase <LETTER>
   validate-plan --criteria <plan.json> --plan
   validate-plan --check-review <plan.json> --type <TYPE> --scope <SCOPE>
+  validate-plan --check-workflow <plan.json>
 
   Valid types:  design-review, plan-review, task-review, impl-review
   Valid scopes: design, plan, task-{ID}, phase-{LETTER}, final
@@ -681,6 +682,129 @@ do_check_review() {
   exit 0
 }
 
+do_check_workflow() {
+  local plan_json="$1"
+  local plan_dir
+  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+
+  local json
+  json=$(cat "$plan_json")
+
+  local workflow
+  workflow=$(echo "$json" | jq -r '.workflow // empty')
+  if [[ -z "$workflow" ]]; then
+    echo "ERROR: missing workflow field in plan.json" >&2
+    exit 1
+  fi
+
+  local gate_errors=()
+
+  local dr_result
+  if ! dr_result=$(check_review_record "$plan_dir" "design-review" "design"); then
+    gate_errors+=("design-review not passed: $dr_result")
+  fi
+
+  local pr_result
+  if ! pr_result=$(check_review_record "$plan_dir" "plan-review" "plan"); then
+    gate_errors+=("plan-review not passed: $pr_result")
+  fi
+
+  if [[ "$workflow" == "plan-only" ]]; then
+    if [[ ${#gate_errors[@]} -gt 0 ]]; then
+      echo "ERROR: workflow gate (plan-only) unsatisfied:" >&2
+      for ge in "${gate_errors[@]}"; do echo "  - $ge" >&2; done
+      exit 1
+    fi
+    exit 0
+  fi
+
+  local plan_status
+  plan_status=$(echo "$json" | jq -r '.status')
+  if [[ "$plan_status" != "Complete" ]]; then
+    gate_errors+=("plan status is '$plan_status', expected 'Complete'")
+  fi
+
+  local phase_count
+  phase_count=$(echo "$json" | jq '.phases | length')
+  for ((p=0; p<phase_count; p++)); do
+    local letter letter_lower
+    letter=$(echo "$json" | jq -r ".phases[$p].letter")
+    letter_lower=$(echo "$letter" | tr '[:upper:]' '[:lower:]')
+    local ir_result
+    if ! ir_result=$(check_review_record "$plan_dir" "impl-review" "phase-$letter_lower"); then
+      gate_errors+=("impl-review phase-$letter_lower: $ir_result")
+    fi
+  done
+
+  if [[ "$phase_count" -gt 1 ]]; then
+    local fr_result
+    if ! fr_result=$(check_review_record "$plan_dir" "impl-review" "final"); then
+      gate_errors+=("impl-review final: $fr_result")
+    fi
+  fi
+
+  check_pr_exists() {
+    local base="$1" head="$2" state="${3:-open}"
+    local count
+    if ! count=$(gh pr list --base "$base" --head "$head" --state "$state" --json number --jq 'length' 2>/dev/null); then
+      gate_errors+=("gh pr list failed for base=$base head=$head — gh CLI may not be authenticated or network unavailable")
+      return 1
+    fi
+    if [[ "$count" -eq 0 ]]; then
+      return 1
+    fi
+    return 0
+  }
+
+  local current_branch
+  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+  if [[ "$current_branch" == integrate/* ]]; then
+    for ((p=0; p<phase_count; p++)); do
+      local letter letter_lower
+      letter=$(echo "$json" | jq -r ".phases[$p].letter")
+      letter_lower=$(echo "$letter" | tr '[:upper:]' '[:lower:]')
+      if ! check_pr_exists "$current_branch" "phase-$letter_lower" "all"; then
+        gate_errors+=("no PR found for phase-$letter_lower → $current_branch")
+      fi
+    done
+    if ! check_pr_exists "main" "$current_branch" "all"; then
+      if ! check_pr_exists "master" "$current_branch" "all"; then
+        gate_errors+=("no final PR found for $current_branch → main/master")
+      fi
+    fi
+  else
+    if ! check_pr_exists "main" "$current_branch" "all"; then
+      if ! check_pr_exists "master" "$current_branch" "all"; then
+        gate_errors+=("no PR found for $current_branch → main/master")
+      fi
+    fi
+  fi
+
+  if [[ "$workflow" == "merge-pr" ]]; then
+    if [[ "$current_branch" == integrate/* ]]; then
+      if ! check_pr_exists "main" "$current_branch" "merged"; then
+        if ! check_pr_exists "master" "$current_branch" "merged"; then
+          gate_errors+=("final PR not merged for $current_branch → main/master")
+        fi
+      fi
+    else
+      if ! check_pr_exists "main" "$current_branch" "merged"; then
+        if ! check_pr_exists "master" "$current_branch" "merged"; then
+          gate_errors+=("PR not merged for $current_branch → main/master")
+        fi
+      fi
+    fi
+  fi
+
+  if [[ ${#gate_errors[@]} -gt 0 ]]; then
+    echo "ERROR: workflow gate ($workflow) unsatisfied:" >&2
+    for ge in "${gate_errors[@]}"; do echo "  - $ge" >&2; done
+    exit 1
+  fi
+  exit 0
+}
+
 MODE=""
 PLAN_JSON=""
 UPDATE_TARGET=""
@@ -758,6 +882,14 @@ while [[ $# -gt 0 ]]; do
         shift
       fi
       ;;
+    --check-workflow)
+      MODE="check-workflow"
+      shift
+      if [[ $# -gt 0 ]]; then
+        PLAN_JSON="$1"
+        shift
+      fi
+      ;;
     --type)
       shift
       if [[ $# -gt 0 ]]; then
@@ -807,5 +939,6 @@ case "$MODE" in
     fi
     do_check_review "$PLAN_JSON" "$CHECK_REVIEW_TYPE" "$CHECK_REVIEW_SCOPE"
     ;;
+  check-workflow) do_check_workflow "$PLAN_JSON" ;;
   *) usage ;;
 esac
