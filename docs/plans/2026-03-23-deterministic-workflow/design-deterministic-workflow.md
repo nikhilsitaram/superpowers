@@ -227,7 +227,7 @@ Single phase — changes are interconnected.
 1. Add `--check-review` flag to validate-plan (reads reviews.json, checks type+scope+verdict)
 2. Gate `--update-status` on review completion (phase requires impl-review pass; plan requires all reviews pass)
 3. Add `--check-workflow` flag (queries review records + `gh pr list` for PR verification)
-4. Update all 5 reviewer prompts to output `review-summary` JSON block
+4. Update all 4 reviewer prompts to output `review-summary` JSON block
 5. Add review loop protocol to orchestrate and phase-dispatcher-prompt
 6. Remove plan-review dispatch from draft-plan; add plan-review dispatch to design after draft-plan returns
 7. Add `--check-workflow` call to design (plan-only) and orchestrate (create-pr/merge-pr) as final action
