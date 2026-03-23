@@ -5,7 +5,7 @@ description: Use when a reviewed PR is ready to merge, or when triggered by "/me
 
 # Merge PR
 
-Confirm, squash merge, and clean up branches and worktrees.
+Confirm, merge (squash or rebase), and clean up branches and worktrees.
 
 **Prerequisite:** A PR that has been reviewed (via `/review-pr` or manually). Run this from the main repo, not from inside a worktree.
 
@@ -38,7 +38,7 @@ Show: PR URL, title, files changed count, any pending review status.
 If branch protection requires human approval and the PR lacks it, tell the user and stop with the PR URL.
 
 Use AskUserQuestion with options:
-- **Merge** — proceed with squash merge
+- **Merge** — proceed with merge (squash or rebase per strategy)
 - **Abort** — stop without merging
 
 ### Step 3: Merge
@@ -52,9 +52,11 @@ git merge-base --is-ancestor origin/$DEFAULT_BRANCH HEAD
 
 If behind (non-zero exit): rebase onto default branch, resolve conflicts, run tests, push with `git push -u origin HEAD --force-with-lease`. Comment on PR with conflict resolution details. Complex conflicts → stop and ask user.
 
-```bash
-gh pr merge $PR_NUMBER --squash
-```
+**Merge strategy:**
+- Default: `gh pr merge $PR_NUMBER --squash`
+- When caller passes `--rebase` (orchestrate does this for multi-phase final PRs): `gh pr merge $PR_NUMBER --rebase`
+
+Multi-phase plans produce one squash commit per phase on the integration branch. Rebase preserves this per-phase history on main. Single-phase plans use squash (one phase = one commit). Phase PRs (base is `integrate/*`) always use `--squash`.
 
 Never use `--delete-branch` — branch cleanup is handled in Step 4.
 
@@ -84,6 +86,7 @@ Report: PR number/URL, merge status, cleanup status.
 |-----|--------|
 | `<PR number>` | Target specific PR (`/merge-pr 42`) |
 | *(none)* | Detect from current branch |
+| `--rebase` | Use rebase merge instead of squash (for multi-phase final PRs) |
 
 ## Pitfalls
 
