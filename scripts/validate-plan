@@ -162,7 +162,7 @@ do_schema() {
     task_count=$(echo "$json" | jq "(.phases[$p].tasks // []) | length")
 
     for ((t=0; t<task_count; t++)); do
-      local id task_name task_status depends_on verification done_when
+      local id task_name task_status verification done_when
       id=$(echo "$json" | jq -r ".phases[$p].tasks[$t].id // empty")
       task_name=$(echo "$json" | jq -r ".phases[$p].tasks[$t].name // empty")
       task_status=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
@@ -419,6 +419,17 @@ do_update_status_phase() {
     echo "ERROR: phase_not_found: '$phase_letter' not found in plan" >&2
     exit 1
   fi
+  if [[ "$new_status" =~ ^Complete ]]; then
+    local plan_dir
+    plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+    local phase_lower
+    phase_lower=$(echo "$phase_letter" | tr '[:upper:]' '[:lower:]')
+    local gate_result
+    if ! gate_result=$(check_review_record "$plan_dir" "impl-review" "phase-$phase_lower"); then
+      echo "ERROR: cannot mark phase $phase_letter complete — $gate_result" >&2
+      exit 1
+    fi
+  fi
   local tmp="${plan_json}.tmp.$$"
   jq --arg letter "$phase_letter" --arg status "$new_status" '
     (.phases[] | select(.letter == $letter)).status = $status
@@ -437,6 +448,49 @@ do_update_status_plan() {
   if [ "$valid" = false ]; then
     echo "ERROR: invalid_plan_status: '$new_status' (expected Not Yet Started, In Development, or Complete)" >&2
     exit 1
+  fi
+  if [[ "$new_status" == "Complete" ]]; then
+    local plan_dir
+    plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+    local gate_errors=()
+    local gate_result
+
+    if ! gate_result=$(check_review_record "$plan_dir" "design-review" "design"); then
+      gate_errors+=("design-review: $gate_result")
+    fi
+
+    if ! gate_result=$(check_review_record "$plan_dir" "plan-review" "plan"); then
+      gate_errors+=("plan-review: $gate_result")
+    fi
+
+    local json
+    json=$(cat "$plan_json")
+    local phase_count
+    phase_count=$(echo "$json" | jq '.phases | length')
+
+    for ((p=0; p<phase_count; p++)); do
+      local letter letter_lower
+      letter=$(echo "$json" | jq -r ".phases[$p].letter")
+      letter_lower=$(echo "$letter" | tr '[:upper:]' '[:lower:]')
+
+      if ! gate_result=$(check_review_record "$plan_dir" "impl-review" "phase-$letter_lower"); then
+        gate_errors+=("impl-review phase-$letter_lower: $gate_result")
+      fi
+    done
+
+    if [[ "$phase_count" -gt 1 ]]; then
+      if ! gate_result=$(check_review_record "$plan_dir" "impl-review" "final"); then
+        gate_errors+=("impl-review final: $gate_result")
+      fi
+    fi
+
+    if [[ ${#gate_errors[@]} -gt 0 ]]; then
+      echo "ERROR: cannot mark plan complete — missing review gates:" >&2
+      for ge in "${gate_errors[@]}"; do
+        echo "  - $ge" >&2
+      done
+      exit 1
+    fi
   fi
   local tmp="${plan_json}.tmp.$$"
   jq --arg status "$new_status" '.status = $status' "$plan_json" > "$tmp" || { rm -f "$tmp"; echo "ERROR: jq update failed" >&2; exit 1; }
@@ -584,15 +638,13 @@ do_criteria() {
   exit "$has_blocking_failure"
 }
 
-do_check_review() {
-  local plan_json="$1" review_type="$2" review_scope="$3"
-  local plan_dir
-  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+check_review_record() {
+  local plan_dir="$1" review_type="$2" review_scope="$3"
 
   local reviews_file="$plan_dir/reviews.json"
   if [[ ! -f "$reviews_file" ]]; then
-    echo "ERROR: reviews.json not found in $plan_dir" >&2
-    exit 1
+    echo "reviews.json not found in $plan_dir"
+    return 1
   fi
 
   local record
@@ -600,8 +652,8 @@ do_check_review() {
     '[.[] | select(.type == $t and .scope == $s)] | last' "$reviews_file")
 
   if [[ "$record" == "null" || -z "$record" ]]; then
-    echo "ERROR: no review record found for type=$review_type scope=$review_scope" >&2
-    exit 1
+    echo "no review record for type=$review_type scope=$review_scope"
+    return 1
   fi
 
   local verdict remaining
@@ -609,11 +661,24 @@ do_check_review() {
   remaining=$(echo "$record" | jq -r '.remaining // 0')
 
   if [[ "$verdict" == "pass" && "$remaining" -eq 0 ]]; then
-    exit 0
+    return 0
   fi
 
-  echo "ERROR: review gate failed — type=$review_type scope=$review_scope verdict=$verdict remaining=$remaining" >&2
-  exit 1
+  echo "review gate failed — type=$review_type scope=$review_scope verdict=$verdict remaining=$remaining"
+  return 1
+}
+
+do_check_review() {
+  local plan_json="$1" review_type="$2" review_scope="$3"
+  local plan_dir
+  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+
+  local result
+  if ! result=$(check_review_record "$plan_dir" "$review_type" "$review_scope"); then
+    echo "ERROR: $result" >&2
+    exit 1
+  fi
+  exit 0
 }
 
 MODE=""
