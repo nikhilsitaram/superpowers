@@ -139,7 +139,9 @@ Task tool (general-purpose):
     |---------|--------|
     | 1st | TaskStop(task_id) + re-dispatch implementer with diagnosis and guidance appended to prompt |
     | 2nd | TaskStop(task_id) + re-dispatch with full prior output summary as context |
-    | After 2 failures | Write escalation-{task_id}.json to repo root, mark task skipped, continue to next task |
+    | After {MAX_INTERVENTION_ATTEMPTS} failures | Write escalation-{task_id}.json to repo root, mark task skipped, continue to next task |
+
+    After each re-dispatch: update task_id from the new agent, reset prev_output_len=0 and no_progress_count=0, then resume at step 6a.
 
     Escalation file format:
     {"task_id": "A3", "issue": "...", "attempts": 2, "last_output_snippet": "last 50 lines of agent output", "timestamp": "ISO8601"}
