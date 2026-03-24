@@ -73,7 +73,7 @@ Task tool (general-purpose):
 
     5. **Dispatch implementer in background:**
        - Agent with run_in_background: true (see ./implementer-prompt.md)
-       - Pass the task JSON object (from step 1) and the task prose (from step 3) to the implementer; include boundary integration test instruction for tasks consuming prior-task output
+       - Pass {TASK_METADATA} and {TASK_PROSE}; include boundary integration test instruction for tasks consuming prior-task output
        - Capture task_id, init: prev_output_len=0, prev_head_sha=$(git rev-parse HEAD), no_progress_count=0, intervention_count=0
 
     6. **Supervision loop (every {DISPATCHER_POLL_SECONDS}s):**
