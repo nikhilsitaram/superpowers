@@ -34,5 +34,23 @@
     "remaining": 0,
     "verdict": "pass",
     "timestamp": "2026-03-24T22:00:00Z"
+  },
+  {
+    "type": "impl-review",
+    "scope": "phase-a",
+    "iteration": 1,
+    "issues_found": 1,
+    "severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 1
+    },
+    "actionable": 1,
+    "dismissed": 0,
+    "dismissals": [],
+    "fixed": 1,
+    "remaining": 0,
+    "verdict": "pass",
+    "timestamp": "2026-03-24T22:00:00Z"
   }
 ]

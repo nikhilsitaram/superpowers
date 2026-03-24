@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "In Development",
+  "status": "Complete",
   "workflow": "pr-create",
   "goal": "Rename PR skills to pr-* namespace and fix review-to-merge pipeline flow",
   "architecture": "Rename all three PR skill directories from verb-pr to pr-verb pattern, update workflow enum values from create-pr/merge-pr to pr-create/pr-merge, add rebase-before-review to pr-review, add merge continuation prompt to pr-review, remove redundant confirmation from pr-merge, update all cross-references across skills, scripts, tests, and docs.",
@@ -9,14 +9,14 @@
     {
       "letter": "A",
       "name": "Rename and pipeline fixes",
-      "status": "In Progress",
+      "status": "Complete (2026-03-24)",
       "depends_on": [],
       "rationale": "All changes are tightly coupled — the rename affects every file the other two issues touch. Single phase keeps the rename atomic.",
       "tasks": [
         {
           "id": "A1",
           "name": "Rename PR skill directories and update their SKILL.md files",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [
@@ -34,7 +34,7 @@
         {
           "id": "A2",
           "name": "Update cross-references in non-PR skills",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -52,7 +52,7 @@
         {
           "id": "A3",
           "name": "Update marketplace.json, CLAUDE.md, and README.md",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -69,7 +69,7 @@
         {
           "id": "A4",
           "name": "Update validate-plan workflow enum values",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
