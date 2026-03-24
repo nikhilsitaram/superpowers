@@ -45,7 +45,7 @@ docs/plans/YYYY-MM-DD-topic/
 {
   "schema": 1,
   "status": "Not Yet Started",
-  "workflow": "create-pr",
+  "workflow": "pr-create",
   "goal": "One sentence",
   "architecture": "2-3 sentences",
   "tech_stack": "Key technologies",
@@ -76,7 +76,7 @@ docs/plans/YYYY-MM-DD-topic/
 }
 ```
 
-Optional: `success_criteria` array at plan, phase, and task levels for automated verification. `workflow` field controls post-plan behavior: `create-pr` (orchestrate + create-pr, default), `merge-pr` (orchestrate + create-pr + review-pr + merge-pr), `plan-only` (stop after planning). Set by the design skill based on user choice. `review_wait_minutes` integer sets the max wait for external reviewers (default 10, set 0 to skip polling).
+Optional: `success_criteria` array at plan, phase, and task levels for automated verification. `workflow` field controls post-plan behavior: `pr-create` (orchestrate + pr-create, default), `pr-merge` (orchestrate + pr-create + pr-review + pr-merge), `plan-only` (stop after planning). Set by the design skill based on user choice. `review_wait_minutes` integer sets the max wait for external reviewers (default 10, set 0 to skip polling).
 
 **See:** `docs/plans/2026-03-19-structured-plans/design-structured-plans.md` for full schema reference.
 
