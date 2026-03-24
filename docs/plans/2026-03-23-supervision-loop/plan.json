@@ -9,7 +9,7 @@
     {
       "letter": "A",
       "name": "Supervision loop implementation",
-      "status": "Not Started",
+      "status": "Complete (2026-03-23)",
       "depends_on": [],
       "rationale": "Single phase per design doc. The orchestrator and phase dispatcher are tightly coupled — supervision at L1 dispatches the L2-supervised phase dispatchers, and L2 writes escalation files that L1 reads. Separating them would require shipping unmonitored parallel execution as an intermediate state.",
       "tasks": [

@@ -42,7 +42,7 @@ The existing orchestrate skill already uses `Agent` (foreground); the change is 
 
 ### Two-Level Hierarchy
 
-```
+```text
 Orchestrator (L1 supervisor — polls every 60s, user progress updates)
   ├── Phase Dispatcher A (L2 supervisor — polls every 30s)
   │     ├── Task Implementer 1 (worker, background, sequential)
@@ -55,7 +55,7 @@ Orchestrator (L1 supervisor — polls every 60s, user progress updates)
 
 ### Escalation Chain
 
-```
+```text
 Implementer stuck
   → Phase dispatcher: TaskStop + re-dispatch with diagnosis and additional context
   → 2nd attempt: TaskStop + re-dispatch with broader context (prior output summary)
@@ -71,7 +71,7 @@ Phase dispatcher stuck
 
 The wave loop changes from synchronous dispatch to async dispatch + supervision:
 
-```
+```text
 for each wave:
   dispatch phase dispatchers (run_in_background: true) → capture agent_ids
 
@@ -106,7 +106,7 @@ for each wave:
 
 Tasks remain sequential. The change is that each implementer is dispatched in the background so the phase dispatcher can supervise:
 
-```
+```text
 for each task in phase (sequential):
   dispatch implementer (run_in_background: true) → agent_id
 
@@ -205,7 +205,7 @@ The orchestrator reads all `escalation-*.json` files from the phase worktree on 
 
 Orchestrator outputs to user every 60s:
 
-```
+```text
 [1m] Phase A: 1/5 tasks, healthy | Phase B: 0/4 tasks, starting
 [2m] Phase A: 3/5 tasks, healthy | Phase B: 1/4 tasks, healthy
 [3m] Phase A: 4/5 tasks, healthy | Phase B: 2/4 tasks, degraded (no commits)

@@ -13,7 +13,7 @@ status: In Development
 ---
 
 ## Phase A — Supervision loop implementation
-**Status:** Not Started | **Rationale:** Single phase per design doc. The orchestrator and phase dispatcher are tightly coupled — supervision at L1 dispatches the L2-supervised phase dispatchers, and L2 writes escalation files that L1 reads. Separating them would require shipping unmonitored parallel execution as an intermediate state.
+**Status:** Complete (2026-03-23) | **Rationale:** Single phase per design doc. The orchestrator and phase dispatcher are tightly coupled — supervision at L1 dispatches the L2-supervised phase dispatchers, and L2 writes escalation files that L1 reads. Separating them would require shipping unmonitored parallel execution as an intermediate state.
 
 - [x] A1: Validate sleep-based polling pattern — *Prototype confirms: (a) Bash sleep 10 returns control to agent, (b) TaskOutput(task_id, block: false) returns background agent output and status after sleep, (c) supervisor executes a second sleep+TaskOutput cycle proving loop continues, (d) background agent completes independently. If any criterion fails, plan is blocked — stop and escalate.*
 - [x] A2: Rewrite phase-dispatcher-prompt.md with L2 supervision loop — *Phase dispatcher prompt includes: (1) background dispatch of each implementer with run_in_background: true, (2) 30s polling loop with sleep + TaskOutput + git log checks, (3) detection logic for permission blocks, repeated errors, and no-progress, (4) intervention protocol (TaskStop + re-dispatch with max 2 attempts), (5) escalation-{task_id}.json writing after failed interventions, (6) sequential task constraint preserved. Word count stays under 2,000.*

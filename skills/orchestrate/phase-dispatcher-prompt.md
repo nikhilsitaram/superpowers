@@ -84,8 +84,8 @@ Task tool (general-purpose):
        e. Evaluate health (see Detection Logic):
           - Permission prompt detected -> stuck
           - Same error line 3+ consecutive times -> stuck
-          - No new commits AND no new output 2 consecutive polls -> stuck
-          - Otherwise -> healthy: update prev_output_len, prev_head_sha, reset no_progress_count
+          - No new commits AND no new output this poll -> no_progress_count += 1; if no_progress_count >= 2 -> stuck
+          - Otherwise -> healthy: update prev_output_len, prev_head_sha, reset no_progress_count = 0
        f. If stuck -> Intervention Protocol (see below)
 
     7. **After implementer completes: run task review loop**
@@ -143,7 +143,7 @@ Task tool (general-purpose):
     |---------|--------|
     | 1st | TaskStop(task_id) + re-dispatch implementer with diagnosis and guidance appended to prompt |
     | 2nd | TaskStop(task_id) + re-dispatch with full prior output summary as context |
-    | After {MAX_INTERVENTION_ATTEMPTS} failures | Write escalation-{task_id}.json to repo root, mark task skipped, continue to next task |
+    | After {MAX_INTERVENTION_ATTEMPTS} failures | Write escalation-{task_id}.json to phase worktree root ({REPO_PATH}), mark task skipped, continue to next task |
 
     After each re-dispatch: update task_id from the new agent, reset prev_output_len=0 and no_progress_count=0, then resume at step 6a.
 
