@@ -21,12 +21,12 @@ Replace the polling-based supervision architecture with Claude Code agent teams.
 1. A multi-phase plan completes with zero sleep/poll loops in the orchestrator
 2. All tasks within a phase execute concurrently (one teammate per task)
 3. Phases execute sequentially — Phase B tasks don't start until Phase A is fully merged
-4. No git conflicts between teammates — each task touches a unique set of files, enforced at plan time by draft-plan and validated by plan-review and validate-plan
+4. Parallel teammates within the same phase never produce merge conflicts
 5. Stuck teammates are surfaced to the lead within 30 seconds via idle notification or direct messaging
 6. Token overhead for supervision drops by >70% (from ~60K to <15K for a 60-minute orchestration)
 7. Single-phase and multi-phase plans both work correctly
-8. Per-task reviewers run in parallel as implementer teammates complete, without blocking other active teammates
-9. validate-plan catches plan structural errors before execution begins (task prose files, ID format, status consistency, file-set overlaps, phase ordering)
+8. Per-task reviews begin immediately after each task completes, without waiting for other tasks in the same phase to finish
+9. Plans with structural errors (missing task files, invalid task IDs, overlapping file sets within a phase, inconsistent statuses) are rejected before execution begins
 
 ## Architecture
 
@@ -84,7 +84,7 @@ Implementer teammates are autonomous. Each teammate:
 3. Implements via TDD (red/green/refactor)
 4. Commits work
 5. Self-reviews
-6. Writes task completion notes to `{PHASE_DIR}/{task_id_lower}-completion.md`
+6. Writes task completion notes to `{PHASE_DIR}/{task_id_lower}-completion.md` (e.g., `phase-a/a1-completion.md`)
 7. Marks task complete via `validate-plan --update-status`
 8. Reports back to lead
 
@@ -96,9 +96,22 @@ This is a change from the current model where the phase dispatcher handles steps
 2. **Implementation review** — after all tasks + reviews in a phase complete, a fresh-eyes Opus subagent reviews the full phase diff for cross-task issues (duplication, inconsistency, dead code).
 3. **No per-task review blocking** — reviewer teammates don't block implementer teammates in the same phase.
 
+### Agent Teams API Contract
+
+Claude Code agent teams (experimental, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, v2.1.32+) provide:
+
+- **Teammate spawn**: Lead creates a team and spawns teammates. Each teammate is a separate Claude Code instance with its own context window and auto-provisioned git worktree at `.claude/worktrees/<name>/`.
+- **Idle notifications**: When a teammate finishes work and is about to idle, the lead is automatically notified. This is push-based — the lead does not poll.
+- **Mailbox messaging**: Teammates can send structured messages directly to the lead or to each other. Messages are delivered automatically (file-based inbox, recipient polls its own inbox, messages inject as synthetic conversation turns).
+- **Shared task list**: All agents see task status. Dependencies auto-unblock when predecessors complete. Teammates claim available work.
+- **Hooks**: `TeammateIdle` fires when teammate goes idle (exit code 2 sends feedback to keep working). `TaskCompleted` fires when a task is marked complete (exit code 2 prevents completion with feedback).
+- **Wait semantics**: Lead receives notifications as conversation turns — no explicit blocking wait API. The lead processes notifications as they arrive.
+
+**Feasibility risk**: This is an experimental feature. The API may change, teammate status can lag (teammates sometimes fail to mark tasks complete), and there is no session resumption with in-process teammates. The design accepts this risk — see Decision 6.
+
 ### Escalation
 
-Teammates that hit unresolvable issues send a structured message directly to the lead via the agent team mailbox. The lead receives it immediately (no polling delay). The lead can:
+Teammates that hit unresolvable issues send a structured message directly to the lead via the mailbox. The lead receives it immediately (no polling delay). The lead can:
 - Respond with guidance and keep the teammate working
 - Stop the teammate and reassign the task
 - Escalate to the user via AskUserQuestion
@@ -122,11 +135,21 @@ Teammates that hit unresolvable issues send a structured message directly to the
 
 5. **Per-task reviewer teammates in parallel** — dispatched as implementer teammates finish. Run concurrently with still-active implementers. Same quality gate, no serial blocking.
 
-6. **Agent teams only** — requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. No fallback to polling. Simplifies implementation — one code path.
+6. **Agent teams only** — requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. No fallback to polling. Accepted risk: if agent teams API changes or the feature flag is removed, the skill breaks entirely. Mitigation: the skill declares a hard dependency, so users without the flag simply can't invoke it. The alternative — maintaining both polling and agent-team code paths — doubles implementation and testing surface for a transitional period. One code path is worth the experimental dependency.
 
-7. **Teammates self-manage lifecycle** — mark their own tasks in-progress/complete, write their own completion notes. The lead validates but doesn't micromanage.
+7. **Teammates self-manage lifecycle** — mark their own tasks in-progress/complete, write their own completion notes to `{PHASE_DIR}/{task_id_lower}-completion.md` (e.g., `phase-a/a1-completion.md`). The lead validates but doesn't micromanage.
 
-8. **Comprehensive validate-plan checks** — 8 new deterministic checks catch structural errors before execution begins, reducing runtime failures.
+8. **Comprehensive validate-plan checks** — new deterministic checks catch structural errors before execution begins, reducing runtime failures. See Task 8 in Implementation Approach for the specific check list.
+
+## Alternatives Considered
+
+**A. Keep polling, remove phase dispatcher** — simplify to one polling level (orchestrator polls task subagents directly). Partial benefit: eliminates L2 polling and dispatcher prompt overhead. Limitation: L1 polling overhead and fragile detection remain. Rejected because it addresses only half the problem.
+
+**B. Subagents with `run_in_background` + event files** — keep the current subagent model but replace polling with file-based signaling (subagents write completion files, orchestrator watches via filesystem). Works without experimental feature flag. Limitation: still requires a watch/poll mechanism for file changes — no true push notification. Filesystem watching is platform-dependent and unreliable in worktrees. Rejected because it adds complexity without eliminating polling.
+
+**C. Sequential everything** — no parallel execution at all (sequential phases, sequential tasks). Simplest possible implementation. Limitation: a 10-task plan takes 10x longer than necessary. Rejected because parallel task execution within a phase is a major throughput win, and agent teams make it safe via worktree isolation + file-set constraints.
+
+**Agent teams (chosen)** — provides true push-based notifications, automatic worktree isolation, and native messaging. The experimental dependency is the tradeoff for eliminating polling entirely and getting first-class concurrency primitives.
 
 ## Non-Goals
 
@@ -137,18 +160,33 @@ Teammates that hit unresolvable issues send a structured message directly to the
 - Auto-recovery from all failure modes (lead escalates to user when stuck)
 - Fallback to subagent polling when agent teams feature flag is off
 
+## Migrated Responsibilities
+
+The phase dispatcher (phase-dispatcher-prompt.md) currently owns several responsibilities beyond task dispatch. Each must move to a new owner or be explicitly dropped:
+
+| Responsibility | Current Owner | New Owner | Notes |
+|---|---|---|---|
+| Task lifecycle (mark in-progress/complete) | Phase dispatcher | Implementer teammate | Teammate self-manages via validate-plan |
+| Task review dispatch | Phase dispatcher | Lead | Lead dispatches reviewer teammate on idle notification |
+| Completion notes | Phase dispatcher (single completion.md) | Implementer teammate (per-task completion file) | `{task_id_lower}-completion.md` per task; lead aggregates after phase |
+| Deviation rules 1-3 (auto-fix bug, add critical, fix blocker) | Phase dispatcher | Implementer teammate | Add to implementer prompt — teammates self-manage deviations |
+| Deviation rule 4 (architectural change) | Phase dispatcher → orchestrator | Implementer teammate → lead | Teammate sends message to lead via mailbox; lead asks user |
+| Safe commands learning loop | Phase dispatcher | Dropped | Safe commands hook handles this globally; per-phase learning loop adds no value |
+| Cross-phase handoffs | Phase dispatcher | Lead | Lead writes handoff notes to next phase's task files between phases |
+| Within-phase handoffs | Phase dispatcher | Dropped | Not needed — tasks within a phase are parallel with no intra-phase dependencies |
+
 ## Implementation Approach
 
 **Single phase** — the changes are tightly coupled. The orchestrate SKILL.md rewrite depends on the implementer prompt changes, which depend on the validate-plan updates. Splitting into multiple phases would create intermediate broken states where the skill references features that don't exist yet.
 
 ### Tasks
 
-1. **Update plan.json schema** — remove `supervision` config object, document `file_set` constraint for the `files` object (already has `create`/`modify`/`test` arrays)
+1. **Update plan.json schema** — remove `supervision` config object. No new schema field needed — the file-set isolation constraint is on the existing `files.create`, `files.modify`, `files.test` arrays, enforced by validate-plan at execution time.
 2. **Update draft-plan** — enforce file-set isolation when decomposing tasks within a phase
 3. **Update plan-review** — validate file-set isolation as a review criterion
 4. **Rewrite orchestrate SKILL.md** — replace wave loop + supervision with agent team coordination (sequential phases, parallel teammates, push-based completion)
 5. **Delete phase-dispatcher-prompt.md** — no longer needed with flat hierarchy
-6. **Update implementer-prompt.md** — teammates mark task in-progress/complete, write per-task completion notes
+6. **Update implementer-prompt.md** — teammates mark task in-progress/complete, write per-task completion notes to `{PHASE_DIR}/{task_id_lower}-completion.md`, handle deviation rules 1-3, escalate rule 4 via mailbox
 7. **Update task-reviewer-prompt.md** — adapt for teammate dispatch model (reviewer is a teammate, not a subagent of the phase dispatcher)
-8. **Update validate-plan** — add 8 new checks: task prose files exist, task ID format matches phase, status consistency (task→phase→plan), files exist after completion, file-set overlap for modify/test within phase, task completion file exists when complete, no orphaned task files, phase letter ordering
+8. **Update validate-plan** — new checks: file-set overlap for `modify`/`test` within a phase (existing check only covers `create`), status consistency (all tasks complete before phase marked complete, all phases complete before plan marked complete), task completion file exists when task status is complete, no orphaned `.md` files in phase directories, task ID prefix matches phase letter, phase letters are alphabetically ordered. Enhanced check: files declared in `files.create` exist on disk after task completion (post-implementation gate via `--criteria` flag).
 9. **Bump version** — increment in marketplace.json
