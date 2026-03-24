@@ -21,6 +21,7 @@
           "files": {
             "create": [
               "tests/validate-plan/test_fileset_overlap.sh",
+              "tests/validate-plan/test_structural_ordering.sh",
               "tests/validate-plan/test_status_consistency.sh"
             ],
             "modify": [
@@ -29,12 +30,13 @@
             ],
             "test": [
               "tests/validate-plan/test_fileset_overlap.sh",
+              "tests/validate-plan/test_structural_ordering.sh",
               "tests/validate-plan/test_status_consistency.sh",
               "tests/validate-plan/test_supervision_schema.sh"
             ]
           },
-          "verification": "bash tests/validate-plan/test_fileset_overlap.sh && bash tests/validate-plan/test_status_consistency.sh && bash tests/validate-plan/test_supervision_schema.sh && bash tests/validate-plan/test_schema.sh",
-          "done_when": "Three changes to validate-plan --schema: (1) supervision config validation removed — plans with or without supervision field pass (field ignored), (2) file-set overlap within a phase detected — rejects plans where two tasks in same phase share any path across create/modify/test, cross-phase overlap allowed, (3) task ID prefix matches phase letter and phase letters are alphabetically ordered. All new test files pass. Existing schema tests still pass."
+          "verification": "bash tests/validate-plan/test_fileset_overlap.sh && bash tests/validate-plan/test_structural_ordering.sh && bash tests/validate-plan/test_status_consistency.sh && bash tests/validate-plan/test_supervision_schema.sh && bash tests/validate-plan/test_schema.sh",
+          "done_when": "Six changes to validate-plan --schema: (1) supervision config validation removed — plans with or without supervision field pass (field ignored), (2) file-set overlap within a phase detected — rejects plans where two tasks in same phase share any path across create/modify/test, cross-phase overlap allowed, (3) task ID prefix matches phase letter and phase letters are alphabetically ordered, (4) status consistency — phase marked complete requires all tasks complete/skipped, plan marked complete requires all phases complete, (5) task completion file ({task_id_lower}-completion.md) must exist when task status is complete, orphaned .md files in phase directories flagged, (6) files.create paths must exist on disk when task is complete. All new test files pass. Existing schema tests still pass."
         },
         {
           "id": "A2",
