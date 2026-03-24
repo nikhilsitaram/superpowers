@@ -32,7 +32,7 @@
         {
           "id": "A2",
           "name": "Shell interpreter resolution and variable-as-command deny",
-          "status": "in_progress",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
