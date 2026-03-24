@@ -152,12 +152,12 @@ jq '.phases = []' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
 assert_fail "empty phases array" "empty_phases" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
 
-echo "Test 17: Valid workflow merge-pr passes"
+echo "Test 17: Valid workflow pr-merge passes"
 rm -rf "${TMPDIR:?}/"*
 cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
-jq '. + {"workflow": "merge-pr"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["A"]}' \
+jq '. + {"workflow": "pr-merge"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["A"]}' \
   "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
-assert_pass "valid workflow merge-pr passes" \
+assert_pass "valid workflow pr-merge passes" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
 
 echo "Test 18: Invalid workflow value fails"
@@ -182,6 +182,20 @@ jq '. + {"workflow": "review-only"}' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR
 assert_fail "old workflow review-only is rejected" "invalid_workflow" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
 
+echo "Test 18d: Old workflow value 'create-pr' is rejected"
+rm -rf "${TMPDIR:?}/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '. + {"workflow": "create-pr"}' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "old workflow create-pr is rejected" "invalid_workflow" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
+echo "Test 18e: Old workflow value 'merge-pr' is rejected"
+rm -rf "${TMPDIR:?}/"*
+cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
+jq '. + {"workflow": "merge-pr"}' "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
+assert_fail "old workflow merge-pr is rejected" "invalid_workflow" \
+  "$VALIDATE" --schema "$TMPDIR/plan.json"
+
 echo "Test 19: Missing workflow field fails"
 rm -rf "${TMPDIR:?}/"*
 cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
@@ -196,7 +210,7 @@ cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
 mkdir -p "$TMPDIR/phase-c"
 touch "$TMPDIR/phase-c/completion.md"
 echo "# C1: Phase C task" > "$TMPDIR/phase-c/c1.md"
-jq '. + {"workflow": "create-pr"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["A"]} | .phases += [{"letter": "C", "name": "Integration", "status": "Not Started", "rationale": "Depends on A and B", "depends_on": ["A", "B"], "tasks": [{"id": "C1", "name": "Phase C task", "status": "pending", "depends_on": [], "files": {"create": ["src/c1.ts"], "modify": [], "test": ["tests/c1.test.ts"]}, "verification": "echo ok", "done_when": "C1 done", "success_criteria": []}]}]' \
+jq '. + {"workflow": "pr-create"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["A"]} | .phases += [{"letter": "C", "name": "Integration", "status": "Not Started", "rationale": "Depends on A and B", "depends_on": ["A", "B"], "tasks": [{"id": "C1", "name": "Phase C task", "status": "pending", "depends_on": [], "files": {"create": ["src/c1.ts"], "modify": [], "test": ["tests/c1.test.ts"]}, "verification": "echo ok", "done_when": "C1 done", "success_criteria": []}]}]' \
   "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
 assert_pass "multi-phase depends_on C depends on A and B passes" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
@@ -204,7 +218,7 @@ assert_pass "multi-phase depends_on C depends on A and B passes" \
 echo "Test 21: depends_on references non-existent phase fails"
 rm -rf "${TMPDIR:?}/"*
 cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
-jq '. + {"workflow": "create-pr"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["Z"]}' \
+jq '. + {"workflow": "pr-create"} | .phases[0] += {"depends_on": []} | .phases[1] += {"depends_on": ["Z"]}' \
   "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
 assert_fail "depends_on references non-existent phase" "invalid_depends_on" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"
@@ -212,7 +226,7 @@ assert_fail "depends_on references non-existent phase" "invalid_depends_on" \
 echo "Test 22: Circular phase dependency detected"
 rm -rf "${TMPDIR:?}/"*
 cp -r "$FIXTURES/valid-plan/"* "$TMPDIR/"
-jq '. + {"workflow": "create-pr"} | .phases[0] += {"depends_on": ["B"]} | .phases[1] += {"depends_on": ["A"]}' \
+jq '. + {"workflow": "pr-create"} | .phases[0] += {"depends_on": ["B"]} | .phases[1] += {"depends_on": ["A"]}' \
   "$FIXTURES/valid-plan/plan.json" > "$TMPDIR/plan.json"
 assert_fail "circular phase dependency" "circular_dependency" \
   "$VALIDATE" --schema "$TMPDIR/plan.json"

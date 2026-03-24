@@ -54,7 +54,7 @@ echo "Test 1: Task with no dependencies passes"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
@@ -75,7 +75,7 @@ echo "Test 2: Task with all dependencies complete passes"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
@@ -106,7 +106,7 @@ echo "Test 3: Task with one dependency still pending fails"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
@@ -136,7 +136,7 @@ echo "Test 4: Task with one dependency in_progress fails"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
@@ -166,7 +166,7 @@ echo "Test 5: Task that doesn't exist fails"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
@@ -187,7 +187,7 @@ echo "Test 6: Task with skipped dependency passes"
 DIR=$(make_plan_dir)
 cat > "$DIR/plan.json" <<'JSON'
 {
-  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "schema": 1, "status": "In Development", "workflow": "pr-create",
   "goal": "test", "architecture": "test", "tech_stack": "test",
   "phases": [{
     "letter": "A", "name": "Phase A", "status": "In Progress",
