@@ -44,16 +44,18 @@ Proposed: Lead (orchestrator) ──push notifications──▶ Teammates (1 per
 
 For each phase (sequential):
 
-1. Lead reads plan.json, identifies the current phase's tasks
-2. Lead spawns one implementer teammate per task — each gets an auto-worktree from the feature branch
-3. All teammates execute in parallel (non-overlapping file sets guaranteed by plan constraints)
-4. As each teammate completes, lead receives an idle notification (no polling)
-5. Lead dispatches a reviewer teammate for each completed task — reviewers run concurrently with still-active implementers
-6. When all implementers + reviewers for the phase are done:
-   - Lead merges all task branches into the feature branch (no conflicts due to file-set isolation)
+1. Lead reads plan.json, identifies the current phase's tasks and their dependency graph
+2. Lead spawns implementer teammates for all tasks with no unmet dependencies — each gets an auto-worktree from the feature branch
+3. Independent teammates execute in parallel (non-overlapping file sets guaranteed by plan constraints)
+4. As each teammate completes, lead receives an idle notification (no polling). Lead runs the teammate lifecycle (review → fix loop → validate → kill → merge branch into feature branch)
+5. **Incremental merge**: after each task passes review and is killed, lead immediately merges that task's branch into the feature branch. This ensures dependent tasks see prerequisite code.
+6. **Dependency gate**: when a task's dependencies are all resolved, lead runs `validate-plan --check-deps plan.json --task {TASK_ID}` to verify all dependency tasks have status `complete`. Only then does the lead spawn a teammate for that task (worktree created from the now-updated feature branch).
+7. When all tasks in the phase are complete and merged:
    - Lead runs implementation review (cross-task holistic) for the phase
    - Lead creates + merges phase PR (if multi-phase) or final PR (if single-phase)
-7. Move to next phase from the updated feature branch
+8. Move to next phase from the updated feature branch
+
+**Example** (this plan): A1-A6 spawn immediately (no dependencies). As each completes → review → kill → merge. When A4 AND A5 are both merged and marked complete, `validate-plan --check-deps` passes for A7 → spawn A7. When all A1-A7 are complete, spawn A8. When A8 completes → implementation review → PR.
 
 ### Parallelism Inversion
 
