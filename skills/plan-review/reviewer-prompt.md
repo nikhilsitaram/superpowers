@@ -123,8 +123,16 @@ Agent tool (general-purpose):
     - Flag: "Done when" references a criterion but doesn't actually satisfy it
     - Flag: Design doc has Success Criteria section but plan has no tasks covering them
 
-    ### Phase Checks (multi-phase plans only)
+    ### Phase & Parallelism Checks
     **Structural validation already verified:** phase-{letter}/completion.md files exist.
+    File-set overlap within phases (no two tasks in the same phase share create/modify/test paths).
+
+    **File-set isolation (single and multi-phase):**
+    - Do any tasks in the same phase logically need to modify the same module? (Indicates bad decomposition even if paths are technically different)
+    - Are shared utilities or config files properly assigned to one task, with other tasks only consuming them?
+
+    - Flag: Two tasks modify different functions in the same file (should be one task or file should be split)
+    - Flag: Task A creates a utility that Task B also needs to modify (should consolidate)
 
     **LLM reviewer checks:** If plan has multiple phases:
     - Phase boundaries at meaningful verification points?

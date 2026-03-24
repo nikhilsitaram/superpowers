@@ -49,6 +49,7 @@ Handled by `validate-plan --schema`:
 - Missing phase completion files
 - Empty success_criteria run commands
 - Missing expect fields
+- File-set overlap within a phase (create, modify, test paths must be disjoint per task)
 
 ### Prose + Design Review (LLM reviewer)
 
