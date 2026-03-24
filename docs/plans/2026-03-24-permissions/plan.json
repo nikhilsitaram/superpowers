@@ -64,7 +64,7 @@
         {
           "id": "A4",
           "name": "Verify no dead permission-forwarding code",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],

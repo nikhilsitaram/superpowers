@@ -18,4 +18,4 @@ status: In Development
 - [x] A1: Add missing commands to safe-commands.txt — *safe-commands.txt contains ln, dirname, basename, [, command (64 entries total); marketplace.json version bumped to 1.15.0; all existing tests pass*
 - [x] A2: Shell interpreter resolution and variable-as-command deny — *'bash scripts/validate-plan' resolves to 'validate-plan' (safe); 'bash -e scripts/validate-plan' resolves to 'validate-plan'; 'bash "$f"' emits deny with feedback; bare 'bash' falls through; $VAR/"$VAR"/${VAR} as command word produces deny with permissionDecisionReason; all existing tests still pass*
 - [x] A3: Tests for all new behaviors — *16+ new tests cover: 5 new safe commands, 7 interpreter resolution cases, 4 variable-as-command deny cases; all tests green*
-- [ ] A4: Verify no dead permission-forwarding code — *Grep confirms no orphaned permission-prompt-forwarding code from the pre-agent-teams supervision loop in hooks/ or skills/orchestrate/*
+- [x] A4: Verify no dead permission-forwarding code — *Grep confirms no orphaned permission-prompt-forwarding code from the pre-agent-teams supervision loop in hooks/ or skills/orchestrate/*
