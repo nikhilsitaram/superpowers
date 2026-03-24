@@ -82,7 +82,7 @@
         {
           "id": "A5",
           "name": "Bump version in marketplace.json",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2",
             "A3",
@@ -101,7 +101,7 @@
         {
           "id": "A6",
           "name": "Run skill-eval for orchestrate",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2",
             "A3",
