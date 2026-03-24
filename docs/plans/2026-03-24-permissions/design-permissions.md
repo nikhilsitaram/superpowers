@@ -40,11 +40,15 @@ Add to `hooks/safe-commands.txt`:
 
 In `extract_command_words_from_segment`, when the extracted command word is a known shell interpreter (`bash`, `sh`, `zsh`):
 
-1. Extract the first non-flag argument (the script path)
-2. If it's a variable reference (`$VAR`, `"$VAR"`) → emit the variable token (will fail safe-list check, triggering deny path)
-3. Otherwise → extract basename and emit that instead of the interpreter name
+1. Skip flags: tokens matching `^-` (handles `-e`, `-x`, `-euo`, `--verbose`). Stop skipping at `--` (end-of-flags) or the first non-flag token.
+2. Extract the first non-flag argument (the script path)
+3. If it's a variable reference (`$VAR`, `"$VAR"`) → emit the variable token (will fail safe-list check, triggering deny path)
+4. Otherwise → extract basename and emit that instead of the interpreter name
+5. If no script argument exists (bare `bash`) → emit `bash` as the command word (fails safe-list check → deny)
 
-This means `bash scripts/validate-plan --args` → `validate-plan` → safe → approved. And `bash "$f"` → `$f` → not safe → denied.
+This means `bash scripts/validate-plan --args` → `validate-plan` → safe → approved. `bash -e scripts/validate-plan` → `validate-plan` → safe. `bash "$f"` → `$f` → deny. Bare `bash` → deny.
+
+The `bash -c 'command string'` pattern is not handled specially — `-c` is a flag, `'command string'` becomes the "script" token, its basename won't match the safe list, so it denies. This is safe-by-default and correct.
 
 The existing basename extraction logic (`${word##*/}`) already handles path stripping — we just apply it one word deeper for shell interpreters.
 
@@ -53,7 +57,11 @@ The existing basename extraction logic (`${word##*/}`) already handles path stri
 In the main verification loop, when a command word starts with `$` (after stripping quotes):
 
 - Set a flag indicating variable-as-command was detected
-- After the loop, if the flag is set, output a PreToolUse deny with `userMessage`: "Command word is a shell variable — the safe commands hook cannot verify safety. Use the literal path instead of variable indirection."
+- After the loop, if the flag is set, output a PreToolUse deny with `permissionDecisionReason`: "Command word is a shell variable — the safe commands hook cannot verify safety. Use the literal path instead of variable indirection."
+
+The deny response format: `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}`
+
+The `permissionDecisionReason` is surfaced to the agent (not the user), enabling self-correction without user interruption.
 
 This gives agents clear, actionable feedback. The agent rewrites with the literal path, which the hook can then verify normally. No user interruption needed.
 

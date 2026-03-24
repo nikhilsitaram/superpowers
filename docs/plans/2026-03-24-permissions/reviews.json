@@ -1,0 +1,25 @@
+[
+  {
+    "type": "design-review",
+    "scope": "design",
+    "iteration": 1,
+    "issues_found": 6,
+    "severity": {
+      "medium": 2,
+      "low": 3,
+      "informational": 1
+    },
+    "actionable": 2,
+    "dismissed": 4,
+    "dismissals": [
+      "F2: bash -c pattern safe-by-default, not used by skills",
+      "F4: test count 32+6+7=45 is correct",
+      "F5: bare bash already in T5 no-arg test",
+      "F6: dead code confirmed absent"
+    ],
+    "fixed": 2,
+    "remaining": 0,
+    "verdict": "pass",
+    "timestamp": "2026-03-24T21:30:00Z"
+  }
+]
