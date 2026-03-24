@@ -9,14 +9,6 @@ Execute plans via agent teams. Phases run sequentially; tasks within each phase 
 
 **Core principle:** The lead dispatches teammates — only implementer teammates touch code.
 
-## Requires
-
-```bash
-[ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" = "1" ] || { echo "Agent teams not enabled"; exit 1; }
-```
-
-If the environment variable is not set, stop and ask the user to enable it.
-
 ## Prompt Templates
 
 | Template | Purpose |
@@ -131,7 +123,7 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 
 | Constraint | Why |
 |------------|-----|
-| Check `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Feature flag required for teammate API |
+| Verify `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Feature flag required for teammate API (checked in design skill) |
 | Validate schema before execution | Catches file-set overlap and structural issues early |
 | Record PLAN_BASE_SHA before first phase | Final cross-phase review needs total diff |
 | Record PHASE_BASE_SHA per phase | Per-phase review needs exact phase start |

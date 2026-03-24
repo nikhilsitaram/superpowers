@@ -7,6 +7,17 @@ description: Use when creating features, building components, adding functionali
 
 Turn ideas into validated designs through collaborative dialogue before any code is written.
 
+## Prerequisite: Agent Teams
+
+Before anything else, check `$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. If it's not `1`, offer to enable it:
+
+1. Detect shell profile: `~/.zshrc` (zsh) or `~/.bashrc` (bash)
+2. Append `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to the profile
+3. Tell the user: "Added agent teams flag to your profile. Run `source ~/.zshrc` (or `! source ~/.zshrc` here) to activate it, then re-run your request."
+4. Stop — the env var won't take effect in the current session without sourcing.
+
+If the var is already set, continue silently.
+
 <HARD-GATE>
 Do NOT invoke implementation skills, write code, or scaffold projects until you have presented a design and the user has explicitly approved it. Skipping design validation is the #1 cause of wasted work in AI-assisted sessions. This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
