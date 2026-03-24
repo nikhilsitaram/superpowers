@@ -6,12 +6,16 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 VP="$REPO_ROOT/scripts/validate-plan"
 PASS=0
 FAIL=0
+CLEANUP_DIRS=()
+cleanup() { for d in "${CLEANUP_DIRS[@]}"; do rm -rf "$d"; done; }
+trap cleanup EXIT
 
 make_plan_dir() {
   local dir
   dir=$(mktemp -d)
   mkdir -p "$dir/phase-a"
   touch "$dir/phase-a/completion.md"
+  CLEANUP_DIRS+=("$dir")
   echo "$dir"
 }
 
@@ -66,7 +70,6 @@ cat > "$DIR/plan.json" <<'JSON'
 JSON
 make_task_file "$DIR" "phase-a" "A1" "Task one"
 assert_pass "task with no dependencies" bash "$VP" --check-deps "$DIR/plan.json" --task A1
-rm -rf "$DIR"
 
 echo "Test 2: Task with all dependencies complete passes"
 DIR=$(make_plan_dir)
@@ -98,7 +101,6 @@ make_task_file "$DIR" "phase-a" "A1" "Task one"
 make_task_file "$DIR" "phase-a" "A2" "Task two"
 echo "# A1 Completion" > "$DIR/phase-a/a1-completion.md"
 assert_pass "task with all deps complete" bash "$VP" --check-deps "$DIR/plan.json" --task A2
-rm -rf "$DIR"
 
 echo "Test 3: Task with one dependency still pending fails"
 DIR=$(make_plan_dir)
@@ -129,7 +131,6 @@ JSON
 make_task_file "$DIR" "phase-a" "A1" "Task one"
 make_task_file "$DIR" "phase-a" "A2" "Task two"
 assert_fail "task with pending dependency" bash "$VP" --check-deps "$DIR/plan.json" --task A2
-rm -rf "$DIR"
 
 echo "Test 4: Task with one dependency in_progress fails"
 DIR=$(make_plan_dir)
@@ -160,7 +161,6 @@ JSON
 make_task_file "$DIR" "phase-a" "A1" "Task one"
 make_task_file "$DIR" "phase-a" "A2" "Task two"
 assert_fail "task with in_progress dependency" bash "$VP" --check-deps "$DIR/plan.json" --task A2
-rm -rf "$DIR"
 
 echo "Test 5: Task that doesn't exist fails"
 DIR=$(make_plan_dir)
@@ -182,7 +182,36 @@ cat > "$DIR/plan.json" <<'JSON'
 JSON
 make_task_file "$DIR" "phase-a" "A1" "Task one"
 assert_fail "nonexistent task" bash "$VP" --check-deps "$DIR/plan.json" --task Z99
-rm -rf "$DIR"
+
+echo "Test 6: Task with skipped dependency passes"
+DIR=$(make_plan_dir)
+cat > "$DIR/plan.json" <<'JSON'
+{
+  "schema": 1, "status": "In Development", "workflow": "create-pr",
+  "goal": "test", "architecture": "test", "tech_stack": "test",
+  "phases": [{
+    "letter": "A", "name": "Phase A", "status": "In Progress",
+    "depends_on": [], "rationale": "test",
+    "tasks": [
+      {
+        "id": "A1", "name": "Task one", "status": "skipped",
+        "depends_on": [],
+        "files": {"create": [], "modify": ["f1.sh"], "test": []},
+        "verification": "true", "done_when": "done"
+      },
+      {
+        "id": "A2", "name": "Task two", "status": "pending",
+        "depends_on": ["A1"],
+        "files": {"create": [], "modify": ["f2.sh"], "test": []},
+        "verification": "true", "done_when": "done"
+      }
+    ]
+  }]
+}
+JSON
+make_task_file "$DIR" "phase-a" "A1" "Task one"
+make_task_file "$DIR" "phase-a" "A2" "Task two"
+assert_pass "task with skipped dependency" bash "$VP" --check-deps "$DIR/plan.json" --task A2
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

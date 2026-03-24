@@ -39,7 +39,6 @@ setup_valid_plan() {
   local dir="$1"
   rm -rf "${dir:?}/"*
   cp -r "$FIXTURES/valid-plan/"* "$dir/"
-  cp "$FIXTURES/valid-plan/plan.json" "$dir/plan.json"
 }
 
 TMPDIR=$(mktemp -d)

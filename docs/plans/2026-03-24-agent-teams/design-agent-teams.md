@@ -32,7 +32,7 @@ Replace the polling-based supervision architecture with Claude Code agent teams.
 
 ### Current vs Proposed
 
-```
+```text
 Current:  Orchestrator ──poll 60s──▶ Phase Dispatchers ──poll 30s──▶ Task Implementers
                                      (1 per phase)                   (1 at a time)
 
@@ -96,7 +96,7 @@ This is a change from the current model where the phase dispatcher handles steps
 
 Each implementer teammate follows a strict lifecycle. The lead manages transitions:
 
-```
+```text
 Spawn → Implement → Idle (notify lead) → [Review Loop] → Validate → Kill
 ```
 

@@ -211,8 +211,14 @@ else
   setup_plan_dir
   write_single_phase_plan "create-pr" "Complete"
   printf '[{"type":"design-review","scope":"design","verdict":"pass","remaining":0},{"type":"plan-review","scope":"plan","verdict":"pass","remaining":0},{"type":"impl-review","scope":"phase-a","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
+  GIT_TMPDIR=$(mktemp -d)
+  git -C "$GIT_TMPDIR" init -b test-no-pr-branch >/dev/null 2>&1
+  git -C "$GIT_TMPDIR" commit --allow-empty -m "init" >/dev/null 2>&1
+  pushd "$GIT_TMPDIR" >/dev/null
   assert_fail "single-phase create-pr fails on PR state not final impl-review" "no PR found\|no final PR found\|gh pr list failed" \
     "$VALIDATE" --check-workflow "$TMPDIR/plan.json"
+  popd >/dev/null
+  rm -rf "$GIT_TMPDIR"
 fi
 
 echo "Test 9b: single-phase create-pr fails when missing phase impl-review"

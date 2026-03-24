@@ -50,6 +50,9 @@ assert_eq "plan status" "In Development" "$(jq -r '.status' "$TMPDIR/plan.json")
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A2 --status in_progress
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A2 --status complete
 
+echo "# A1 Completion" > "$TMPDIR/phase-a/a1-completion.md"
+echo "# A2 Completion" > "$TMPDIR/phase-a/a2-completion.md"
+
 printf '[{"type":"impl-review","scope":"phase-a","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --phase A --status "Complete (2026-03-19)"
 

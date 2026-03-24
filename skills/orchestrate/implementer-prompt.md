@@ -4,6 +4,7 @@ Use this template when spawning an implementer teammate. The lead substitutes al
 
 **Variables:**
 - `{TASK_ID}` — the task ID (e.g., A1)
+- `{TASK_ID_LOWER}` — lowercase task ID (e.g., a1)
 - `{TASK_METADATA}` — JSON task object from plan.json
 - `{TASK_PROSE}` — content of the task .md file
 - `{PLAN_DIR}` — absolute path to plan directory
@@ -81,7 +82,7 @@ Teammate spawn:
 
     ## Completion Notes
 
-    Write to `{PHASE_DIR}/{task_id_lower}-completion.md`:
+    Write to `{PHASE_DIR}/{TASK_ID_LOWER}-completion.md`:
 
     ```markdown
     # {TASK_ID} Completion Notes

@@ -7,7 +7,7 @@ Dispatch a reviewer teammate to evaluate a single task's implementation. Spawned
 **Variables:**
 - `{TASK_ID}` — the task ID
 - `{TASK_SPEC}` — task metadata + prose combined
-- `{TASK_COMPLETION_FILE}` — path to implementer's completion notes (`{PHASE_DIR}/{task_id_lower}-completion.md`)
+- `{TASK_COMPLETION_FILE}` — path to implementer's completion notes (`{PHASE_DIR}/{TASK_ID_LOWER}-completion.md`)
 - `{REPO_PATH}` — implementer teammate's worktree path
 - `{BASE_SHA}` — SHA before task started
 - `{HEAD_SHA}` — SHA after task completed

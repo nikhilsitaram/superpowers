@@ -25,6 +25,25 @@ USAGE
 ERRORS=()
 err() { ERRORS+=("$1"); }
 
+lock_plan() {
+  local plan_json="$1"
+  local lock_dir="${plan_json}.lock"
+  local retries=0
+  while ! mkdir "$lock_dir" 2>/dev/null; do
+    retries=$((retries + 1))
+    if [[ $retries -gt 50 ]]; then
+      echo "ERROR: could not acquire lock on $plan_json after 5 seconds" >&2
+      exit 1
+    fi
+    sleep 0.1
+  done
+}
+
+unlock_plan() {
+  local plan_json="$1"
+  rmdir "${plan_json}.lock" 2>/dev/null || true
+}
+
 find_timeout_cmd() {
   if command -v timeout >/dev/null 2>&1; then
     echo "timeout"
@@ -313,7 +332,8 @@ do_schema() {
       all_task_ids+=("$id")
     done
 
-    local -A phase_file_owners=()
+    local phase_file_paths=()
+    local phase_file_tids=()
     for ((t=0; t<task_count; t++)); do
       local tid
       tid=$(echo "$json" | jq -r ".phases[$p].tasks[$t].id // empty")
@@ -323,10 +343,18 @@ do_schema() {
         for ((f=0; f<arr_count; f++)); do
           local fpath
           fpath=$(echo "$json" | jq -r ".phases[$p].tasks[$t].files.$arr[$f]")
-          if [[ -n "${phase_file_owners[$fpath]+x}" ]]; then
-            err "ERROR: fileset_overlap: file '$fpath' claimed by tasks ${phase_file_owners[$fpath]} and $tid in phase $letter"
-          else
-            phase_file_owners[$fpath]="$tid"
+          local existing_owner=""
+          for ((i=0; i<${#phase_file_paths[@]}; i++)); do
+            if [[ "${phase_file_paths[$i]}" == "$fpath" ]]; then
+              existing_owner="${phase_file_tids[$i]}"
+              break
+            fi
+          done
+          if [[ -n "$existing_owner" && "$existing_owner" != "$tid" ]]; then
+            err "ERROR: fileset_overlap: file '$fpath' claimed by tasks $existing_owner and $tid in phase $letter"
+          elif [[ -z "$existing_owner" ]]; then
+            phase_file_paths+=("$fpath")
+            phase_file_tids+=("$tid")
           fi
         done
       done
@@ -492,17 +520,23 @@ do_update_status_task() {
     echo "ERROR: invalid_task_status: '$new_status'" >&2
     exit 1
   fi
+  lock_plan "$plan_json"
+  trap 'unlock_plan "'"$plan_json"'"' EXIT
   local task_found
   task_found=$(jq --arg id "$task_id" '[.phases[].tasks[] | select(.id == $id)] | length' "$plan_json")
   if [ "$task_found" -eq 0 ]; then
+    unlock_plan "$plan_json"
+    trap - EXIT
     echo "ERROR: task_not_found: '$task_id' not found in plan" >&2
     exit 1
   fi
   local tmp="${plan_json}.tmp.$$"
   jq --arg id "$task_id" --arg status "$new_status" '
     (.phases[].tasks[] | select(.id == $id)).status = $status
-  ' "$plan_json" > "$tmp" || { rm -f "$tmp"; echo "ERROR: jq update failed" >&2; exit 1; }
-  mv "$tmp" "$plan_json" || { echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  ' "$plan_json" > "$tmp" || { rm -f "$tmp"; unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: jq update failed" >&2; exit 1; }
+  mv "$tmp" "$plan_json" || { unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  unlock_plan "$plan_json"
+  trap - EXIT
   do_render "$plan_json"
 }
 
@@ -512,9 +546,13 @@ do_update_status_phase() {
     echo "ERROR: invalid_phase_status: '$new_status' (expected Not Started, In Progress, or Complete (YYYY-MM-DD))" >&2
     exit 1
   fi
+  lock_plan "$plan_json"
+  trap 'unlock_plan "'"$plan_json"'"' EXIT
   local phase_found
   phase_found=$(jq --arg letter "$phase_letter" '[.phases[] | select(.letter == $letter)] | length' "$plan_json")
   if [ "$phase_found" -eq 0 ]; then
+    unlock_plan "$plan_json"
+    trap - EXIT
     echo "ERROR: phase_not_found: '$phase_letter' not found in plan" >&2
     exit 1
   fi
@@ -525,6 +563,8 @@ do_update_status_phase() {
     phase_lower=$(echo "$phase_letter" | tr '[:upper:]' '[:lower:]')
     local gate_result
     if ! gate_result=$(check_review_record "$plan_dir" "impl-review" "phase-$phase_lower"); then
+      unlock_plan "$plan_json"
+      trap - EXIT
       echo "ERROR: cannot mark phase $phase_letter complete — $gate_result" >&2
       exit 1
     fi
@@ -532,8 +572,10 @@ do_update_status_phase() {
   local tmp="${plan_json}.tmp.$$"
   jq --arg letter "$phase_letter" --arg status "$new_status" '
     (.phases[] | select(.letter == $letter)).status = $status
-  ' "$plan_json" > "$tmp" || { rm -f "$tmp"; echo "ERROR: jq update failed" >&2; exit 1; }
-  mv "$tmp" "$plan_json" || { echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  ' "$plan_json" > "$tmp" || { rm -f "$tmp"; unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: jq update failed" >&2; exit 1; }
+  mv "$tmp" "$plan_json" || { unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  unlock_plan "$plan_json"
+  trap - EXIT
   do_render "$plan_json"
 }
 
@@ -597,9 +639,13 @@ do_update_status_plan() {
       exit 1
     fi
   fi
+  lock_plan "$plan_json"
+  trap 'unlock_plan "'"$plan_json"'"' EXIT
   local tmp="${plan_json}.tmp.$$"
-  jq --arg status "$new_status" '.status = $status' "$plan_json" > "$tmp" || { rm -f "$tmp"; echo "ERROR: jq update failed" >&2; exit 1; }
-  mv "$tmp" "$plan_json" || { echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  jq --arg status "$new_status" '.status = $status' "$plan_json" > "$tmp" || { rm -f "$tmp"; unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: jq update failed" >&2; exit 1; }
+  mv "$tmp" "$plan_json" || { unlock_plan "$plan_json"; trap - EXIT; echo "ERROR: failed to write plan.json" >&2; exit 1; }
+  unlock_plan "$plan_json"
+  trap - EXIT
   do_render "$plan_json"
 }
 
@@ -967,8 +1013,8 @@ do_check_deps() {
         fi
       done
     done
-    if [[ "$dep_status" != "complete" ]]; then
-      echo "ERROR: dependency_not_complete: task $task_id depends on $dep_id which has status '$dep_status' (expected: complete)" >&2
+    if [[ "$dep_status" != "complete" && "$dep_status" != "skipped" ]]; then
+      echo "ERROR: dependency_not_complete: task $task_id depends on $dep_id which has status '$dep_status' (expected: complete or skipped)" >&2
       exit 1
     fi
   done

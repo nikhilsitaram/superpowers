@@ -15,7 +15,7 @@ Execute plans via agent teams. Phases run sequentially; tasks within each phase 
 [ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" = "1" ] || { echo "Agent teams not enabled"; exit 1; }
 ```
 
-If the environment variable is not set, stop and tell the user to enable it.
+If the environment variable is not set, stop and ask the user to enable it.
 
 ## Prompt Templates
 
@@ -63,7 +63,7 @@ Spawn implementer teammates for tasks with no unmet dependencies (verified via `
 
 When an implementer teammate goes idle (push notification — no polling):
 
-1. Read the teammate's completion notes (`{PHASE_DIR}/{task_id_lower}-completion.md`)
+1. Read the teammate's completion notes (`{PHASE_DIR}/{TASK_ID_LOWER}-completion.md`)
 2. Dispatch a reviewer teammate (`./task-reviewer-prompt.md`) with the task's branch-specific diff range (task worktree `BASE..HEAD`, not the phase-wide range)
 3. When reviewer goes idle, extract the last `json review-summary` block
 4. Triage issues: "fix" (send to implementer via mailbox) or "dismiss" (document reasoning)
@@ -140,5 +140,5 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 
 ## Integration
 
-**Workflow:** design -> draft-plan -> **this skill** -> create-pr -> review-pr -> merge-pr
-**See:** `tdd.md` -- TDD reference embedded in implementer prompts
+**Workflow:** design → draft-plan → **this skill** → create-pr → review-pr → merge-pr
+**See:** `tdd.md`
