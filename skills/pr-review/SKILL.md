@@ -92,11 +92,9 @@ Post a `gh pr comment` with unified assessment: what was fixed, dismissed (with 
 
 Report: PR URL, review items (fixed/dismissed/informational).
 
-If inside a worktree, tell the user: "When ready to merge: `cd` to the main repo, then run `/pr-merge`." Otherwise: "Run `/pr-merge` when ready to merge."
-
 Use AskUserQuestion with options:
 - **Merge PR** — invoke pr-merge via Skill tool (pr-merge's worktree guard handles CWD automatically)
-- **Not yet** — stop here
+- **Not yet** — if inside a worktree, tell the user: "When ready to merge: `cd` to the main repo, then run `/pr-merge`." Otherwise: "Run `/pr-merge` when ready to merge."
 
 ## Arguments
 
