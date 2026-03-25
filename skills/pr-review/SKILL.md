@@ -28,7 +28,7 @@ If not on the PR branch: look up `WORKTREE_PATH` first — if the branch is in a
 
 ### Step 2: Mode Selection
 
-If `--automated`/`-A` flag was passed, use automated mode (skip prompt).
+If `--automated`/`-A` flag was passed, use automated mode (skip prompt). If both `--automated` and `--skip-fixes` are passed, fail fast — these flags are mutually exclusive.
 
 Otherwise, AskUserQuestion:
 - **Automated** — Fix all actionable findings without interaction. External feedback processed first, then subagent findings.
@@ -65,8 +65,6 @@ The subagent posts its findings as a `gh pr comment` on the PR, then returns fin
 
 ### Step 5: External Feedback
 
-If both `--automated` and `--skip-fixes` are passed, fail fast — these flags are mutually exclusive.
-
 **`--automated` flag (from orchestrate):** Skip polling entirely — orchestrate already confirmed bot readiness. Collect available feedback via `gh` and proceed directly to fixing.
 
 **User-selected automated / Deliberate — poll for bot readiness:**
@@ -86,7 +84,7 @@ If both `--automated` and `--skip-fixes` are passed, fail fast — these flags a
 | **Informational** — explanation, praise | Acknowledge, no change |
 | **False positive** — incorrect analysis | Dismiss with technical reasoning |
 
-**Automated mode:** Fix all actionable items. Run tests. `git commit` locally (do NOT push yet — wave 2 may modify the same files).
+**Automated mode:** Fix all actionable items. Run tests. If `--skip-review` was passed (no wave 2 coming): `git commit` and `git push -u origin HEAD`. Otherwise: `git commit` locally (do NOT push yet — wave 2 may modify the same files).
 
 **Deliberate mode:** Collect and report status. No fixes yet — wait for unified triage in Step 7.
 

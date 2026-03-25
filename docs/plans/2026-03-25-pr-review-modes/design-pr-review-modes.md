@@ -23,7 +23,7 @@ Add a user-facing mode prompt ("Automated" vs "Deliberate"), restructure the wor
 
 ### Restructured Steps
 
-```
+```text
 Step 1: Setup (unchanged)
 Step 2: Mode Selection (NEW)
 Step 3: Rebase (unchanged)
@@ -101,7 +101,7 @@ Same as current Step 7. Post unified assessment as `gh pr comment`. Automated mo
 | Poll interval | 60 seconds | Balanced between responsiveness and API rate limits. |
 | Max timeout | 10 minutes | Safety net. Most bots complete in 2-5 minutes. |
 | CodeRabbit rate limit | Proceed immediately | Waiting for retry is too slow and may not resolve. |
-| Commit strategy | Wave 1: commit local. Wave 2: commit + push. | Avoids intermediate push state. Subagent reviews pushed code, wave 1 only modifies local. |
+| Commit strategy | Wave 1: commit local. Wave 2: commit + push. | Avoids intermediate push state. Subagent reviews original code; findings are reconciled against wave-1 fixes before wave 2. |
 
 ## Non-Goals
 
