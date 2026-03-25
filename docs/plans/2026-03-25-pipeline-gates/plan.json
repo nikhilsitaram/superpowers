@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "status": "Not Yet Started",
-  "workflow": "pr-create",
-  "execution_mode": "subagents",
+  "workflow": "pr-merge",
+  "execution_mode": "agent-teams",
   "goal": "Add pipeline enforcement gates to validate-plan",
   "architecture": "Three new validate-plan modes (--consistency, --check-entry, --check-base) plus an integration_branch schema field. Consistency rules move from --schema to a dedicated function that --schema chains to. Entry gates check reviews.json for prerequisite reviews before work begins. Base-branch checks prevent dispatch from the wrong worktree. Skill docs updated to call the new gates at startup.",
   "tech_stack": "Bash, jq, git",
@@ -21,7 +21,9 @@
           "depends_on": [],
           "files": {
             "create": [],
-            "modify": ["scripts/validate-plan"],
+            "modify": [
+              "scripts/validate-plan"
+            ],
             "test": []
           },
           "verification": "bash tests/validate-plan/test_schema.sh && bash tests/validate-plan/test_status_consistency.sh && bash tests/validate-plan/test_check_review.sh",
@@ -31,9 +33,13 @@
           "id": "A2",
           "name": "Write consistency mode tests",
           "status": "pending",
-          "depends_on": ["A1"],
+          "depends_on": [
+            "A1"
+          ],
           "files": {
-            "create": ["tests/validate-plan/test_consistency.sh"],
+            "create": [
+              "tests/validate-plan/test_consistency.sh"
+            ],
             "modify": [],
             "test": []
           },
@@ -44,9 +50,13 @@
           "id": "A3",
           "name": "Write check-entry mode tests",
           "status": "pending",
-          "depends_on": ["A1"],
+          "depends_on": [
+            "A1"
+          ],
           "files": {
-            "create": ["tests/validate-plan/test_check_entry.sh"],
+            "create": [
+              "tests/validate-plan/test_check_entry.sh"
+            ],
             "modify": [],
             "test": []
           },
@@ -57,9 +67,13 @@
           "id": "A4",
           "name": "Write check-base mode tests",
           "status": "pending",
-          "depends_on": ["A1"],
+          "depends_on": [
+            "A1"
+          ],
           "files": {
-            "create": ["tests/validate-plan/test_check_base.sh"],
+            "create": [
+              "tests/validate-plan/test_check_base.sh"
+            ],
             "modify": [],
             "test": []
           },
@@ -73,7 +87,11 @@
           "depends_on": [],
           "files": {
             "create": [],
-            "modify": ["skills/orchestrate/SKILL.md", "skills/orchestrate/dispatch-subagents.md", "skills/orchestrate/dispatch-agent-teams.md"],
+            "modify": [
+              "skills/orchestrate/SKILL.md",
+              "skills/orchestrate/dispatch-subagents.md",
+              "skills/orchestrate/dispatch-agent-teams.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'check-entry' skills/orchestrate/SKILL.md && grep -q 'check-base' skills/orchestrate/SKILL.md && grep -q 'consistency' skills/orchestrate/SKILL.md",
@@ -86,7 +104,9 @@
           "depends_on": [],
           "files": {
             "create": [],
-            "modify": ["skills/draft-plan/SKILL.md"],
+            "modify": [
+              "skills/draft-plan/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'check-entry' skills/draft-plan/SKILL.md",
@@ -99,7 +119,9 @@
           "depends_on": [],
           "files": {
             "create": [],
-            "modify": ["skills/design/SKILL.md"],
+            "modify": [
+              "skills/design/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'integration_branch' skills/design/SKILL.md",
@@ -112,7 +134,9 @@
           "depends_on": [],
           "files": {
             "create": [],
-            "modify": [".claude-plugin/marketplace.json"],
+            "modify": [
+              ".claude-plugin/marketplace.json"
+            ],
             "test": []
           },
           "verification": "jq -r '.plugins[0].version' .claude-plugin/marketplace.json | grep -q '1.18.0'",
