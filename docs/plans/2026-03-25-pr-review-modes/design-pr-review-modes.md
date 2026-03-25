@@ -15,8 +15,8 @@ Add a user-facing mode prompt ("Automated" vs "Deliberate"), restructure the wor
 3. The fresh-eyes subagent runs in the background in both modes (parallelism improvement).
 4. External feedback readiness is detected by polling `gh pr checks` and scanning for bot processing indicators — not a hardcoded wait.
 5. CodeRabbit rate-limit warnings are detected and treated as "proceed with available feedback."
-6. In automated mode, a 60-second warm-up delay precedes the first poll to allow bots to register checks on new PRs.
-7. Deliberate mode behavior matches the current interactive workflow (collect all, present triage, user picks).
+6. In user-selected automated mode (not `--automated` flag), a 60-second warm-up delay precedes the first poll to allow bots to register checks on new PRs. When `--automated` is passed by orchestrate, the caller has already polled checks — skip warm-up and polling entirely.
+7. Deliberate mode skips warm-up (user triggers manually after seeing bot activity) and polls immediately.
 8. The `--automated` flag continues to work for orchestrate backward compatibility.
 
 ## Architecture
@@ -49,7 +49,10 @@ Both modes dispatch the reviewer subagent with `run_in_background: true` using t
 
 ### Step 5: External Feedback
 
-**Automated mode:**
+**`--automated` flag (from orchestrate):**
+Skip warm-up and polling — orchestrate already polled checks before invoking pr-review. Proceed directly to collecting available feedback, assess, fix all actionable, `git commit` locally.
+
+**User-selected automated mode:**
 1. Wait 60 seconds for bots to register checks on the PR.
 2. Poll `gh pr checks $PR_NUMBER` every 60 seconds.
 3. Scan latest PR comments for "processing" / "in progress" indicators from bots.
@@ -61,9 +64,10 @@ Both modes dispatch the reviewer subagent with `run_in_background: true` using t
 9. `git commit` locally (do NOT push yet — wave 2 may modify the same files).
 
 **Deliberate mode:**
-1. Same polling logic (warm-up, check polling, rate-limit detection, timeout).
-2. Collect external feedback and report status to user while waiting for subagent.
-3. No fixes yet — wait for Step 7 unified triage.
+1. No warm-up — user triggers pr-review manually after seeing bot activity.
+2. Poll `gh pr checks` every 60 seconds. Same readiness signals (all checks complete, no processing indicators, rate-limit = proceed, 10 min timeout).
+3. Collect external feedback and report status to user while waiting for subagent.
+4. No fixes yet — wait for Step 7 unified triage.
 
 ### Step 6: Subagent Results
 
@@ -93,7 +97,7 @@ Same as current Step 7. Post unified assessment as `gh pr comment`. Automated mo
 |----------|--------|-----------|
 | Two-wave vs single-pass fixing | Two-wave | User preference. Wave 1 commits locally, wave 2 pushes — no stale remote state. |
 | Bot readiness detection | Poll-based (`gh pr checks` + comment scan) | More reliable than hardcoded timeout. Timeout is safety net only. |
-| Warm-up delay | 60s in automated mode | Bots need time to register checks on new PRs. Deliberate mode has natural user interaction buffer. |
+| Warm-up delay | 60s for user-selected automated only | Bots need time to register checks. `--automated` (orchestrate) skips — caller already polled. Deliberate skips — user triggers manually after seeing bot activity. |
 | Poll interval | 60 seconds | Balanced between responsiveness and API rate limits. |
 | Max timeout | 10 minutes | Safety net. Most bots complete in 2-5 minutes. |
 | CodeRabbit rate limit | Proceed immediately | Waiting for retry is too slow and may not resolve. |
@@ -103,5 +107,5 @@ Same as current Step 7. Post unified assessment as `gh pr comment`. Automated mo
 
 - Configuring which bots to wait for
 - Changing `reviewer-prompt.md` template
-- Changing `--automated` flag semantics for orchestrate
+- Changing orchestrate's poll-checks step (pr-review handles the overlap by skipping warm-up when `--automated`)
 - Adding new CLI arguments beyond the existing set
