@@ -13,11 +13,15 @@ Usage:
   validate-plan --criteria <plan.json> --phase <LETTER>
   validate-plan --criteria <plan.json> --plan
   validate-plan --check-review <plan.json> --type <TYPE> --scope <SCOPE>
+  validate-plan --consistency <plan.json>
+  validate-plan --check-entry <plan.json> --stage <STAGE>
+  validate-plan --check-base <plan.json>
   validate-plan --check-deps <plan.json> --task <ID>
   validate-plan --check-workflow <plan.json>
 
   Valid types:  design-review, plan-review, task-review, impl-review
   Valid scopes: design, plan, task-{ID}, phase-{letter}, final
+  Valid stages: draft-plan, execution
 USAGE
   exit 1
 }
@@ -95,6 +99,14 @@ do_schema() {
       "subagents"|"agent-teams") ;;
       *) err "ERROR: invalid_execution_mode: $execution_mode (expected: subagents or agent-teams)" ;;
     esac
+  fi
+
+  local integration_branch
+  integration_branch=$(echo "$json" | jq -r '.integration_branch // empty')
+  if [[ -n "$integration_branch" ]]; then
+    if [[ "$integration_branch" =~ ^[[:space:]]*$ ]]; then
+      err "ERROR: invalid_integration_branch: integration_branch must be a non-empty string"
+    fi
   fi
 
   if [[ -n "$status" ]]; then
@@ -353,7 +365,7 @@ do_schema() {
         arr_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].files.$arr // []) | length")
         for ((f=0; f<arr_count; f++)); do
           local fpath
-          fpath=$(echo "$json" | jq -r ".phases[$p].tasks[$t].files.$arr[$f]")
+          fpath=$(echo "$json" | jq -r ".phases[$p].tasks[$t].files.${arr}[$f]")
           local existing_owner=""
           for ((i=0; i<${#phase_file_paths[@]}; i++)); do
             if [[ "${phase_file_paths[$i]}" == "$fpath" ]]; then
@@ -394,26 +406,7 @@ do_schema() {
       done
     fi
 
-    if [[ "$phase_status" =~ ^Complete ]]; then
-      for ((t=0; t<task_count; t++)); do
-        local ts
-        ts=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
-        if [[ "$ts" != "complete" && "$ts" != "skipped" ]]; then
-          err "ERROR: status_inconsistency: phase $letter is '$phase_status' but task $(echo "$json" | jq -r ".phases[$p].tasks[$t].id") is '$ts'"
-        fi
-      done
-    fi
   done
-
-  if [[ "$status" == "Complete" ]]; then
-    for ((p=0; p<phase_count; p++)); do
-      local ps
-      ps=$(echo "$json" | jq -r ".phases[$p].status // empty")
-      if [[ ! "$ps" =~ ^Complete ]]; then
-        err "ERROR: status_inconsistency: plan is Complete but phase $(echo "$json" | jq -r ".phases[$p].letter") is '$ps'"
-      fi
-    done
-  fi
 
   # Defense-in-depth: BFS cycle check across phase depends_on edges.
   # The backward-reference check above already guarantees acyclicity:
