@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "status": "Complete",
   "workflow": "pr-merge",
   "execution_mode": "subagents",
   "goal": "Reduce validate-plan test suite runtime by ~40% by removing nested regression checks and mocking gh CLI calls",
@@ -10,14 +10,14 @@
     {
       "letter": "A",
       "name": "Remove nested regressions and mock gh CLI",
-      "status": "Not Started",
+      "status": "Complete (2026-03-25)",
       "depends_on": [],
       "rationale": "All three tasks modify disjoint files and can execute in parallel within a single phase.",
       "tasks": [
         {
           "id": "A1",
           "name": "Remove nested regression test invocations",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -36,7 +36,7 @@
         {
           "id": "A2",
           "name": "Create gh mock stub fixture",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [
@@ -51,8 +51,10 @@
         {
           "id": "A3",
           "name": "Wire gh mock into test_check_workflow.sh and remove skip guards",
-          "status": "pending",
-          "depends_on": ["A2"],
+          "status": "complete",
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
             "modify": [
