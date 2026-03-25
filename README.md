@@ -9,7 +9,7 @@
 A Claude Code plugin that turns your goal into a PR with as little friction as possible. Every step is reviewed with a fresh context subagent. You get a design-reviewed, plan-validated, test-driven PR — with three human decisions.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.14.0-blue)](https://github.com/nikhilsitaram/claude-caliper/releases)
+[![Version](https://img.shields.io/badge/version-1.15.0-blue)](https://github.com/nikhilsitaram/claude-caliper/releases)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-6E40C9?logo=anthropic&logoColor=white)](https://claude.ai/code)
 [![Skills](https://img.shields.io/badge/11%20skills-included-2ea44f)](skills/)
 
@@ -48,10 +48,10 @@ Then the pipeline runs:
 | 7 | Per-task reviewer checks each task; fixes sent back to the original implementer via messaging | Fresh subagents |
 | 8 | Implementation review does a cross-task holistic pass | Fresh subagent |
 | 9 | Create PR opens a PR | Automated |
-| 10 | You review the PR and run `/review-pr` | **You** |
+| 10 | You review the PR and run `/pr-review` | **You** |
 | 11 | Fresh-eyes review reads the diff cold before any external feedback | Fresh subagent |
 | 12 | Fixes applied, feedback addressed | Automated |
-| 13 | You run `/merge-pr` — squash merge, branch cleaned up | **You** |
+| 13 | You run `/pr-merge` — squash merge, branch cleaned up | **You** |
 
 Steps 3-9 run without any input from you.
 
@@ -77,11 +77,11 @@ flowchart TD
     TN --> RN[Review]
 
     R1 & R2 & RN --> IR[implementation-review]
-    IR --> S[create-pr]
+    IR --> S[pr-create]
     S --> M([You: review PR])
-    M --> MR[review-pr]
+    M --> MR[pr-review]
     MR --> MP([You: merge])
-    MP --> MG[merge-pr]
+    MP --> MG[pr-merge]
 
     style A    fill:#3b82f6,stroke:#2563eb,color:#fff
     style B    fill:#8b5cf6,stroke:#7c3aed,color:#fff
@@ -156,9 +156,9 @@ These skills chain automatically. You trigger the first one by describing what t
 | **Plan Gate** | [plan-review](skills/plan-review/) | Catches vague steps, missing file paths, design-plan drift, the "Different Claude Test" |
 | **Execution** | [orchestrate](skills/orchestrate/) | Spawns agent team teammates per task (parallel within phase, sequential phases), push-based completion via idle notifications |
 | **Review Gate** | [implementation-review](skills/implementation-review/) | Cross-task holistic review — catches inconsistencies invisible to per-task reviewers |
-| **Create PR** | [create-pr](skills/create-pr/) | Commits, rebases, tests, pushes, opens PR with structured summary |
-| **Review PR** | [review-pr](skills/review-pr/) | Fresh-eyes review before reading external feedback, addresses comments, posts assessment |
-| **Merge** | [merge-pr](skills/merge-pr/) | Confirms merge, squash merges, cleans up branches and worktrees |
+| **Create PR** | [pr-create](skills/pr-create/) | Commits, rebases, tests, pushes, opens PR with structured summary |
+| **Review PR** | [pr-review](skills/pr-review/) | Fresh-eyes review before reading external feedback, addresses comments, posts assessment |
+| **Merge** | [pr-merge](skills/pr-merge/) | Confirms merge, squash merges, cleans up branches and worktrees |
 
 ### Standalone Tools
 
@@ -180,7 +180,7 @@ claude-caliper spawns a **fresh subagent for every review**:
 
 - The **task reviewer** never wrote the code it's reviewing
 - The **implementation reviewer** never built any of the tasks it's checking
-- The **review-pr reviewer** forms its own opinion before seeing external feedback
+- The **pr-review reviewer** forms its own opinion before seeing external feedback
 - The **design reviewer** and **plan reviewer** are always fresh agents with zero prior context
 
 No agent ever reviews its own work.
@@ -296,7 +296,7 @@ Every task specifies exact files, a verification command, and a measurable end s
 {
   "schema": 1,
   "status": "Not Yet Started",
-  "workflow": "create-pr",
+  "workflow": "pr-create",
   "goal": "Add rate limiting with per-route config",
   "architecture": "Sliding window counter in Redis, middleware per route group",
   "tech_stack": "Node.js, Redis, Express",

@@ -104,8 +104,8 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 4. Run plan criteria: `scripts/validate-plan --criteria plan.json --plan`
 5. `scripts/validate-plan --update-status plan.json --plan --status Complete`
 6. Route on workflow:
-   - `"create-pr"`: invoke create-pr (targets main), `scripts/validate-plan --check-workflow plan.json`, stop
-   - `"merge-pr"`: invoke create-pr, poll checks + review-pr --automated (skip if `review_wait_minutes` is 0), then merge-pr with `--squash`, `scripts/validate-plan --check-workflow plan.json`
+   - `"pr-create"`: invoke pr-create (targets main), `scripts/validate-plan --check-workflow plan.json`, stop
+   - `"pr-merge"`: invoke pr-create, poll checks + pr-review --automated (skip if `review_wait_minutes` is 0), then pr-merge with `--squash`, `scripts/validate-plan --check-workflow plan.json`
 
 ## After All Phases (Multi-Phase Only)
 
@@ -114,10 +114,10 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 3. `scripts/validate-plan --check-review plan.json --type impl-review --scope final`
 4. `scripts/validate-plan --update-status plan.json --plan --status Complete`
 5. Route on workflow:
-   - `"merge-pr"`: create final PR, poll checks, review-pr --automated, merge-pr with `--rebase`, `scripts/validate-plan --check-workflow plan.json`, clean up
-   - `"create-pr"`: create final PR, `scripts/validate-plan --check-workflow plan.json`, stop
+   - `"pr-merge"`: create final PR, poll checks, pr-review --automated, pr-merge with `--rebase`, `scripts/validate-plan --check-workflow plan.json`, clean up
+   - `"pr-create"`: create final PR, `scripts/validate-plan --check-workflow plan.json`, stop
 
-**Continuity:** Run continuously. Pause only for Rule 4 violations and merge confirmation in merge-pr.
+**Continuity:** Run continuously. Pause only for Rule 4 violations.
 
 ## Key Constraints
 
@@ -132,5 +132,5 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 
 ## Integration
 
-**Workflow:** design → draft-plan → **this skill** → create-pr → review-pr → merge-pr
+**Workflow:** design → draft-plan → **this skill** → pr-create → pr-review → pr-merge
 **See:** `tdd.md`

@@ -2,7 +2,7 @@
 
 ## What This Repo Is
 
-A Claude Code plugin containing composable agent skills for software development workflows (TDD, design, draft-plan, orchestrate, create-pr). Skills live in `skills/<name>/SKILL.md` with optional supporting files alongside.
+A Claude Code plugin containing composable agent skills for software development workflows (TDD, design, draft-plan, orchestrate, pr-create). Skills live in `skills/<name>/SKILL.md` with optional supporting files alongside.
 
 ## Skill Conventions
 
@@ -51,7 +51,7 @@ Bash test scripts live in `tests/`. Run with `bash tests/<dir>/<script>.sh`. Ski
 
 ## Development Workflow
 
-This repo uses its own skills. The typical flow: design -> worktree -> draft-plan -> orchestrate -> create-pr -> review-pr -> merge-pr.
+This repo uses its own skills. The typical flow: design -> worktree -> draft-plan -> orchestrate -> pr-create -> pr-review -> pr-merge.
 
 Orchestrate spawns agent team teammates per task (parallel within phase) with push-based idle notifications instead of polling. The design skill checks and enables the required `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` flag.
 
