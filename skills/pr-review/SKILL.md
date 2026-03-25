@@ -65,10 +65,12 @@ The subagent posts its findings as a `gh pr comment` on the PR, then returns fin
 
 ### Step 5: External Feedback
 
-Poll for bot readiness, then collect external feedback.
+If both `--automated` and `--skip-fixes` are passed, fail fast — these flags are mutually exclusive.
 
-**Polling logic (both modes):**
-1. **Warm-up:** In user-selected automated mode, wait 60 seconds for bots to register checks. Skip warm-up when `--automated` flag was passed (orchestrate already polled) or in deliberate mode.
+**`--automated` flag (from orchestrate):** Skip polling entirely — orchestrate already confirmed bot readiness. Collect available feedback via `gh` and proceed directly to fixing.
+
+**User-selected automated / Deliberate — poll for bot readiness:**
+1. **Warm-up:** In user-selected automated mode, wait 60 seconds for bots to register checks. Skip in deliberate mode (user triggers manually after seeing bot activity).
 2. Poll `gh pr checks $PR_NUMBER` every 60 seconds.
 3. Scan latest PR comments for "processing" / "in progress" indicators from bots.
 4. **Ready when:** all checks complete AND no processing indicators found.
