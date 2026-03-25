@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "status": "Not Yet Started",
-  "workflow": "pr-create",
+  "workflow": "pr-merge",
   "execution_mode": "subagents",
   "goal": "Reduce validate-plan test suite runtime by ~40% by removing nested regression checks and mocking gh CLI calls",
   "architecture": "Remove redundant nested test suite invocations from test_check_review.sh and test_review_gates.sh (CI already runs all files independently). Create a gh mock stub fixture that intercepts `gh pr list` calls and returns controlled responses via GH_MOCK_PR_COUNT env var. Update test_check_workflow.sh to use the mock and remove skip guards so PR-related tests run unconditionally.",
@@ -31,7 +31,7 @@
             ]
           },
           "verification": "bash tests/validate-plan/test_check_review.sh && bash tests/validate-plan/test_review_gates.sh",
-          "done_when": "test_check_review.sh has 11 tests (Test 12 removed), test_review_gates.sh has 10 tests (Test 11 removed), both pass in under 2s each"
+          "done_when": "test_check_review.sh has 11 tests (Test 12 removed), test_review_gates.sh has 11 tests (Test 11 removed, Tests 1-10 + 5b remain), both pass in under 2s each"
         },
         {
           "id": "A2",
@@ -52,7 +52,7 @@
           "id": "A3",
           "name": "Wire gh mock into test_check_workflow.sh and remove skip guards",
           "status": "pending",
-          "depends_on": [],
+          "depends_on": ["A2"],
           "files": {
             "create": [],
             "modify": [
