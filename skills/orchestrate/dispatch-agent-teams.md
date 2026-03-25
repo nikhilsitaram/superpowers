@@ -2,6 +2,10 @@
 
 Dispatch protocol for executing plan tasks via agent team teammates. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` environment variable — the design skill verifies this flag is set and offers a fallback if not.
 
+## Verify Environment
+
+Before dispatching any teammates, verify: `[[ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" == "1" ]]`. If not set, abort with an error — the design skill should have caught this during mode selection, but this guards against direct orchestrate invocation.
+
 ## Spawn Implementer Teammates
 
 Spawn implementer teammates for tasks with no unmet dependencies (verified via `scripts/validate-plan --check-deps`). Each teammate:
