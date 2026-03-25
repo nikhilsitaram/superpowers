@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: In Development
 ---
 
 # Add automated vs deliberate mode selection, background subagent dispatch, poll-based bot readiness detection, and two-wave fixing to pr-review Implementation Plan

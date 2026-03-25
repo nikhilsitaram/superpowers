@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "status": "In Development",
   "workflow": "pr-create",
   "execution_mode": "subagents",
   "goal": "Add automated vs deliberate mode selection, background subagent dispatch, poll-based bot readiness detection, and two-wave fixing to pr-review",
