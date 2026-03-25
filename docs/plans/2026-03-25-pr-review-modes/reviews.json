@@ -22,5 +22,27 @@
     "remaining": 0,
     "verdict": "pass",
     "timestamp": "2026-03-25T16:15:00Z"
+  },
+  {
+    "type": "plan-review",
+    "scope": "plan",
+    "iteration": 1,
+    "issues_found": 3,
+    "severity": {
+      "high": 0,
+      "medium": 0,
+      "low": 3
+    },
+    "actionable": 0,
+    "dismissed": 3,
+    "dismissals": [
+      {"id": 1, "reason": "Word count check is covered by done_when criteria; agent will validate."},
+      {"id": 2, "reason": "Rate-limit detection falls under 'external feedback with polling' in done_when."},
+      {"id": 3, "reason": "--automated warm-up skip is part of mode selection behavior covered by done_when."}
+    ],
+    "fixed": 0,
+    "remaining": 0,
+    "verdict": "pass",
+    "timestamp": "2026-03-25T16:25:00Z"
   }
 ]
