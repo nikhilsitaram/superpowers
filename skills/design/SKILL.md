@@ -7,17 +7,6 @@ description: Use when creating features, building components, adding functionali
 
 Turn ideas into validated designs through collaborative dialogue before any code is written.
 
-## Prerequisite: Agent Teams
-
-Before anything else, check `$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. If it's not `1`, offer to enable it:
-
-1. Detect shell profile: `~/.zshrc` (zsh) or `~/.bashrc` (bash)
-2. Append `export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to the profile
-3. Tell the user: "Added agent teams flag to your profile. Run `source ~/.zshrc` (or `! source ~/.zshrc` here) to activate it, then re-run your request."
-4. Stop — the env var won't take effect in the current session without sourcing.
-
-If the var is already set, continue silently.
-
 <HARD-GATE>
 Do NOT invoke implementation skills, write code, or scaffold projects until you have presented a design and the user has explicitly approved it. Skipping design validation is the #1 cause of wasted work in AI-assisted sessions. This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
@@ -40,20 +29,41 @@ Complete in order:
    - Single-phase: `git worktree add -b <feature> .claude/worktrees/<feature>` — feature branch; orchestrate works here directly, PRs to main
    1. Bootstrap dependencies per **See:** ./dependency-bootstrap.md
    2. Run tests to establish a clean baseline
-7. **Choose workflow extent** — if not already chosen, ask the user:
+7. **Configure and approve** — single AskUserQuestion with 3 questions:
 
-    AskUserQuestion (header: "Workflow"):
-    - **Create PR** (default) — Orchestrate → pr-create (PR created, stops for human review)
-    - **Merge PR** — Orchestrate → pr-create → pr-review → pr-merge (PR created, reviewed, and merged)
-    - **Plan only** — Stop after the plan is written and reviewed (orchestrate will not run)
+    **Q1 — Workflow** (header: "Workflow"):
+    - **Create PR** (default) — Orchestrate → pr-create
+    - **Merge PR** — Orchestrate → pr-create → pr-review → pr-merge
+    - **Plan only** — Stop after plan is reviewed
 
-    Store the choice for step 12.
+    **Q2 — Execution mode** (header: "Exec mode"):
+    Recommend based on design complexity:
+    - ≤10 tasks AND single phase → recommend `Subagents`
+    - >10 tasks OR multi-phase → recommend `Agent teams`
 
-8. **Design approval gate** — use AskUserQuestion with options `["Approve design (auto turn on acceptEdits)", "Needs changes"]`. If "Needs changes," return to step 5. On approval, create the sentinel: `mkdir -p <plan-dir> && touch <plan-dir>/.design-approved` — this enables auto-approved edits for the rest of the session via the PermissionRequest hook.
-9. **Write design doc** — `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`, commit
-10. **Dispatch design-review subagent** — fresh Opus agent validates design before planning (hard gate)
-11. **Dispatch draft-plan subagent** — fresh Opus agent with design doc path and worktree path (zero design context)
-12. **Route workflow** — Map the step 7 choice to the schema enum value (`Create PR` → `pr-create`, `Merge PR` → `pr-merge`, `Plan only` → `plan-only`), then write: `jq --arg w "<mapped-value>" '.workflow = $w' plan.json > tmp && mv tmp plan.json`
+    Mark the recommended option with "(Recommended)" in its label.
+
+    Options:
+    - **Subagents** — Parallel Agent tool dispatches with worktree isolation. No special env var needed.
+    - **Agent teams** — Parallel teammates with push notifications and mailbox messaging. Requires env var.
+
+    **Q3 — Approval** (header: "Approval"):
+    - **Approve design (auto turn on acceptEdits)**
+    - **Needs changes**
+
+    If "Needs changes" on Q3, return to step 5.
+
+    **Agent teams fallback:** If user picks "Agent teams", check `$CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. If not `1`, use AskUserQuestion to explain: "Agent teams requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. To enable: run `echo 'export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1' >> ~/.zshrc && source ~/.zshrc`, then restart Claude Code." Offer: "Continue with subagents" or "Stop (I'll restart with agent teams)". If they choose subagents, override the Q2 answer to `Subagents` before step 11 writes plan.json. If they stop, tell them the exact command to resume: `claude --continue` in the worktree directory.
+
+    On approval, create sentinel: `mkdir -p <plan-dir> && touch <plan-dir>/.design-approved`
+8. **Write design doc** — `docs/plans/YYYY-MM-DD-<topic>/design-<topic>.md`, commit
+9. **Dispatch design-review subagent** — fresh Opus agent validates design before planning (hard gate)
+10. **Dispatch draft-plan subagent** — fresh Opus agent with design doc path and worktree path (zero design context)
+11. **Route workflow** — Map step 7 choices to schema values:
+    - Workflow: `Create PR` → `pr-create`, `Merge PR` → `pr-merge`, `Plan only` → `plan-only`
+    - Exec mode: `Subagents` → `subagents`, `Agent teams` → `agent-teams`
+
+    Write both: `jq --arg w "<workflow>" --arg e "<exec-mode>" '.workflow = $w | .execution_mode = $e' plan.json > tmp && mv tmp plan.json`
 
     For **Create PR** or **Merge PR**: invoke orchestrate.
     For **Plan only**: run `scripts/validate-plan --check-workflow plan.json` to verify design-review and plan-review passed. Report the plan file path and stop.
@@ -95,21 +105,6 @@ Agent(
 
 Extract the `json review-summary` block from the response. Triage issues (fix plan files or dismiss with reasoning). If >5 actionable issues, fix and re-dispatch reviewer (max 3 iterations, then escalate to user). Write review record to `{PLAN_DIR}/reviews.json`: `{"type":"plan-review","scope":"plan","iteration":N,"issues_found":N,"severity":{...},"actionable":N,"dismissed":N,"dismissals":[...],"fixed":N,"remaining":0,"verdict":"pass","timestamp":"ISO8601"}`
 
-**Approval gate format:**
-
-```json
-{
-  "questions": [{
-    "question": "Design approved?",
-    "options": [
-      { "label": "Approve design (auto turn on acceptEdits)", "description": "Write design doc and proceed to review" },
-      { "label": "Needs changes", "description": "Continue iterating on the design" }
-    ]
-  }]
-}
-```
-
-On "Approve design (auto turn on acceptEdits)", immediately run: `mkdir -p <plan-dir> && touch <plan-dir>/.design-approved`
 
 ## Challenging Assumptions
 
