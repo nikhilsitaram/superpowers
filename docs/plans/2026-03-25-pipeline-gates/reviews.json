@@ -1,0 +1,21 @@
+[
+  {
+    "type": "design-review",
+    "scope": "design",
+    "iteration": 2,
+    "issues_found": 0,
+    "severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "actionable": 0,
+    "dismissed": 0,
+    "dismissals": [],
+    "fixed": 0,
+    "remaining": 0,
+    "verdict": "pass",
+    "timestamp": "2026-03-25T21:35:00Z"
+  }
+]
