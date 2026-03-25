@@ -2,6 +2,7 @@
   "schema": 1,
   "status": "Not Yet Started",
   "workflow": "pr-create",
+  "execution_mode": "subagents",
   "goal": "Build a sample feature",
   "architecture": "Two-phase plan for testing validation",
   "tech_stack": "Bash, jq",
