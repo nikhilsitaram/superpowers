@@ -18,26 +18,27 @@ Dispatch fresh-eyes review, address feedback, and comment on the PR.
 Identify the PR from argument, current branch (`gh pr view`), or `gh pr list --author @me --state open`. If the list returns multiple candidates and you're not on a branch with an associated PR, ask the user to pick. Store PR number, branch name, and URL.
 
 Detect environment:
-- `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master)
+- `BASE_BRANCH` from `gh pr view $PR_NUMBER --json baseRefName --jq .baseRefName` (fallback: `DEFAULT_BRANCH`)
+- `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master) — used only as fallback for `BASE_BRANCH`
 - `MAIN_REPO` from `git rev-parse --path-format=absolute --git-common-dir` (strip `/.git`)
 - `IS_WORKTREE` — true when `--git-dir` differs from `--git-common-dir`
 - `WORKTREE_PATH` — look up from `git worktree list` by matching `$BRANCH_NAME` (works regardless of CWD)
 
 If not on the PR branch: look up `WORKTREE_PATH` first — if the branch is in a worktree, `cd` into it (`gh pr checkout` fails when a worktree holds the branch). Otherwise `gh pr checkout $PR_NUMBER`.
 
-### Step 2: Rebase onto Default Branch
+### Step 2: Rebase onto Base Branch
 
-Ensure the PR branch is up-to-date with the default branch so the review covers only this PR's changes:
+Ensure the PR branch is up-to-date with its base branch so the review covers only this PR's changes:
 
 ```bash
-git fetch origin $DEFAULT_BRANCH
-if ! git merge-base --is-ancestor origin/$DEFAULT_BRANCH HEAD; then
-  git rebase origin/$DEFAULT_BRANCH
+git fetch origin $BASE_BRANCH
+if ! git merge-base --is-ancestor origin/$BASE_BRANCH HEAD; then
+  git rebase origin/$BASE_BRANCH
   git push -u origin HEAD --force-with-lease
 fi
 ```
 
-If rebased, log: "Branch was behind `$DEFAULT_BRANCH` — rebased and force-pushed to ensure the review covers only this PR's changes."
+If rebased, log: "Branch was behind `$BASE_BRANCH` — rebased and force-pushed to ensure the review covers only this PR's changes."
 
 If rebase has conflicts, stop and ask the user to resolve.
 
@@ -48,7 +49,7 @@ After a force-push, existing bot review comments become outdated. Step 4 (Collec
 Skip if `--skip-review` was passed.
 
 Read `reviewer-prompt.md` (same directory as SKILL.md) and dispatch a fresh-eyes reviewer subagent with:
-- `{DIFF_RANGE}` = `$DEFAULT_BRANCH..HEAD`
+- `{DIFF_RANGE}` = `origin/$BASE_BRANCH..HEAD`
 - `{REPO_PATH}` = repository root path
 - `{PR_NUMBER}` = PR number from Step 1
 
@@ -92,7 +93,9 @@ Post a `gh pr comment` with unified assessment: what was fixed, dismissed (with 
 
 Report: PR URL, review items (fixed/dismissed/informational).
 
-Use AskUserQuestion with options:
+If `--automated` was passed, skip the prompt — the caller (orchestrate) handles the merge step separately.
+
+Otherwise, use AskUserQuestion with options:
 - **Merge PR** — invoke pr-merge via Skill tool (pr-merge's worktree guard handles CWD automatically)
 - **Not yet** — if inside a worktree, tell the user: "When ready to merge: `cd` to the main repo, then run `/pr-merge`." Otherwise: "Run `/pr-merge` when ready to merge."
 

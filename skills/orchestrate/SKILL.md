@@ -117,7 +117,7 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
    - `"pr-merge"`: create final PR, poll checks, pr-review --automated, pr-merge with `--rebase`, `scripts/validate-plan --check-workflow plan.json`, clean up
    - `"pr-create"`: create final PR, `scripts/validate-plan --check-workflow plan.json`, stop
 
-**Continuity:** Run continuously. Pause only for Rule 4 violations and merge confirmation in pr-merge.
+**Continuity:** Run continuously. Pause only for Rule 4 violations.
 
 ## Key Constraints
 
