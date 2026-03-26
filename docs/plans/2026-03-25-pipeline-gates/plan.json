@@ -17,7 +17,7 @@
         {
           "id": "A1",
           "name": "Implement all validate-plan script changes",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -83,7 +83,7 @@
         {
           "id": "A5",
           "name": "Update orchestrate skill docs with gate calls",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -100,7 +100,7 @@
         {
           "id": "A6",
           "name": "Update draft-plan skill doc with entry gate",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -115,7 +115,7 @@
         {
           "id": "A7",
           "name": "Update design skill doc to write integration_branch",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
@@ -130,7 +130,7 @@
         {
           "id": "A8",
           "name": "Bump plugin version",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [],
