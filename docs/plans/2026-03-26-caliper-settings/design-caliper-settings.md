@@ -128,7 +128,7 @@ The `userConfig` field in plugin.json prompts at install-time and stores in Clau
 | `skip_tests` | bool | `false` | pr-create | Skip test suite before committing |
 | `review_mode` | enum: `automated`, `deliberate` | `deliberate` | pr-review | Default PR review mode |
 | `skip_review` | bool | `false` | pr-review | Skip fresh-eyes subagent review dispatch |
-| `merge_strategy` | enum: `squash`, `rebase` | `squash` | pr-merge | Default merge strategy for PRs |
+| `merge_strategy` | enum: `squash`, `rebase` | `squash` | pr-merge | Default merge strategy for standard PRs (integration branches and phase PRs retain auto-detected strategy) |
 
 ### Orchestration
 
@@ -136,7 +136,7 @@ The `userConfig` field in plugin.json prompts at install-time and stores in Clau
 |-----|------|---------|---------|-------------|
 | `workflow` | enum: `pr-create`, `pr-merge`, `plan-only` | `pr-create` | design, orchestrate | Default post-orchestration workflow |
 | `execution_mode` | enum: `subagents`, `agent-teams` | `subagents` | design, orchestrate | Default execution mode for plan dispatch |
-| `review_wait_minutes` | int | `10` | orchestrate, pr-review | Minutes to wait for external review bot comments |
+| `review_wait_minutes` | int | `10` | orchestrate, pr-review | Poll timeout in minutes for external review bot comments (warm-up periods remain fixed) |
 
 ### Review
 
