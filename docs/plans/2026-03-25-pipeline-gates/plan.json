@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "In Development",
+  "status": "Complete",
   "workflow": "pr-merge",
   "execution_mode": "agent-teams",
   "goal": "Add pipeline enforcement gates to validate-plan",
@@ -10,7 +10,7 @@
     {
       "letter": "A",
       "name": "Pipeline Gates",
-      "status": "Not Started",
+      "status": "Complete (2026-03-26)",
       "depends_on": [],
       "rationale": "Single phase — all changes target one script with test and doc tasks radiating from it. No dependency layers between the three gate features.",
       "tasks": [
@@ -32,7 +32,7 @@
         {
           "id": "A2",
           "name": "Write consistency mode tests",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
@@ -49,7 +49,7 @@
         {
           "id": "A3",
           "name": "Write check-entry mode tests",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
@@ -66,7 +66,7 @@
         {
           "id": "A4",
           "name": "Write check-base mode tests",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
