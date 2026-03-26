@@ -53,6 +53,7 @@ init_git_repo() {
   git -C "$dir" -c user.email="test@test.com" -c user.name="Test" commit --allow-empty -m "init" -q
 }
 
+# shellcheck disable=SC2329
 run_in_dir() {
   (cd "$1" && shift && "$@")
 }

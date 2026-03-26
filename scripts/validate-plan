@@ -362,7 +362,7 @@ do_schema() {
       tid=$(echo "$json" | jq -r ".phases[$p].tasks[$t].id // empty")
       for arr in create modify test; do
         local arr_count
-        arr_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].files.$arr // []) | length")
+        arr_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].files.${arr} // []) | length")
         for ((f=0; f<arr_count; f++)); do
           local fpath
           fpath=$(echo "$json" | jq -r ".phases[$p].tasks[$t].files.${arr}[$f]")
@@ -1212,6 +1212,7 @@ UPDATE_ID=""
 UPDATE_STATUS=""
 CHECK_REVIEW_TYPE=""
 CHECK_REVIEW_SCOPE=""
+# shellcheck disable=SC2034
 CHECK_ENTRY_STAGE=""
 
 while [[ $# -gt 0 ]]; do
