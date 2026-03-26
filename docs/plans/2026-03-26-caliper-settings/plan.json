@@ -2,7 +2,7 @@
   "schema": 1,
   "status": "Not Yet Started",
   "workflow": "pr-create",
-  "execution_mode": "subagents",
+  "execution_mode": "agent-teams",
   "goal": "Add /caliper-settings skill and script for persistent user-configurable defaults with 3-tier precedence (CLI flag > user setting > shipped default)",
   "architecture": "A defaults.json schema at the repo root defines 8 settings with types and metadata. A bash script (scripts/caliper-settings) handles get/set/reset/list operations against CLAUDE_PLUGIN_DATA/settings.json, merging user overrides over defaults. A thin SKILL.md wraps the script for /caliper-settings invocation. Each consuming skill (pr-create, pr-review, pr-merge, design, orchestrate, design-review, plan-review, implementation-review) adds a one-liner fallback per setting: check CLI flag first, then call the script.",
   "tech_stack": "Bash, jq, SKILL.md (markdown)",
@@ -20,7 +20,9 @@
           "status": "pending",
           "depends_on": [],
           "files": {
-            "create": ["defaults.json"],
+            "create": [
+              "defaults.json"
+            ],
             "modify": [],
             "test": []
           },
@@ -31,9 +33,13 @@
           "id": "A2",
           "name": "Implement scripts/caliper-settings bash script",
           "status": "pending",
-          "depends_on": ["A1"],
+          "depends_on": [
+            "A1"
+          ],
           "files": {
-            "create": ["scripts/caliper-settings"],
+            "create": [
+              "scripts/caliper-settings"
+            ],
             "modify": [],
             "test": []
           },
@@ -44,9 +50,13 @@
           "id": "A3",
           "name": "Write test suite for caliper-settings script",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
-            "create": ["tests/caliper-settings/test_caliper_settings.sh"],
+            "create": [
+              "tests/caliper-settings/test_caliper_settings.sh"
+            ],
             "modify": [],
             "test": []
           },
@@ -57,9 +67,13 @@
           "id": "A4",
           "name": "Create caliper-settings skill SKILL.md",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
-            "create": ["skills/caliper-settings/SKILL.md"],
+            "create": [
+              "skills/caliper-settings/SKILL.md"
+            ],
             "modify": [],
             "test": []
           },
@@ -70,10 +84,14 @@
           "id": "A5",
           "name": "Integrate skip_tests into pr-create",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
-            "modify": ["skills/pr-create/SKILL.md"],
+            "modify": [
+              "skills/pr-create/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'caliper-settings get skip_tests' skills/pr-create/SKILL.md",
@@ -83,10 +101,14 @@
           "id": "A6",
           "name": "Integrate review_mode, skip_review, and review_wait_minutes into pr-review",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
-            "modify": ["skills/pr-review/SKILL.md"],
+            "modify": [
+              "skills/pr-review/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'caliper-settings get review_mode' skills/pr-review/SKILL.md && grep -q 'caliper-settings get skip_review' skills/pr-review/SKILL.md && grep -q 'caliper-settings get review_wait_minutes' skills/pr-review/SKILL.md",
@@ -96,10 +118,14 @@
           "id": "A7",
           "name": "Integrate merge_strategy into pr-merge",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
-            "modify": ["skills/pr-merge/SKILL.md"],
+            "modify": [
+              "skills/pr-merge/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'caliper-settings get merge_strategy' skills/pr-merge/SKILL.md",
@@ -109,10 +135,14 @@
           "id": "A8",
           "name": "Integrate workflow, execution_mode, and re_review_threshold into design",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
-            "modify": ["skills/design/SKILL.md"],
+            "modify": [
+              "skills/design/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'caliper-settings get workflow' skills/design/SKILL.md && grep -q 'caliper-settings get execution_mode' skills/design/SKILL.md && grep -q 'caliper-settings get re_review_threshold' skills/design/SKILL.md",
@@ -122,10 +152,14 @@
           "id": "A9",
           "name": "Integrate workflow, execution_mode, review_wait_minutes, and re_review_threshold into orchestrate",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
-            "modify": ["skills/orchestrate/SKILL.md"],
+            "modify": [
+              "skills/orchestrate/SKILL.md"
+            ],
             "test": []
           },
           "verification": "grep -q 'caliper-settings get re_review_threshold' skills/orchestrate/SKILL.md && grep -q 'caliper-settings get review_wait_minutes' skills/orchestrate/SKILL.md",
@@ -135,7 +169,9 @@
           "id": "A10",
           "name": "Integrate re_review_threshold into design-review, plan-review, and implementation-review",
           "status": "pending",
-          "depends_on": ["A2"],
+          "depends_on": [
+            "A2"
+          ],
           "files": {
             "create": [],
             "modify": [
@@ -152,13 +188,17 @@
           "id": "A11",
           "name": "Register skill and bump plugin version",
           "status": "pending",
-          "depends_on": ["A4"],
+          "depends_on": [
+            "A4"
+          ],
           "files": {
             "create": [],
-            "modify": [".claude-plugin/marketplace.json"],
+            "modify": [
+              ".claude-plugin/marketplace.json"
+            ],
             "test": []
           },
-          "verification": "jq -r '.plugins[0].version' .claude-plugin/marketplace.json | grep -q '1.19.0' && jq '.plugins[0].skills[]' .claude-plugin/marketplace.json | grep -q 'caliper-settings'",
+          "verification": "jq -r '.plugins[].version' .claude-plugin/marketplace.json | sort -u | grep -qx '1.19.0' && jq '.plugins[0].skills[]' .claude-plugin/marketplace.json | grep -q 'caliper-settings'",
           "done_when": "All three plugin versions bumped from 1.18.2 to 1.19.0, caliper-settings skill path added to claude-caliper and claude-caliper-workflow plugin skill arrays"
         }
       ]
