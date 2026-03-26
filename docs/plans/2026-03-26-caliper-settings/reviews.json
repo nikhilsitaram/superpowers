@@ -1,0 +1,45 @@
+[
+  {
+    "type": "design-review",
+    "scope": "design",
+    "iteration": 1,
+    "issues_found": 6,
+    "severity": {
+      "critical": 0,
+      "major": 1,
+      "minor": 3,
+      "nit": 2
+    },
+    "actionable": 5,
+    "dismissed": 1,
+    "dismissals": [
+      {
+        "id": 2,
+        "reason": "CLAUDE_PLUGIN_DATA verified via official Claude Code plugins reference docs"
+      }
+    ],
+    "fixed": 5,
+    "remaining": 0,
+    "verdict": "fail",
+    "timestamp": "2026-03-26T17:30:00Z"
+  },
+  {
+    "type": "design-review",
+    "scope": "design",
+    "iteration": 2,
+    "issues_found": 2,
+    "severity": {
+      "critical": 0,
+      "major": 0,
+      "minor": 2,
+      "nit": 0
+    },
+    "actionable": 2,
+    "dismissed": 0,
+    "dismissals": [],
+    "fixed": 2,
+    "remaining": 0,
+    "verdict": "pass",
+    "timestamp": "2026-03-26T17:35:00Z"
+  }
+]
