@@ -19,14 +19,7 @@ A `/caliper-settings` skill backed by a bash script that reads/writes persistent
 2. Running `/caliper-settings set skip_tests true` persists across sessions — a new session sees the value
 3. Running `/caliper-settings reset skip_tests` restores the shipped default
 4. Setting a value with wrong type (e.g., `set skip_tests banana`) produces a clear error message naming the expected type
-5. Each consuming skill respects its settings when no CLI flag overrides them:
-   - pr-create skips tests when `skip_tests` is `true` and no `--skip-tests` flag
-   - pr-review uses automated mode when `review_mode` is `automated` and no `--automated` flag
-   - design pre-selects workflow and execution_mode from settings in its AskUserQuestion prompt
-   - orchestrate reads `workflow`, `execution_mode`, and `review_wait_minutes` from settings
-   - pr-merge uses configured `merge_strategy` when no explicit strategy flag
-   - review skills (design-review, plan-review, implementation-review) use `re_review_threshold`
-   - pr-review uses `skip_review` and `bot_poll_timeout_minutes`
+5. Each consuming skill uses its settings as fallback values when no CLI flag is provided — the skill's behavior changes without requiring flags
 6. CLI flags always override settings — `--skip-tests=false` overrides a `true` setting
 
 ## Architecture
@@ -99,6 +92,14 @@ caliper-settings reset [key]         # Removes key from settings.json (or all ke
 caliper-settings list                # Prints table: key, current value, default, description.
 ```
 
+### Error handling
+
+- **`CLAUDE_PLUGIN_ROOT` unset:** Exit 1 with message "CLAUDE_PLUGIN_ROOT not set — cannot locate defaults.json"
+- **`CLAUDE_PLUGIN_DATA` unset:** Exit 1 with message "CLAUDE_PLUGIN_DATA not set — cannot locate settings storage"
+- **`settings.json` missing:** Treat as empty — all values fall back to defaults. This is the expected first-run state.
+- **`settings.json` corrupted:** Warn to stderr ("settings.json is invalid JSON, using defaults") and treat as empty. Do not delete the file — the user may want to fix it.
+- **Unknown key on `get`/`set`:** Exit 1 with message naming the key and listing valid keys.
+
 ### Consumer integration pattern
 
 Each consuming skill adds a one-liner fallback per setting. Example for pr-create:
@@ -109,6 +110,10 @@ If it returns `true`, skip the test step.
 ```
 
 This keeps SKILL.md changes minimal — one sentence per setting, no boilerplate.
+
+### Why a dedicated script?
+
+Alternatives considered: (1) inline `jq` commands in each SKILL.md, (2) skill-only approach with no helper script. The dedicated script wins because it centralizes merge logic, type validation, and defaults resolution in one testable place. Without it, every consuming skill would duplicate the same `jq` merge pattern — a maintenance risk as settings grow. The repo already has `scripts/validate-plan` as precedent for shared tooling.
 
 ### Why not userConfig?
 
@@ -137,8 +142,7 @@ The `userConfig` field in plugin.json prompts at install-time and stores in Clau
 
 | Key | Type | Default | Used by | Description |
 |-----|------|---------|---------|-------------|
-| `re_review_threshold` | int | `5` | design-review, plan-review, implementation-review | Issue count above which reviewer is re-dispatched after fixes |
-| `bot_poll_timeout_minutes` | int | `10` | pr-review | Timeout for polling external review bot comments |
+| `re_review_threshold` | int | `5` | design, orchestrate, design-review, plan-review, implementation-review | Issue count above which reviewer is re-dispatched after fixes |
 
 ## Non-Goals
 
@@ -152,18 +156,16 @@ The `userConfig` field in plugin.json prompts at install-time and stores in Clau
 Single phase. Infrastructure tasks first (sequential), then consumer integrations (parallel):
 
 **Sequential foundation (tasks 1-4):**
-1. `defaults.json` with all 9 settings
+1. `defaults.json` with all 8 settings
 2. `scripts/caliper-settings` bash script
 3. Test suite for the script
 4. `skills/caliper-settings/SKILL.md`
 
-**Parallel consumer integrations (tasks 5-10, all depend on task 2):**
+**Parallel consumer integrations (tasks 5-11, all depend on task 2):**
 5. pr-create: `skip_tests`
-6. pr-review: `review_mode`, `skip_review`, `bot_poll_timeout_minutes`
+6. pr-review: `review_mode`, `skip_review`, `review_wait_minutes`
 7. pr-merge: `merge_strategy`
-8. design: `workflow`, `execution_mode`
-9. orchestrate: `workflow`, `execution_mode`, `review_wait_minutes`
+8. design: `workflow`, `execution_mode`, `re_review_threshold`
+9. orchestrate: `workflow`, `execution_mode`, `review_wait_minutes`, `re_review_threshold`
 10. Review skills: `re_review_threshold` in design-review, plan-review, implementation-review
-
-**Wrap-up:**
 11. Version bump in marketplace.json
