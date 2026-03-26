@@ -74,18 +74,18 @@ assert_fail "phase complete with pending task via --consistency" "status_inconsi
 
 echo "Test 5: Rule 3 - Task complete but dependency is pending"
 setup_valid_plan "$TMPDIR"
-jq '.phases[0].status = "In Progress" | .phases[0].tasks[0].status = "pending" | .phases[0].tasks[1].status = "complete"' "$TMPDIR/plan.json" > "$TMPDIR/plan2.json" && mv "$TMPDIR/plan2.json" "$TMPDIR/plan.json"
+jq '.status = "In Development" | .phases[0].status = "In Progress" | .phases[0].tasks[0].status = "pending" | .phases[0].tasks[1].status = "complete"' "$TMPDIR/plan.json" > "$TMPDIR/plan2.json" && mv "$TMPDIR/plan2.json" "$TMPDIR/plan.json"
 mkdir -p "$TMPDIR/phase-a"
 echo "# A2 Completion" > "$TMPDIR/phase-a/a2-completion.md"
-assert_fail "task complete but dep pending" "status_inconsistency" \
+assert_fail "task complete but dep pending" "but dependency A1 is" \
   "$VALIDATE" --consistency "$TMPDIR/plan.json"
 
 echo "Test 6: Rule 3 - Task complete but dependency is in_progress"
 setup_valid_plan "$TMPDIR"
-jq '.phases[0].status = "In Progress" | .phases[0].tasks[0].status = "in_progress" | .phases[0].tasks[1].status = "complete"' "$TMPDIR/plan.json" > "$TMPDIR/plan2.json" && mv "$TMPDIR/plan2.json" "$TMPDIR/plan.json"
+jq '.status = "In Development" | .phases[0].status = "In Progress" | .phases[0].tasks[0].status = "in_progress" | .phases[0].tasks[1].status = "complete"' "$TMPDIR/plan.json" > "$TMPDIR/plan2.json" && mv "$TMPDIR/plan2.json" "$TMPDIR/plan.json"
 mkdir -p "$TMPDIR/phase-a"
 echo "# A2 Completion" > "$TMPDIR/phase-a/a2-completion.md"
-assert_fail "task complete but dep in_progress" "status_inconsistency" \
+assert_fail "task complete but dep in_progress" "but dependency A1 is" \
   "$VALIDATE" --consistency "$TMPDIR/plan.json"
 
 echo "Test 7: Rule 4 - Plan 'Not Yet Started' but phase is In Progress"
