@@ -98,6 +98,13 @@ echo '[{"type":"design-review","scope":"design","verdict":"pass","remaining":0},
 assert_pass "execution passes with both reviews" \
   "$VALIDATE" --check-entry "$TMPDIR/plan.json" --stage execution
 
+echo "Test 8: draft-plan passes without plan.json (only reviews.json needed)"
+rm -rf "${TMPDIR:?}/"*
+mkdir -p "$TMPDIR"
+echo '[{"type":"design-review","scope":"design","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
+assert_pass "draft-plan without plan.json but with reviews.json" \
+  "$VALIDATE" --check-entry "$TMPDIR/plan.json" --stage draft-plan
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 exit $FAIL
