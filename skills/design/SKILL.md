@@ -32,16 +32,17 @@ Complete in order:
 7. **Configure and approve** — single AskUserQuestion with 3 questions:
 
     **Q1 — Workflow** (header: "Workflow"):
-    - **Create PR** (default) — Orchestrate → pr-create
+    Check `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get workflow` for the user's preferred default. Mark the matching option with "(default)":
+    - **Create PR** — Orchestrate → pr-create
     - **Merge PR** — Orchestrate → pr-create → pr-review → pr-merge
     - **Plan only** — Stop after plan is reviewed
 
     **Q2 — Execution mode** (header: "Exec mode"):
-    Recommend based on design complexity:
+    Check `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get execution_mode` for the user's preferred default. Recommend based on design complexity (these override the setting when they differ):
     - ≤10 tasks AND single phase → recommend `Subagents`
     - >10 tasks OR multi-phase → recommend `Agent teams`
 
-    Mark the recommended option with "(Recommended)" in its label.
+    Mark the recommended option with "(Recommended)" in its label. If the user's setting differs from the complexity recommendation, note both in the option labels.
 
     Options:
     - **Subagents** — Parallel Agent tool dispatches with worktree isolation. No special env var needed.
@@ -106,7 +107,7 @@ Agent(
 )
 ```
 
-Extract the `json review-summary` block from the response. Triage issues (fix plan files or dismiss with reasoning). If >5 actionable issues, fix and re-dispatch reviewer (max 3 iterations, then escalate to user). Write review record to `{PLAN_DIR}/reviews.json`: `{"type":"plan-review","scope":"plan","iteration":N,"issues_found":N,"severity":{...},"actionable":N,"dismissed":N,"dismissals":[...],"fixed":N,"remaining":0,"verdict":"pass","timestamp":"ISO8601"}`
+Extract the `json review-summary` block from the response. Triage issues (fix plan files or dismiss with reasoning). Read the threshold: `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get re_review_threshold`. If actionable issues exceed this threshold, fix and re-dispatch reviewer (max 3 iterations, then escalate to user). Write review record to `{PLAN_DIR}/reviews.json`: `{"type":"plan-review","scope":"plan","iteration":N,"issues_found":N,"severity":{...},"actionable":N,"dismissed":N,"dismissals":[...],"fixed":N,"remaining":0,"verdict":"pass","timestamp":"ISO8601"}`
 
 
 ## Challenging Assumptions
