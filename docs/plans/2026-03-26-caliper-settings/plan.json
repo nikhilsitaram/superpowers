@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "In Development",
+  "status": "Complete",
   "workflow": "pr-create",
   "execution_mode": "agent-teams",
   "goal": "Add /caliper-settings skill and script for persistent user-configurable defaults with 3-tier precedence (CLI flag > user setting > shipped default)",
@@ -10,7 +10,7 @@
     {
       "letter": "A",
       "name": "Settings Infrastructure and Consumer Integrations",
-      "status": "In Progress",
+      "status": "Complete (2026-03-26)",
       "depends_on": [],
       "rationale": "Single phase — foundation tasks (1-4) are sequential, consumer integrations (5-11) are parallel and independent. No natural phase boundary since consumers are one-liner additions that don't depend on each other.",
       "tasks": [
@@ -100,7 +100,7 @@
         {
           "id": "A6",
           "name": "Integrate review_mode, skip_review, and review_wait_minutes into pr-review",
-          "status": "in_progress",
+          "status": "complete",
           "depends_on": [
             "A2"
           ],
@@ -117,7 +117,7 @@
         {
           "id": "A7",
           "name": "Integrate merge_strategy into pr-merge",
-          "status": "in_progress",
+          "status": "complete",
           "depends_on": [
             "A2"
           ],
@@ -134,7 +134,7 @@
         {
           "id": "A8",
           "name": "Integrate workflow, execution_mode, and re_review_threshold into design",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2"
           ],
@@ -151,7 +151,7 @@
         {
           "id": "A9",
           "name": "Integrate workflow, execution_mode, review_wait_minutes, and re_review_threshold into orchestrate",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2"
           ],
@@ -168,7 +168,7 @@
         {
           "id": "A10",
           "name": "Integrate re_review_threshold into design-review, plan-review, and implementation-review",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A2"
           ],
@@ -187,7 +187,7 @@
         {
           "id": "A11",
           "name": "Register skill and bump plugin version",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [
             "A4"
           ],
