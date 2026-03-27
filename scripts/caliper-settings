@@ -44,9 +44,8 @@ cmd_get() {
   local key="${1:?get requires a key}"
   validate_key "$key"
   local user_val
-  user_val=$(echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] // empty')
-  if [[ -n "$user_val" ]]; then
-    echo "$user_val"
+  if echo "$SETTINGS" | jq -e --arg k "$key" 'has($k)' > /dev/null 2>&1; then
+    echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] | tostring'
   else
     echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].default'
   fi
@@ -123,8 +122,11 @@ cmd_list() {
     local default description user_val current
     default=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].default')
     description=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].description')
-    user_val=$(echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] // empty')
-    current="${user_val:-$default}"
+    if echo "$SETTINGS" | jq -e --arg k "$key" 'has($k)' > /dev/null 2>&1; then
+      current=$(echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] | tostring')
+    else
+      current="$default"
+    fi
     printf "%-25s %-20s %-20s %s\n" "$key" "$current" "$default" "$description"
   done
   echo ""

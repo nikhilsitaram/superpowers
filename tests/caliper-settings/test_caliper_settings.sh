@@ -216,6 +216,21 @@ output=$(bash "$SCRIPT" list)
 assert_contains "list shows overridden value" "$output" "true"
 teardown
 
+echo "Test: get returns explicit false override (not default)"
+setup
+bash "$SCRIPT" set skip_tests true
+bash "$SCRIPT" set skip_tests false
+assert_eq "get returns explicit false override" "false" "$(bash "$SCRIPT" get skip_tests)"
+teardown
+
+echo "Test: list shows explicit false override correctly"
+setup
+bash "$SCRIPT" set skip_tests true
+bash "$SCRIPT" set skip_tests false
+output=$(bash "$SCRIPT" list)
+assert_contains "list shows false override" "$output" "false"
+teardown
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
