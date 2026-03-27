@@ -281,7 +281,6 @@ do_schema() {
 
     # --- Validate tasks for this phase from pre-extracted scalars ---
     local _phase_task_ids=()
-    local _global_task_idx=${_global_task_idx:-0}
     local _phase_file_paths=()
     local _phase_file_tids=()
     for ((ti=0; ti<_total_tasks; ti++)); do
@@ -428,14 +427,12 @@ do_schema() {
         local repo_root
         repo_root=$(git -C "$plan_dir" rev-parse --show-toplevel 2>/dev/null || echo "")
         if [[ -n "$repo_root" ]]; then
-          local _fc_paths
-          _fc_paths=$(echo "$_tarr" | jq -r '.create[]?')
           while IFS= read -r fc_path; do
             [[ -z "$fc_path" ]] && continue
             if [[ ! -f "$repo_root/$fc_path" ]]; then
               err "ERROR: missing_created_file: task $id declares files.create '$fc_path' but file not found"
             fi
-          done <<< "$_fc_paths"
+          done <<< "$_create_paths"
         fi
       fi
 
@@ -525,88 +522,80 @@ do_consistency() {
     json=$(cat "$plan_json")
   fi
 
-  # Bulk extract all consistency data in one jq call
-  local _cdata
-  _cdata=$(echo "$json" | jq -c '{
-    plan_status: (.status // ""),
-    phases: [.phases // [] | to_entries[] | {
-      idx: .key,
-      letter: (.value.letter // ""),
-      status: (.value.status // ""),
-      tasks: [(.value.tasks // [])[] | {
-        id: (.id // ""),
-        status: (.status // ""),
-        depends_on: (.depends_on // [])
-      }]
-    }]
-  }')
+  # Bulk extract: plan_status, phase_count, then per-phase (letter, status, task_count)
+  # and per-task (id, status, depends_on as comma-separated) — all NUL-delimited
+  local _cv=()
+  mapfile -d '' _cv < <(echo "$json" | jq -j '
+    [(.status // ""), ((.phases // []) | length | tostring)] | map(. + "\u0000") | join("")')
+  local plan_status="${_cv[0]}" phase_count="${_cv[1]}"
 
-  local plan_status
-  plan_status=$(echo "$_cdata" | jq -r '.plan_status')
-  local phase_count
-  phase_count=$(echo "$_cdata" | jq '.phases | length')
+  # Phase scalars: stride 3 (letter, status, task_count)
+  local _cp=()
+  mapfile -d '' _cp < <(echo "$json" | jq -j '
+    [.phases // [] | .[] | [
+      (.letter // ""), (.status // ""), ((.tasks // []) | length | tostring)
+    ] | map(. + "\u0000") | join("")] | join("")')
+
+  # Task scalars: stride 4 (phase_idx, id, status, depends_on comma-separated)
+  local _ct=()
+  mapfile -d '' _ct < <(echo "$json" | jq -j '
+    [.phases // [] | to_entries[] | .key as $pi |
+     (.value.tasks // [])[] | [
+      ($pi | tostring), (.id // ""), (.status // ""),
+      ((.depends_on // []) | join(","))
+    ] | map(. + "\u0000") | join("")] | join("")')
+  local _total_ct=$(( ${#_ct[@]} / 4 ))
 
   # Build task status lookup for O(1) dependency checks
   declare -A _task_status_map
-  for ((p=0; p<phase_count; p++)); do
-    local _phase
-    _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
-    local _tc
-    _tc=$(echo "$_phase" | jq '.tasks | length')
-    for ((t=0; t<_tc; t++)); do
-      local _tid _ts
-      _tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
-      _ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
-      _task_status_map["$_tid"]="$_ts"
-    done
+  for ((i=0; i<_total_ct; i++)); do
+    local ibase=$((i * 4))
+    _task_status_map["${_ct[$((ibase+1))]}"]="${_ct[$((ibase+2))]}"
   done
 
   ERRORS=()
 
   for ((p=0; p<phase_count; p++)); do
-    local _phase
-    _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
-    local letter phase_status task_count
-    letter=$(echo "$_phase" | jq -r '.letter')
-    phase_status=$(echo "$_phase" | jq -r '.status')
-    task_count=$(echo "$_phase" | jq '.tasks | length')
+    local pbase=$((p * 3))
+    local letter="${_cp[$pbase]}" phase_status="${_cp[$((pbase+1))]}"
+    local task_count="${_cp[$((pbase+2))]}"
 
     if [[ "$phase_status" == "Not Started" ]]; then
-      for ((t=0; t<task_count; t++)); do
-        local ts tid
-        ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
+      for ((i=0; i<_total_ct; i++)); do
+        local ibase=$((i * 4))
+        [[ "${_ct[$ibase]}" != "$p" ]] && continue
+        local ts="${_ct[$((ibase+2))]}"
         if [[ "$ts" == "in_progress" || "$ts" == "complete" ]]; then
-          tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
-          err "ERROR: status_inconsistency: phase $letter is 'Not Started' but task $tid is '$ts'"
+          err "ERROR: status_inconsistency: phase $letter is 'Not Started' but task ${_ct[$((ibase+1))]} is '$ts'"
         fi
       done
     fi
 
     if [[ "$phase_status" =~ ^Complete ]]; then
-      for ((t=0; t<task_count; t++)); do
-        local ts tid
-        ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
+      for ((i=0; i<_total_ct; i++)); do
+        local ibase=$((i * 4))
+        [[ "${_ct[$ibase]}" != "$p" ]] && continue
+        local ts="${_ct[$((ibase+2))]}"
         if [[ "$ts" != "complete" && "$ts" != "skipped" ]]; then
-          tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
-          err "ERROR: status_inconsistency: phase $letter is '$phase_status' but task $tid is '$ts'"
+          err "ERROR: status_inconsistency: phase $letter is '$phase_status' but task ${_ct[$((ibase+1))]} is '$ts'"
         fi
       done
     fi
 
-    for ((t=0; t<task_count; t++)); do
-      local ts tid
-      ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
-      tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
-      if [[ "$ts" == "complete" ]]; then
-        local _deps
-        _deps=$(echo "$_phase" | jq -r ".tasks[$t].depends_on[]?")
-        while IFS= read -r dep_id; do
+    for ((i=0; i<_total_ct; i++)); do
+      local ibase=$((i * 4))
+      [[ "${_ct[$ibase]}" != "$p" ]] && continue
+      local tid="${_ct[$((ibase+1))]}" ts="${_ct[$((ibase+2))]}"
+      local deps_str="${_ct[$((ibase+3))]}"
+      if [[ "$ts" == "complete" && -n "$deps_str" ]]; then
+        IFS=',' read -ra dep_arr <<< "$deps_str"
+        for dep_id in "${dep_arr[@]}"; do
           [[ -z "$dep_id" ]] && continue
           local dep_status="${_task_status_map[$dep_id]:-}"
           if [[ "$dep_status" == "pending" || "$dep_status" == "in_progress" ]]; then
             err "ERROR: status_inconsistency: task $tid is 'complete' but dependency $dep_id is '$dep_status'"
           fi
-        done <<< "$_deps"
+        done
       fi
     done
 
@@ -622,26 +611,20 @@ do_consistency() {
 
   if [[ "$plan_status" == "Not Yet Started" ]]; then
     for ((p=0; p<phase_count; p++)); do
-      local _phase
-      _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
-      local ps pl
-      ps=$(echo "$_phase" | jq -r '.status')
+      local pbase=$((p * 3))
+      local ps="${_cp[$((pbase+1))]}"
       if [[ "$ps" == "In Progress" || "$ps" =~ ^Complete ]]; then
-        pl=$(echo "$_phase" | jq -r '.letter')
-        err "ERROR: status_inconsistency: plan is 'Not Yet Started' but phase $pl is '$ps'"
+        err "ERROR: status_inconsistency: plan is 'Not Yet Started' but phase ${_cp[$pbase]} is '$ps'"
       fi
     done
   fi
 
   if [[ "$plan_status" == "Complete" ]]; then
     for ((p=0; p<phase_count; p++)); do
-      local _phase
-      _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
-      local ps pl
-      ps=$(echo "$_phase" | jq -r '.status')
+      local pbase=$((p * 3))
+      local ps="${_cp[$((pbase+1))]}"
       if [[ ! "$ps" =~ ^Complete ]]; then
-        pl=$(echo "$_phase" | jq -r '.letter')
-        err "ERROR: status_inconsistency: plan is Complete but phase $pl is '$ps'"
+        err "ERROR: status_inconsistency: plan is Complete but phase ${_cp[$pbase]} is '$ps'"
       fi
     done
   fi
