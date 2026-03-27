@@ -512,74 +512,93 @@ do_consistency() {
     json=$(cat "$plan_json")
   fi
 
-  local plan_status
-  plan_status=$(echo "$json" | jq -r '.status // empty')
+  # Bulk extract all consistency data in one jq call
+  local _cdata
+  _cdata=$(echo "$json" | jq -c '{
+    plan_status: (.status // ""),
+    phases: [.phases // [] | to_entries[] | {
+      idx: .key,
+      letter: (.value.letter // ""),
+      status: (.value.status // ""),
+      tasks: [(.value.tasks // [])[] | {
+        id: (.id // ""),
+        status: (.status // ""),
+        depends_on: (.depends_on // [])
+      }]
+    }]
+  }')
 
+  local plan_status
+  plan_status=$(echo "$_cdata" | jq -r '.plan_status')
   local phase_count
-  phase_count=$(echo "$json" | jq '(.phases // []) | length')
+  phase_count=$(echo "$_cdata" | jq '.phases | length')
+
+  # Build task status lookup for O(1) dependency checks
+  declare -A _task_status_map
+  for ((p=0; p<phase_count; p++)); do
+    local _phase
+    _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
+    local _tc
+    _tc=$(echo "$_phase" | jq '.tasks | length')
+    for ((t=0; t<_tc; t++)); do
+      local _tid _ts
+      _tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
+      _ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
+      _task_status_map["$_tid"]="$_ts"
+    done
+  done
 
   ERRORS=()
 
   for ((p=0; p<phase_count; p++)); do
-    local letter phase_status
-    letter=$(echo "$json" | jq -r ".phases[$p].letter // empty")
-    phase_status=$(echo "$json" | jq -r ".phases[$p].status // empty")
-    local task_count
-    task_count=$(echo "$json" | jq "(.phases[$p].tasks // []) | length")
+    local _phase
+    _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
+    local letter phase_status task_count
+    letter=$(echo "$_phase" | jq -r '.letter')
+    phase_status=$(echo "$_phase" | jq -r '.status')
+    task_count=$(echo "$_phase" | jq '.tasks | length')
 
     if [[ "$phase_status" == "Not Started" ]]; then
       for ((t=0; t<task_count; t++)); do
-        local ts
-        ts=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
+        local ts tid
+        ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
         if [[ "$ts" == "in_progress" || "$ts" == "complete" ]]; then
-          err "ERROR: status_inconsistency: phase $letter is 'Not Started' but task $(echo "$json" | jq -r ".phases[$p].tasks[$t].id") is '$ts'"
+          tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
+          err "ERROR: status_inconsistency: phase $letter is 'Not Started' but task $tid is '$ts'"
         fi
       done
     fi
 
     if [[ "$phase_status" =~ ^Complete ]]; then
       for ((t=0; t<task_count; t++)); do
-        local ts
-        ts=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
+        local ts tid
+        ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
         if [[ "$ts" != "complete" && "$ts" != "skipped" ]]; then
-          err "ERROR: status_inconsistency: phase $letter is '$phase_status' but task $(echo "$json" | jq -r ".phases[$p].tasks[$t].id") is '$ts'"
+          tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
+          err "ERROR: status_inconsistency: phase $letter is '$phase_status' but task $tid is '$ts'"
         fi
       done
     fi
 
     for ((t=0; t<task_count; t++)); do
       local ts tid
-      ts=$(echo "$json" | jq -r ".phases[$p].tasks[$t].status // empty")
-      tid=$(echo "$json" | jq -r ".phases[$p].tasks[$t].id // empty")
+      ts=$(echo "$_phase" | jq -r ".tasks[$t].status")
+      tid=$(echo "$_phase" | jq -r ".tasks[$t].id")
       if [[ "$ts" == "complete" ]]; then
-        local dep_count
-        dep_count=$(echo "$json" | jq "(.phases[$p].tasks[$t].depends_on // []) | length")
-        for ((d=0; d<dep_count; d++)); do
-          local dep_id
-          dep_id=$(echo "$json" | jq -r ".phases[$p].tasks[$t].depends_on[$d]")
-          local dep_status=""
-          for ((p2=0; p2<phase_count; p2++)); do
-            local tc2
-            tc2=$(echo "$json" | jq "(.phases[$p2].tasks // []) | length")
-            for ((t2=0; t2<tc2; t2++)); do
-              local tid2
-              tid2=$(echo "$json" | jq -r ".phases[$p2].tasks[$t2].id")
-              if [[ "$tid2" == "$dep_id" ]]; then
-                dep_status=$(echo "$json" | jq -r ".phases[$p2].tasks[$t2].status")
-                break 2
-              fi
-            done
-          done
+        local _deps
+        _deps=$(echo "$_phase" | jq -r ".tasks[$t].depends_on[]?")
+        while IFS= read -r dep_id; do
+          [[ -z "$dep_id" ]] && continue
+          local dep_status="${_task_status_map[$dep_id]:-}"
           if [[ "$dep_status" == "pending" || "$dep_status" == "in_progress" ]]; then
             err "ERROR: status_inconsistency: task $tid is 'complete' but dependency $dep_id is '$dep_status'"
           fi
-        done
+        done <<< "$_deps"
       fi
     done
 
     if [[ "$phase_status" =~ ^Complete ]]; then
-      local letter_lower
-      letter_lower=$(echo "$letter" | tr '[:upper:]' '[:lower:]')
+      local letter_lower="${letter,,}"
       local plan_dir
       plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
       if ! check_review_record "$plan_dir" "impl-review" "phase-$letter_lower" > /dev/null 2>&1; then
@@ -590,20 +609,26 @@ do_consistency() {
 
   if [[ "$plan_status" == "Not Yet Started" ]]; then
     for ((p=0; p<phase_count; p++)); do
-      local ps
-      ps=$(echo "$json" | jq -r ".phases[$p].status // empty")
+      local _phase
+      _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
+      local ps pl
+      ps=$(echo "$_phase" | jq -r '.status')
       if [[ "$ps" == "In Progress" || "$ps" =~ ^Complete ]]; then
-        err "ERROR: status_inconsistency: plan is 'Not Yet Started' but phase $(echo "$json" | jq -r ".phases[$p].letter") is '$ps'"
+        pl=$(echo "$_phase" | jq -r '.letter')
+        err "ERROR: status_inconsistency: plan is 'Not Yet Started' but phase $pl is '$ps'"
       fi
     done
   fi
 
   if [[ "$plan_status" == "Complete" ]]; then
     for ((p=0; p<phase_count; p++)); do
-      local ps
-      ps=$(echo "$json" | jq -r ".phases[$p].status // empty")
+      local _phase
+      _phase=$(echo "$_cdata" | jq -c ".phases[$p]")
+      local ps pl
+      ps=$(echo "$_phase" | jq -r '.status')
       if [[ ! "$ps" =~ ^Complete ]]; then
-        err "ERROR: status_inconsistency: plan is Complete but phase $(echo "$json" | jq -r ".phases[$p].letter") is '$ps'"
+        pl=$(echo "$_phase" | jq -r '.letter')
+        err "ERROR: status_inconsistency: plan is Complete but phase $pl is '$ps'"
       fi
     done
   fi
