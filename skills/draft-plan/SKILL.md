@@ -7,7 +7,7 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 Write implementation plans assuming the executor has zero codebase context. Document everything: which files to touch, exact code, how to test, what to avoid and why.
 
-**Save to:** `docs/plans/YYYY-MM-DD-<topic>/` directory
+**Save to:** `.claude/claude-caliper/YYYY-MM-DD-<topic>/` directory
 
 ## Workflow
 
@@ -20,7 +20,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 7. **Create completion.md stubs** — Empty files, one per phase
 8. **Run scripts/validate-plan --schema** — Fix any structural errors
 9. **Run scripts/validate-plan --render** — Generates plan.md deterministically
-10. **Commit plan artifacts** — `git add docs/plans/<dir>/ && git commit -m "docs: add implementation plan for <topic>"`
+10. **Skip** — plan artifacts are under `.claude/claude-caliper/` (gitignored), no commit needed
 11. **Hand off** — Report plan path to caller. Plan-review is dispatched by the design skill after draft-plan returns.
 
 ## Plan Structure
@@ -28,7 +28,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 **Directory layout:**
 
 ```text
-docs/plans/YYYY-MM-DD-topic/
+.claude/claude-caliper/YYYY-MM-DD-topic/
 ├── plan.json             # Structured manifest (source of truth)
 ├── plan.md               # Generated outline (DO NOT edit)
 ├── phase-a/
@@ -80,7 +80,7 @@ docs/plans/YYYY-MM-DD-topic/
 
 Optional: `success_criteria` array at plan, phase, and task levels for automated verification. `workflow` field controls post-plan behavior: `pr-create` (orchestrate + pr-create, default), `pr-merge` (orchestrate + pr-create + pr-review + pr-merge), `plan-only` (stop after planning). Set by the design skill based on user choice. `execution_mode` controls how orchestrate runs tasks: `subagents` (parallel via Agent tool with worktree isolation) or `agent-teams` (parallel teammates with push notifications and mailbox messaging). The design skill overwrites this after draft-plan returns with the user's actual choice; draft-plan writes `"subagents"` as a placeholder. `review_wait_minutes` integer sets the max wait for external reviewers (default 10, set 0 to skip polling).
 
-**See:** `docs/plans/2026-03-19-structured-plans/design-structured-plans.md` for full schema reference.
+**See:** `schema-reference.md` for full schema reference.
 
 **Task .md file structure:**
 
