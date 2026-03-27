@@ -105,7 +105,7 @@ done
 teardown
 
 echo ""
-echo "=== get ==="
+echo "=== get (default fallback) ==="
 
 setup
 assert_eq "get bool default" "$FIRST_BOOL_DEFAULT" "$(bash "$SCRIPT" get "$FIRST_BOOL_KEY")"
@@ -114,6 +114,18 @@ assert_eq "get int default" "$FIRST_INT_DEFAULT" "$(bash "$SCRIPT" get "$FIRST_I
 check_fail "get unknown key fails" bash "$SCRIPT" get nonexistent_key
 output=$(bash "$SCRIPT" get nonexistent_key 2>&1 || true)
 assert_contains "get unknown key message" "$output" "Unknown setting"
+teardown
+
+echo ""
+echo "=== get (user override) ==="
+
+setup
+bash "$SCRIPT" set "$FIRST_BOOL_KEY" true > /dev/null
+assert_eq "get bool returns user override" "true" "$(bash "$SCRIPT" get "$FIRST_BOOL_KEY")"
+bash "$SCRIPT" set "$FIRST_ENUM_KEY" "$FIRST_ENUM_ALT" > /dev/null
+assert_eq "get enum returns user override" "$FIRST_ENUM_ALT" "$(bash "$SCRIPT" get "$FIRST_ENUM_KEY")"
+bash "$SCRIPT" set "$FIRST_INT_KEY" 99 > /dev/null
+assert_eq "get int returns user override" "99" "$(bash "$SCRIPT" get "$FIRST_INT_KEY")"
 teardown
 
 echo ""
@@ -133,6 +145,9 @@ check "set int" bash "$SCRIPT" set "$FIRST_INT_KEY" 42
 assert_eq "get int after set" "42" "$(bash "$SCRIPT" get "$FIRST_INT_KEY")"
 stored_int=$(jq --arg k "$FIRST_INT_KEY" '.[$k]' "$TMPDIR/settings.json")
 assert_eq "int stored as JSON number" "42" "$stored_int"
+
+prev_bool=$(jq -r --arg k "$FIRST_BOOL_KEY" '.[$k]' "$TMPDIR/settings.json")
+assert_eq "set int preserves existing bool override" "true" "$prev_bool"
 teardown
 
 echo ""
@@ -152,6 +167,9 @@ output=$(bash "$SCRIPT" set "$FIRST_INT_KEY" abc 2>&1 || true)
 assert_contains "int error message" "$output" "expected int"
 
 check_fail "set unknown key fails" bash "$SCRIPT" set nonexistent_key value
+check_fail "set with no args fails" bash "$SCRIPT" set
+check_fail "set with key but no value fails" bash "$SCRIPT" set "$FIRST_BOOL_KEY"
+check_fail "get with no key fails" bash "$SCRIPT" get
 teardown
 
 echo ""
