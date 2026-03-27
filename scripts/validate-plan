@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${BASH_VERSINFO[0]}" -lt 4 || ( "${BASH_VERSINFO[0]}" -eq 4 && "${BASH_VERSINFO[1]}" -lt 4 ) ]]; then
+  echo "ERROR: validate-plan requires bash 4.4+ (found $BASH_VERSION). On macOS, install bash via Homebrew." >&2
+  exit 1
+fi
+
 usage() {
   cat <<'USAGE'
 Usage:
@@ -162,14 +167,14 @@ do_schema() {
 
   # --- Level 3b: Phase depends_on + criteria as JSON arrays (2 jq calls) ---
   local _phase_deps _phase_criteria_json
-  _phase_deps=$(echo "$json" | jq -c '[.phases[] | (.depends_on // [])]')
-  _phase_criteria_json=$(echo "$json" | jq -c '[.phases[] | (.success_criteria // [])]')
+  _phase_deps=$(echo "$json" | jq -c '[(.phases // [])[] | (.depends_on // [])]')
+  _phase_criteria_json=$(echo "$json" | jq -c '[(.phases // [])[] | (.success_criteria // [])]')
 
   # --- Level 4: Bulk extract task scalars via NUL-delimited (1 jq call) ---
-  # Stride: 12 fields per task (pi, ti, id, name, status, verification, done_when, has_files, has_create, has_modify, has_test, phase_letter)
+  # Stride: 11 fields per task (pi, ti, id, name, status, verification, done_when, has_files, has_create, has_modify, has_test)
   local _ts=()
   mapfile -d '' _ts < <(echo "$json" | jq -j '
-    [.phases // [] | to_entries[] | .key as $pi | .value.letter as $pl |
+    [.phases // [] | to_entries[] | .key as $pi |
      (.value.tasks // []) | to_entries[] | [
       ($pi | tostring), (.key | tostring),
       (.value.id // ""), (.value.name // ""),
@@ -178,27 +183,26 @@ do_schema() {
       (.value | has("files") | tostring),
       ((.value.files // {}) | has("create") | tostring),
       ((.value.files // {}) | has("modify") | tostring),
-      ((.value.files // {}) | has("test") | tostring),
-      $pl
+      ((.value.files // {}) | has("test") | tostring)
     ] | map(. + "\u0000") | join("")] | join("")')
-  local _total_tasks=$(( ${#_ts[@]} / 12 ))
+  local _total_tasks=$(( ${#_ts[@]} / 11 ))
 
-  # --- Level 4b: Task arrays as indexed JSON array (1 jq call) ---
-  local _task_arrays_all
-  _task_arrays_all=$(echo "$json" | jq -c '
-    [.phases // [] | to_entries[] |
-     (.value.tasks // []) | .[] | {
+  # --- Level 4b: Task arrays as per-task JSON lines (1 jq call, no per-task jq) ---
+  local _task_arrays=()
+  mapfile -t _task_arrays < <(echo "$json" | jq -c '
+    .phases // [] | to_entries[] |
+    (.value.tasks // []) | .[] | {
       depends_on: (.depends_on // []),
       create: (.files.create // []),
       modify: (.files.modify // []),
       test_files: (.files.test // []),
       criteria: (.success_criteria // [])
-    }]')
+    }')
 
   # --- Level 5: Bulk extract BFS dependency graph (1 jq call) ---
   local _dep_graph=()
   mapfile -d '' _dep_graph < <(echo "$json" | jq -j '
-    [.phases[] | [.letter, (.depends_on // [] | join(","))]
+    [(.phases // [])[] | [.letter, (.depends_on // [] | join(","))]
     | map(. + "\u0000") | join("")] | join("")')
 
   # --- Now validate using pre-extracted data (no more jq calls in loops) ---
@@ -284,7 +288,7 @@ do_schema() {
     local _phase_file_paths=()
     local _phase_file_tids=()
     for ((ti=0; ti<_total_tasks; ti++)); do
-      local tbase=$((ti * 12))
+      local tbase=$((ti * 11))
       local _tp="${_ts[$tbase]}"
       [[ "$_tp" != "$p" ]] && continue
 
@@ -334,9 +338,8 @@ do_schema() {
         [[ "$test_exists" != "true" ]] && err "ERROR: missing_field: phases[$p].tasks[$t].files.test"
       fi
 
-      # Task arrays — direct index into pre-extracted JSON array (no scanning)
-      local _tarr
-      _tarr=$(echo "$_task_arrays_all" | jq -c ".[$ti]")
+      # Task arrays — direct index into pre-split array (no jq per task)
+      local _tarr="${_task_arrays[$ti]}"
 
       local _task_deps
       _task_deps=$(echo "$_tarr" | jq -r '.depends_on[]?')
@@ -520,6 +523,11 @@ do_consistency() {
   local json="${2:-}"
   if [[ -z "$json" ]]; then
     json=$(cat "$plan_json")
+  fi
+
+  if ! echo "$json" | jq -e . >/dev/null 2>&1; then
+    echo "ERROR: invalid JSON in $plan_json" >&2
+    return 1
   fi
 
   # Bulk extract: plan_status, phase_count, then per-phase (letter, status, task_count)
