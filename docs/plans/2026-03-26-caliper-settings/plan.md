@@ -1,5 +1,5 @@
 ---
-status: Not Yet Started
+status: In Development
 ---
 
 # Add /caliper-settings skill and script for persistent user-configurable defaults with 3-tier precedence (CLI flag > user setting > shipped default) Implementation Plan
@@ -13,9 +13,9 @@ status: Not Yet Started
 ---
 
 ## Phase A — Settings Infrastructure and Consumer Integrations
-**Status:** Not Started | **Rationale:** Single phase — foundation tasks (1-4) are sequential, consumer integrations (5-11) are parallel and independent. No natural phase boundary since consumers are one-liner additions that don't depend on each other.
+**Status:** In Progress | **Rationale:** Single phase — foundation tasks (1-4) are sequential, consumer integrations (5-11) are parallel and independent. No natural phase boundary since consumers are one-liner additions that don't depend on each other.
 
-- [ ] A1: Create defaults.json schema — *defaults.json exists at repo root with all 8 settings (skip_tests, review_mode, skip_review, merge_strategy, workflow, execution_mode, review_wait_minutes, re_review_threshold), each with type/default/description/used_by fields, types validated as bool/enum/int*
+- [x] A1: Create defaults.json schema — *defaults.json exists at repo root with all 8 settings (skip_tests, review_mode, skip_review, merge_strategy, workflow, execution_mode, review_wait_minutes, re_review_threshold), each with type/default/description/used_by fields, types validated as bool/enum/int*
 - [ ] A2: Implement scripts/caliper-settings bash script — *Script supports get/set/reset/list subcommands, validates types (bool/enum/int), merges user settings.json over defaults.json, handles all error cases (missing env vars, unknown keys, corrupted JSON, missing settings.json), exit codes correct*
 - [ ] A3: Write test suite for caliper-settings script — *Test script covers: get (default fallback, user override), set (valid bool/enum/int, invalid type rejection, unknown key rejection), reset (single key, all keys), list (shows all 8 settings with correct columns), error handling (missing CLAUDE_PLUGIN_ROOT, missing CLAUDE_PLUGIN_DATA, corrupted settings.json, unknown key), all tests pass*
 - [ ] A4: Create caliper-settings skill SKILL.md — *SKILL.md has frontmatter with name and description (trigger: /caliper-settings), documents list/set/reset subcommands, shows how to invoke the script via ${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings, stays under 1500 words*

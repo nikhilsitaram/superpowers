@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "Not Yet Started",
+  "status": "In Development",
   "workflow": "pr-create",
   "execution_mode": "agent-teams",
   "goal": "Add /caliper-settings skill and script for persistent user-configurable defaults with 3-tier precedence (CLI flag > user setting > shipped default)",
@@ -10,14 +10,14 @@
     {
       "letter": "A",
       "name": "Settings Infrastructure and Consumer Integrations",
-      "status": "Not Started",
+      "status": "In Progress",
       "depends_on": [],
       "rationale": "Single phase — foundation tasks (1-4) are sequential, consumer integrations (5-11) are parallel and independent. No natural phase boundary since consumers are one-liner additions that don't depend on each other.",
       "tasks": [
         {
           "id": "A1",
           "name": "Create defaults.json schema",
-          "status": "pending",
+          "status": "complete",
           "depends_on": [],
           "files": {
             "create": [
@@ -32,7 +32,7 @@
         {
           "id": "A2",
           "name": "Implement scripts/caliper-settings bash script",
-          "status": "pending",
+          "status": "in_progress",
           "depends_on": [
             "A1"
           ],

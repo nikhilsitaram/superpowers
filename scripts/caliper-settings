@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DEFAULTS_FILE="${CLAUDE_PLUGIN_ROOT:?CLAUDE_PLUGIN_ROOT not set — cannot locate defaults.json}/defaults.json"
+SETTINGS_FILE="${CLAUDE_PLUGIN_DATA:?CLAUDE_PLUGIN_DATA not set — cannot locate settings storage}/settings.json"
+
+if [[ ! -f "$DEFAULTS_FILE" ]]; then
+  echo "ERROR: defaults.json not found at $DEFAULTS_FILE" >&2
+  exit 1
+fi
+
+DEFAULTS=$(cat "$DEFAULTS_FILE")
+
+SETTINGS="{}"
+if [[ -f "$SETTINGS_FILE" ]]; then
+  if ! SETTINGS=$(jq '.' "$SETTINGS_FILE" 2>/dev/null); then
+    echo "WARNING: settings.json is invalid JSON, using defaults" >&2
+    SETTINGS="{}"
+  fi
+fi
+
+usage() {
+  echo "Usage: caliper-settings <subcommand> [args]" >&2
+  echo "" >&2
+  echo "Subcommands:" >&2
+  echo "  list              Show all settings with current and default values" >&2
+  echo "  get <key>         Get the current value of a setting" >&2
+  echo "  set <key> <value> Set a setting to a new value" >&2
+  echo "  reset [key]       Reset one or all settings to defaults" >&2
+  exit 1
+}
+
+validate_key() {
+  local key="$1"
+  if ! echo "$DEFAULTS" | jq -e --arg k "$key" '.[$k]' > /dev/null 2>&1; then
+    local valid_keys
+    valid_keys=$(echo "$DEFAULTS" | jq -r 'keys | join(", ")')
+    echo "Unknown setting: $key. Valid settings: $valid_keys" >&2
+    exit 1
+  fi
+}
+
+cmd_get() {
+  local key="${1:?get requires a key}"
+  validate_key "$key"
+  local user_val
+  user_val=$(echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] // empty')
+  if [[ -n "$user_val" ]]; then
+    echo "$user_val"
+  else
+    echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].default'
+  fi
+}
+
+cmd_set() {
+  local key="${1:?set requires a key}"
+  local value="${2:?set requires a value}"
+  validate_key "$key"
+  local type
+  type=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].type')
+
+  case "$type" in
+    bool)
+      if [[ "$value" != "true" && "$value" != "false" ]]; then
+        echo "Invalid value for $key: expected bool (true/false), got '$value'" >&2
+        exit 1
+      fi
+      ;;
+    enum)
+      local valid_values
+      valid_values=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].values | join(", ")')
+      if ! echo "$DEFAULTS" | jq -e --arg k "$key" --arg v "$value" '.[$k].values | index($v)' > /dev/null 2>&1; then
+        echo "Invalid value for $key: expected one of [$valid_values], got '$value'" >&2
+        exit 1
+      fi
+      ;;
+    int)
+      if ! [[ "$value" =~ ^[0-9]+$ ]]; then
+        echo "Invalid value for $key: expected int, got '$value'" >&2
+        exit 1
+      fi
+      ;;
+  esac
+
+  mkdir -p "$(dirname "$SETTINGS_FILE")"
+
+  local existing="{}"
+  if [[ -f "$SETTINGS_FILE" ]]; then
+    existing=$(jq '.' "$SETTINGS_FILE" 2>/dev/null || echo "{}")
+  fi
+
+  case "$type" in
+    bool|int)
+      echo "$existing" | jq --arg k "$key" --argjson v "$value" '.[$k] = $v' > "$SETTINGS_FILE"
+      ;;
+    enum)
+      echo "$existing" | jq --arg k "$key" --arg v "$value" '.[$k] = $v' > "$SETTINGS_FILE"
+      ;;
+  esac
+}
+
+cmd_reset() {
+  local key="${1:-}"
+  if [[ -n "$key" ]]; then
+    validate_key "$key"
+    if [[ -f "$SETTINGS_FILE" ]]; then
+      local updated
+      updated=$(jq --arg k "$key" 'del(.[$k])' "$SETTINGS_FILE")
+      echo "$updated" > "$SETTINGS_FILE"
+    fi
+  else
+    if [[ -f "$SETTINGS_FILE" ]]; then
+      echo "{}" > "$SETTINGS_FILE"
+    fi
+  fi
+}
+
+cmd_list() {
+  echo ""
+  printf "%-25s %-20s %-20s %s\n" "KEY" "CURRENT" "DEFAULT" "DESCRIPTION"
+  printf "%-25s %-20s %-20s %s\n" "---" "-------" "-------" "-----------"
+  for key in $(echo "$DEFAULTS" | jq -r 'keys[]'); do
+    local default description user_val current
+    default=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].default')
+    description=$(echo "$DEFAULTS" | jq -r --arg k "$key" '.[$k].description')
+    user_val=$(echo "$SETTINGS" | jq -r --arg k "$key" '.[$k] // empty')
+    current="${user_val:-$default}"
+    printf "%-25s %-20s %-20s %s\n" "$key" "$current" "$default" "$description"
+  done
+  echo ""
+}
+
+if [[ $# -eq 0 ]]; then
+  usage
+fi
+
+case "${1}" in
+  list)  cmd_list ;;
+  get)   shift; cmd_get "$@" ;;
+  set)   shift; cmd_set "$@" ;;
+  reset) shift; cmd_reset "$@" ;;
+  *)     usage ;;
+esac
