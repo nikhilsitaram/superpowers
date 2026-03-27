@@ -341,11 +341,11 @@ cp "$REPO_ROOT/hooks/safe-commands.txt" "$SAFE32"
 OUT32=$(run_hook "sh scripts/validate-plan --schema plan.json" "$SAFE32" "$LOG32")
 assert_output_contains_deny_with_reason "sh + script denied with invoke-directly message" "$OUT32" "Do not use"
 
-echo "Test 33: bash tests/hooks/test_safe_commands.sh denied with guidance"
+echo "Test 33: bash tests/hooks/caliper-test_safe_commands.sh denied with guidance"
 SAFE33="$TMPDIR_TEST/safe33.txt"
 LOG33="$TMPDIR_TEST/log33.txt"
 cp "$REPO_ROOT/hooks/safe-commands.txt" "$SAFE33"
-OUT33=$(run_hook "bash tests/hooks/test_safe_commands.sh" "$SAFE33" "$LOG33")
+OUT33=$(run_hook "bash tests/hooks/caliper-test_safe_commands.sh" "$SAFE33" "$LOG33")
 assert_output_contains_deny_with_reason "bash + script denied with invoke-directly message" "$OUT33" "Do not use"
 
 echo "Test 34: \$VAR as command word triggers deny with feedback"
