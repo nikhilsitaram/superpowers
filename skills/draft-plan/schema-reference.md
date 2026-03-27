@@ -13,7 +13,7 @@ Plans are currently single `.md` files where all structure (phases, tasks, statu
 ### Directory Structure
 
 ```text
-docs/plans/YYYY-MM-DD-topic/
+.claude/claude-caliper/YYYY-MM-DD-topic/
 ├── design-topic.md       # Design doc (unchanged)
 ├── plan.json             # Structured manifest (source of truth)
 ├── plan.md               # Human-readable outline (deterministically generated from plan.json)
