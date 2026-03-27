@@ -26,17 +26,19 @@ TaskCreate per phase: "Execute tasks ({N})", "Implementation review", "Create PR
 ## Setup
 
 Before first phase:
-- Read workflow: `WORKFLOW=$(jq -r '.workflow' plan.json)`
-- Read execution mode: `EXEC_MODE=$(jq -r '.execution_mode' plan.json)`
+- Resolve absolute path: `PLAN_JSON=$(realpath plan.json)` and `PLAN_DIR=$(dirname "$PLAN_JSON")`
+  Plan artifacts live under `.claude/claude-caliper/` (gitignored). Phase worktrees won't have these files, so all plan.json references must use the absolute `$PLAN_JSON` path — it points to the integration worktree where the plan was created.
+- Read workflow: `WORKFLOW=$(jq -r '.workflow' "$PLAN_JSON")`
+- Read execution mode: `EXEC_MODE=$(jq -r '.execution_mode' "$PLAN_JSON")`
 Note: `workflow` and `execution_mode` are read from plan.json (set by the design skill based on user selection and caliper-settings defaults), not from caliper-settings at runtime. This avoids two sources of truth — the plan is the single source once created.
-- Count phases: `PHASE_COUNT=$(jq '.phases | length' plan.json)`
-- Validate schema: `scripts/validate-plan --schema plan.json`
-- Validate entry gate: `scripts/validate-plan --check-entry plan.json --stage execution`
-- Validate base branch: `scripts/validate-plan --check-base plan.json`
-- Validate consistency: `scripts/validate-plan --consistency plan.json`
-- `scripts/validate-plan --update-status plan.json --plan --status "In Development"`
+- Count phases: `PHASE_COUNT=$(jq '.phases | length' "$PLAN_JSON")`
+- Validate schema: `scripts/validate-plan --schema "$PLAN_JSON"`
+- Validate entry gate: `scripts/validate-plan --check-entry "$PLAN_JSON" --stage execution`
+- Validate base branch: `scripts/validate-plan --check-base "$PLAN_JSON"`
+- Validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"`
+- `scripts/validate-plan --update-status "$PLAN_JSON" --plan --status "In Development"`
 - `PLAN_BASE_SHA=$(git rev-parse HEAD)`
-- `PLAN_DIR=$(dirname "$(realpath plan.json)")` and `[ -f "$PLAN_DIR/reviews.json" ] || echo '[]' > "$PLAN_DIR/reviews.json"`
+- `[ -f "$PLAN_DIR/reviews.json" ] || echo '[]' > "$PLAN_DIR/reviews.json"`
 - Push branch: `git push -u origin HEAD`
 - Read the dispatch protocol for `EXEC_MODE`: **See:** `./dispatch-subagents.md` (subagents) or `./dispatch-agent-teams.md` (agent-teams) — read only the file matching `EXEC_MODE`
 
@@ -47,7 +49,7 @@ Process phases in order (A, B, C...). For each phase:
 ### Prepare Phase
 
 1. Create phase worktree from integration branch (multi-phase) or use feature worktree (single-phase)
-2. Re-validate base branch: `scripts/validate-plan --check-base plan.json` (multi-phase only — ensures dispatch happens from integration worktree, not main)
+2. Re-validate base branch: `scripts/validate-plan --check-base "$PLAN_JSON"` (multi-phase only — ensures dispatch happens from integration worktree, not main)
 3. `PHASE_BASE_SHA=$(git rev-parse HEAD)` in worktree
 4. **Bootstrap dependencies** in the worktree. **See:** skills/design/dependency-bootstrap.md
 5. Extract context: tasks JSON, plan dir, phase dir, prior completions (from depends_on closure)
@@ -56,9 +58,9 @@ Process phases in order (A, B, C...). For each phase:
 ### Dispatch, Complete, and Review Tasks
 
 Follow the dispatch protocol from the mode-specific file read during setup. Both modes share these invariants:
-- Only dispatch tasks whose dependencies are met (`scripts/validate-plan --check-deps`)
+- Only dispatch tasks whose dependencies are met (`scripts/validate-plan --check-deps "$PLAN_JSON"`)
 - Each task gets reviewed after implementation (reviewer always uses `./task-reviewer-prompt.md`)
-- After review passes: validate criteria (`scripts/validate-plan --criteria plan.json --task {TASK_ID}`), merge task branch, check for newly unblocked tasks
+- After review passes: validate criteria (`scripts/validate-plan --criteria "$PLAN_JSON" --task {TASK_ID}`), merge task branch, check for newly unblocked tasks
 
 The dispatch file specifies how tasks are dispatched (teammates vs subagents), how completions are detected (push vs background notification), and how review fixes are communicated (mailbox vs fresh agent).
 
@@ -66,11 +68,11 @@ The dispatch file specifies how tasks are dispatched (teammates vs subagents), h
 
 After all tasks complete and branches merged:
 1. Dispatch implementation-review with `PHASE_BASE_SHA..HEAD`, run Review Loop Protocol (scope: `phase-{letter_lower}`)
-2. `scripts/validate-plan --check-review plan.json --type impl-review --scope phase-{letter_lower}`
+2. `scripts/validate-plan --check-review "$PLAN_JSON" --type impl-review --scope phase-{letter_lower}`
 3. Append review changes to `${PHASE_DIR}/completion.md`
-4. Run phase criteria: `scripts/validate-plan --criteria plan.json --phase {LETTER}`
-5. Update status: `scripts/validate-plan --update-status plan.json --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
-6. Re-validate consistency: `scripts/validate-plan --consistency plan.json` (catches state drift after status updates)
+4. Run phase criteria: `scripts/validate-plan --criteria "$PLAN_JSON" --phase {LETTER}`
+5. Update status: `scripts/validate-plan --update-status "$PLAN_JSON" --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
+6. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"` (catches state drift after status updates)
 7. (Multi-phase) Create phase PR, external review gate, merge, clean up worktree
 
 ## Review Loop Protocol
@@ -94,24 +96,24 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 
 1. Dispatch tasks, process completions, wrap up (same dispatch protocol as above)
 2. Dispatch implementation-review, run Review Loop Protocol (scope: `phase-a`)
-3. `scripts/validate-plan --check-review plan.json --type impl-review --scope phase-a`
-4. Run plan criteria: `scripts/validate-plan --criteria plan.json --plan`
-5. `scripts/validate-plan --update-status plan.json --plan --status Complete`
-6. Re-validate consistency: `scripts/validate-plan --consistency plan.json`
+3. `scripts/validate-plan --check-review "$PLAN_JSON" --type impl-review --scope phase-a`
+4. Run plan criteria: `scripts/validate-plan --criteria "$PLAN_JSON" --plan`
+5. `scripts/validate-plan --update-status "$PLAN_JSON" --plan --status Complete`
+6. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"`
 7. Route on workflow:
-   - `"pr-create"`: invoke pr-create (targets main), `scripts/validate-plan --check-workflow plan.json`, stop
-   - `"pr-merge"`: invoke pr-create, read `REVIEW_WAIT=$(${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get review_wait_minutes)`, poll checks + pr-review --automated (skip if $REVIEW_WAIT is 0; if skipped, invoke pr-merge directly), `scripts/validate-plan --check-workflow plan.json`
+   - `"pr-create"`: invoke pr-create (targets main), `scripts/validate-plan --check-workflow "$PLAN_JSON"`, stop
+   - `"pr-merge"`: invoke pr-create, read `REVIEW_WAIT=$(${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get review_wait_minutes)`, poll checks + pr-review --automated (skip if $REVIEW_WAIT is 0; if skipped, invoke pr-merge directly), `scripts/validate-plan --check-workflow "$PLAN_JSON"`
 
 ## After All Phases (Multi-Phase Only)
 
-1. Run plan criteria: `scripts/validate-plan --criteria plan.json --plan`. If exit 1, do not mark complete.
+1. Run plan criteria: `scripts/validate-plan --criteria "$PLAN_JSON" --plan`. If exit 1, do not mark complete.
 2. Final review: dispatch implementation-review with `PLAN_BASE_SHA..HEAD`, run Review Loop Protocol (scope: `final`)
-3. `scripts/validate-plan --check-review plan.json --type impl-review --scope final`
-4. `scripts/validate-plan --update-status plan.json --plan --status Complete`
-5. Re-validate consistency: `scripts/validate-plan --consistency plan.json`
+3. `scripts/validate-plan --check-review "$PLAN_JSON" --type impl-review --scope final`
+4. `scripts/validate-plan --update-status "$PLAN_JSON" --plan --status Complete`
+5. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"`
 6. Route on workflow:
-   - `"pr-merge"`: create final PR, poll checks, pr-review --automated, `scripts/validate-plan --check-workflow plan.json`, clean up
-   - `"pr-create"`: create final PR, `scripts/validate-plan --check-workflow plan.json`, stop
+   - `"pr-merge"`: create final PR, poll checks, pr-review --automated, `scripts/validate-plan --check-workflow "$PLAN_JSON"`, clean up
+   - `"pr-create"`: create final PR, `scripts/validate-plan --check-workflow "$PLAN_JSON"`, stop
 
 **Continuity:** Run continuously. Pause only for Rule 4 violations.
 
@@ -119,6 +121,7 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 
 | Constraint | Why |
 |------------|-----|
+| Resolve `PLAN_JSON` as absolute path at setup | Plan artifacts are gitignored — phase worktrees won't have them. Absolute path ensures all agents access the same file. |
 | Read `execution_mode` from plan.json at setup | Determines which dispatch protocol to follow |
 | Validate schema before execution | Catches file-set overlap and structural issues early |
 | Record PLAN_BASE_SHA before first phase | Final cross-phase review needs total diff |

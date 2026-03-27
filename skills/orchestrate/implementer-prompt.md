@@ -7,8 +7,8 @@ Use this template when spawning an implementer teammate. The lead substitutes al
 - `{TASK_ID_LOWER}` — lowercase task ID (e.g., a1)
 - `{TASK_METADATA}` — JSON task object from plan.json
 - `{TASK_PROSE}` — content of the task .md file
-- `{PLAN_DIR}` — absolute path to plan directory
-- `{PHASE_DIR}` — absolute path to phase directory
+- `{PLAN_DIR}` — absolute path to plan directory (in integration worktree — plan artifacts are gitignored, so this path is the only way to access plan.json from phase worktrees)
+- `{PHASE_DIR}` — absolute path to phase directory (within `{PLAN_DIR}`)
 
 ```text
 Teammate spawn:
