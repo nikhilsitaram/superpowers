@@ -89,7 +89,7 @@ Reviewer produces:
 **Pass:** Zero issues, or all issues fixed and confirmed clean
 **Fail:** Return to draft-plan to fix, then re-run plan-review
 
-**Re-review gate:** If the reviewer finds more than 5 issues, after all fixes, dispatch a fresh reviewer with the same full scope to confirm clean. Under 5 issues, verify fixes and proceed.
+**Re-review gate:** Read the threshold: `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get re_review_threshold` (default: 5). If the reviewer finds more issues than this threshold, after all fixes, dispatch a fresh reviewer with the same full scope to confirm clean. At or under the threshold, verify fixes and proceed.
 
 ## Integration
 

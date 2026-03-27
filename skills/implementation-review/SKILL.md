@@ -68,9 +68,9 @@ After review passes, the **orchestrator** updates the plan document:
 
 ## Re-Review Gate
 
-If the reviewer finds more than 5 fix-needed issues: after all fixes are applied, dispatch a fresh reviewer subagent with the same full review scope. This catches reviewer hallucination from compounding and new issues introduced by bulk fixes.
+Read the threshold: `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get re_review_threshold` (default: 5). If the reviewer finds more issues than this threshold: after all fixes are applied, dispatch a fresh reviewer subagent with the same full review scope. This catches reviewer hallucination from compounding and new issues introduced by bulk fixes.
 
-Under 5 issues, the orchestrator verifies fixes and proceeds without re-review.
+At or under the threshold, the orchestrator verifies fixes and proceeds without re-review.
 
 ## Integration
 
