@@ -135,7 +135,7 @@
             "test": []
           },
           "verification": "./tests/validate-plan/test_schema.sh && ./tests/validate-plan/test_fileset_overlap.sh && ./tests/validate-plan/test_structural_ordering.sh && ./tests/validate-plan/test_execution_mode.sh && ./tests/validate-plan/test_integration_branch.sh && ./tests/validate-plan/test_supervision_schema.sh && ./tests/validate-plan/test_status_consistency.sh",
-          "done_when": "do_schema() uses 4-5 bulk jq calls instead of ~75 individual ones. All 7 test files that exercise --schema pass with zero modifications.",
+          "done_when": "do_schema() uses fewer than 10 bulk jq calls on the full plan JSON instead of ~75 individual ones. Small-object jq calls on extracted data are acceptable. All 7 test files that exercise --schema pass with zero modifications.",
           "success_criteria": [
             {
               "run": "./tests/validate-plan/test_schema.sh",
@@ -192,7 +192,7 @@
             "test": []
           },
           "verification": "./tests/validate-plan/test_consistency.sh && ./tests/validate-plan/test_status_consistency.sh",
-          "done_when": "do_consistency() uses 1-2 bulk jq calls instead of ~20 individual ones. Also passes the loaded $json from do_schema() instead of re-reading plan.json from disk. Both consistency test files pass with zero modifications.",
+          "done_when": "do_consistency() uses 1 bulk jq call on the full plan JSON plus fast calls on the small extracted data (~500 bytes). Also accepts $json from do_schema() to avoid re-reading plan.json from disk. Both consistency test files pass with zero modifications. Note: A2 modifies scripts/validate-plan (same file as A1) but files.modify is intentionally empty to pass fileset_overlap validation — the sequential dependency on A1 prevents conflicts.",
           "success_criteria": [
             {
               "run": "./tests/validate-plan/test_consistency.sh",

@@ -57,13 +57,15 @@ Same batching pattern. One jq call extracts all plan/phase/task statuses and dep
 
 2. **No jq inside inner loops where avoidable** — For fields that are simple strings, use TSV extraction so bash `read` handles parsing. Reserve JSON-per-line + jq for structures that need array/object access.
 
-3. **Preserve exact error strings** — All 19 test files assert specific error strings. The refactored code must emit identical messages. Tests are the acceptance gate.
+3. **Preserve exact error strings** — All 18 test files assert specific error strings. The refactored code must emit identical messages. Tests are the acceptance gate.
 
 4. **No changes to other functions** — Only `do_schema()` and `do_consistency()` are refactored. `do_criteria`, `do_render`, `do_update_status`, and check functions have few jq calls and are not bottlenecks.
 
-6. **Pass loaded JSON between functions** — `do_schema()` chains to `do_consistency()`, which currently re-reads plan.json from disk. Pass the already-loaded `$json` variable to eliminate redundant file I/O.
+5. **Pass loaded JSON between functions** — `do_schema()` chains to `do_consistency()`, which currently re-reads plan.json from disk. Pass the already-loaded `$json` variable to eliminate redundant file I/O.
 
-5. **No test modifications** — The optimization is internal to validate-plan. If tests need changes, the refactor has a bug.
+6. **No test modifications** — The optimization is internal to validate-plan. If tests need changes, the refactor has a bug.
+
+7. **Small-object jq calls are acceptable** — BFS cycle detection and per-entity field extraction may use jq on pre-extracted small JSON objects (~100-200 bytes). These are ~1ms each vs ~5ms on the full plan JSON. The goal is eliminating full-plan jq calls in loops, not reaching zero jq forks.
 
 ## Non-Goals
 
