@@ -32,7 +32,7 @@
         {
           "id": "A2",
           "name": "Implement scripts/caliper-settings bash script",
-          "status": "in_progress",
+          "status": "complete",
           "depends_on": [
             "A1"
           ],
