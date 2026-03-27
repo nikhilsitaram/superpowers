@@ -77,7 +77,14 @@ The subagent posts its findings as a `gh pr comment` on the PR, then returns fin
 5. **CodeRabbit rate limit:** if a rate-limit warning is detected in bot comments, treat as ready — proceed with available feedback.
 6. **Timeout:** `${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get review_wait_minutes` minutes max (default: 10). Proceed with available feedback.
 
-**Collect feedback:** Fetch PR conversation comments, inline review comments, and review status via `gh`. Categorize each item:
+**Collect feedback from all three sources:**
+1. Conversation comments: `gh pr view $PR_NUMBER --json comments --jq '.comments[]'`
+2. Inline review comments: `gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/comments --jq '.[]'`
+3. Reviews (body + status): `gh pr view $PR_NUMBER --json reviews --jq '.reviews[]'`
+
+All three must be checked — bots like Copilot and CodeRabbit post to sources 2-3, not source 1.
+
+Categorize each item:
 
 | Category | Action |
 |----------|--------|
