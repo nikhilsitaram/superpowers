@@ -79,7 +79,7 @@ The subagent posts its findings as a `gh pr comment` on the PR, then returns fin
 
 **Collect feedback from all three sources:**
 1. Conversation comments: `gh pr view $PR_NUMBER --json comments --jq '.comments[]'`
-2. Inline review comments: `gh api repos/{owner}/{repo}/pulls/$PR_NUMBER/comments --jq '.[]'`
+2. Inline review comments: `gh api --paginate repos/{owner}/{repo}/pulls/$PR_NUMBER/comments --jq '.[]'`
 3. Reviews (body + status): `gh pr view $PR_NUMBER --json reviews --jq '.reviews[]'`
 
 All three must be checked — bots like Copilot and CodeRabbit post to sources 2-3, not source 1.
