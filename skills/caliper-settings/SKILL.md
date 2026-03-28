@@ -40,8 +40,10 @@ Removes a user override so the setting falls back to its shipped default. With n
 | `merge_strategy` | enum | `squash` | pr-merge |
 | `workflow` | enum | `pr-create` | design, orchestrate |
 | `execution_mode` | enum | `subagents` | design, orchestrate |
+| `implementer_model` | enum | `opus` | design, orchestrate |
 | `review_wait_minutes` | int | `10` | orchestrate, pr-review |
 | `re_review_threshold` | int | `5` | design, orchestrate, review skills |
+| `reviewer_model` | enum | `sonnet` | design, orchestrate, review skills |
 
 ## How Settings Are Used
 

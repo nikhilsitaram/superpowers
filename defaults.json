@@ -39,6 +39,13 @@
     "description": "Default execution mode for plan dispatch",
     "used_by": ["design", "orchestrate"]
   },
+  "implementer_model": {
+    "type": "enum",
+    "values": ["opus", "sonnet", "haiku"],
+    "default": "opus",
+    "description": "Model for task implementers and draft-plan dispatch",
+    "used_by": ["design", "orchestrate"]
+  },
   "review_wait_minutes": {
     "type": "int",
     "default": 10,
@@ -50,6 +57,13 @@
     "default": 5,
     "description": "Issue count above which reviewer is re-dispatched after fixes",
     "used_by": ["design", "orchestrate", "design-review", "plan-review", "implementation-review"]
+  },
+  "reviewer_model": {
+    "type": "enum",
+    "values": ["opus", "sonnet", "haiku"],
+    "default": "sonnet",
+    "description": "Model for all review dispatches and fix-cycle agents",
+    "used_by": ["design", "orchestrate", "design-review", "plan-review", "implementation-review", "pr-review"]
   },
   "bot_poll_timeout_minutes": {
     "type": "int",
