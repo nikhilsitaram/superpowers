@@ -5,7 +5,7 @@ description: Use when a design doc has been written and before draft-plan is dis
 
 # Design Review
 
-Dispatch an Opus subagent to validate a design doc before planning. Catches spec gaps that are cheap to fix in design but expensive to fix mid-implementation.
+Dispatch a reviewer subagent to validate a design doc before planning. Catches spec gaps that are cheap to fix in design but expensive to fix mid-implementation.
 
 **Core principle:** Designs are hypotheses about what to build. Validate before committing to a plan.
 
@@ -23,7 +23,7 @@ Gather inputs:
 - **Design doc** — `.claude/claude-caliper/YYYY-MM-DD-topic/design-topic.md`
 - **Repo root** — the worktree the design targets
 
-Dispatch with `model: "opus"` — fresh-eyes review requires strong reasoning to catch blind spots the designer and user converged past.
+Dispatch with `model: "$REVIEWER_MODEL"` — fresh-eyes review requires strong reasoning to catch blind spots the designer and user converged past.
 
 **See:** reviewer-prompt.md
 

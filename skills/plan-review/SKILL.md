@@ -5,7 +5,7 @@ description: Use when a plan has been written and before execution begins
 
 # Plan Review
 
-Dispatch an Opus subagent to validate a plan before execution. Catches issues that are cheap to fix in a plan but expensive to fix mid-implementation.
+Dispatch a reviewer subagent to validate a plan before execution. Catches issues that are cheap to fix in a plan but expensive to fix mid-implementation.
 
 **Core principle:** Plans are hypotheses. Validate before running the experiment.
 
@@ -23,14 +23,14 @@ Two-stage review:
 
 **Stage 1: Structural validation** — Run `scripts/validate-plan --schema {PLAN_DIR}/plan.json`. If errors, report them and stop. No point dispatching LLM reviewer for structurally invalid plans.
 
-**Stage 2: Prose + design review** — If schema passes, dispatch Opus subagent.
+**Stage 2: Prose + design review** — If schema passes, dispatch reviewer subagent.
 
 Gather inputs:
 - **Plan directory** — `.claude/claude-caliper/YYYY-MM-DD-topic/` (containing plan.json + task .md files)
 - **Design doc** — if one exists (or "None")
 - **Repo root** — the worktree the plan targets
 
-Dispatch with `model: "opus"` — consistency checking requires strong reasoning.
+Dispatch with `model: "$REVIEWER_MODEL"` — consistency checking requires strong reasoning.
 
 **See:** reviewer-prompt.md
 
