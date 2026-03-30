@@ -13,22 +13,18 @@ Merge (squash or rebase) and clean up branches and worktrees.
 
 ### Step 1: Setup
 
-**Worktree guard:** Check if CWD is inside a worktree:
+Detect if CWD is inside a worktree:
 
 ```bash
-if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
-  MAIN_REPO=$(git rev-parse --path-format=absolute --git-common-dir | sed 's|/.git$||')
-  cd "$MAIN_REPO"
-fi
+[ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]
 ```
 
-If inside a worktree, `cd` to the main repo before proceeding. All git operations (merge, branch delete, worktree remove) must run from the main repo — deleting a branch while CWD is its worktree bricks the shell.
+If inside a worktree, note `IN_WORKTREE=true`. Stay in the worktree — `gh pr merge` is a GitHub API call that works from any directory. `ExitWorktree` handles cleanup in Step 3.
 
 Identify the PR from argument, current branch (`gh pr view`), or `gh pr list --author @me --state open`. If multiple candidates and you're not on a branch with an associated PR, ask the user to pick. Store PR number, branch name, and URL.
 
 Detect environment:
 - `DEFAULT_BRANCH` from `refs/remotes/origin/HEAD` (fallback: main/master)
-- `WORKTREE_PATH` — look up from `git worktree list` by matching `$BRANCH_NAME` (needed for cleanup even though we're in the main repo)
 - `IS_INTEGRATION` — true when `$BRANCH_NAME` matches `integrate/*`; extract `FEATURE=${BRANCH_NAME#integrate/}`
 
 ### Step 2: Merge
@@ -57,14 +53,14 @@ Never use `--delete-branch` — branch cleanup is handled in Step 3.
 ### Step 3: Clean Up
 
 **Integration branch** (`IS_INTEGRATION=true`):
-1. For each phase worktree `.claude/worktrees/$FEATURE-phase-*`: `git worktree remove <path>`
-2. `git worktree remove .claude/worktrees/$FEATURE`
+1. Call `ExitWorktree` with `action: "remove"` if `IN_WORKTREE` — exits and deletes the current worktree atomically, resetting CWD to the main repo at the session level
+2. Remove remaining phase worktrees: `git worktree remove .claude/worktrees/$FEATURE-phase-*` for each
 3. Delete phase branches: `git branch -D phase-a phase-b ...` (list from plan.json)
 4. `git branch -D $BRANCH_NAME`
 5. `git worktree prune && git pull --rebase && git remote prune origin`
 
-**Standard worktree** (branch has a worktree but we're in the main repo):
-1. `git worktree remove "$WORKTREE_PATH"` (retry `--force` if untracked files)
+**Standard worktree** (`IN_WORKTREE=true`):
+1. Call `ExitWorktree` with `action: "remove"` — exits and deletes the worktree atomically, resetting CWD to the main repo at the session level
 2. `git branch -D $BRANCH_NAME`
 3. `git worktree prune && git pull --rebase && git remote prune origin`
 
@@ -86,7 +82,7 @@ Report: PR number/URL, merge status, cleanup status.
 
 | Mistake | Why |
 |---------|-----|
-| Running from inside a worktree | Remote branch deletion bricks the shell. The worktree guard catches this. |
+| Using `cd` instead of `ExitWorktree` to leave a worktree | `cd` doesn't persist across Bash tool calls — CWD stays in the deleted directory, bricking subsequent commands. `ExitWorktree` resets CWD at the session level. |
 | Deleting branch before removing worktree | Git refuses. Remove worktree first. |
 | Using `--delete-branch` on `gh pr merge` | Fails in worktree flows. Delete branch manually after. |
 
