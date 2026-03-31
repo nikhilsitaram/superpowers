@@ -423,6 +423,20 @@ printf 'caliper-test_*\nchmod\n' > "$SAFE43"
 OUT43=$(run_hook "chmod +x tests/hooks/caliper-test_safe_commands.sh && ./tests/hooks/caliper-test_safe_commands.sh" "$SAFE43" "$LOG43")
 assert_output_contains "prefix glob works in compound commands" "$OUT43" "allow"
 
+echo "Test 44: Quoted absolute path matches after quote stripping"
+SAFE44="$TMPDIR_TEST/safe44.txt"
+LOG44="$TMPDIR_TEST/log44.txt"
+printf 'caliper-settings\n' > "$SAFE44"
+OUT44=$(run_hook '"/Users/nsitaram/.claude/plugins/marketplaces/claude-caliper/scripts/caliper-settings" get merge_strategy' "$SAFE44" "$LOG44")
+assert_output_contains "quoted absolute path allowed after stripping" "$OUT44" "allow"
+
+echo "Test 45: Single-quoted absolute path matches after quote stripping"
+SAFE45="$TMPDIR_TEST/safe45.txt"
+LOG45="$TMPDIR_TEST/log45.txt"
+printf 'caliper-settings\n' > "$SAFE45"
+OUT45=$(run_hook "'/Users/nsitaram/.claude/plugins/marketplaces/claude-caliper/scripts/caliper-settings' get merge_strategy" "$SAFE45" "$LOG45")
+assert_output_contains "single-quoted absolute path allowed after stripping" "$OUT45" "allow"
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

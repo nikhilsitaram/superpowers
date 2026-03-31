@@ -313,9 +313,9 @@ for seg in "${segments[@]+"${segments[@]}"}"; do
       continue
     fi
     count=$((count+1))
-    if ! is_safe "$word"; then
+    if ! is_safe "$stripped"; then
       all_safe=0
-      non_matching+=("$word")
+      non_matching+=("$stripped")
     fi
   done
 done
