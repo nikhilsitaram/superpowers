@@ -67,12 +67,15 @@ Agent(
 
 Re-dispatch reviewer after fixes. Repeat until review passes (max 3 cycles, then escalate to user).
 
-## After Review Passes
+## After Review Passes (or Skip)
+
+For trivial tasks (one-liner, config change, rename) where a full reviewer dispatch is overhead, you may skip the review and record a skip with justification instead. The consistency check accepts both `pass` and `skip` verdicts.
 
 1. Record the task-review in `reviews.json` (in the plan directory alongside plan.json):
    ```bash
    jq '. += [{"type":"task-review","scope":"{TASK_ID}","verdict":"pass","remaining":0}]' "$PLAN_DIR/reviews.json" > "$PLAN_DIR/reviews.json.tmp" && mv "$PLAN_DIR/reviews.json.tmp" "$PLAN_DIR/reviews.json"
    ```
+   To skip review: use `"verdict":"skip","reason":"<justification>"` instead of `"verdict":"pass"`.
    If `reviews.json` doesn't exist yet, create it: `echo '[]' > "$PLAN_DIR/reviews.json"` first.
 2. Mark task complete: `scripts/validate-plan --update-status plan.json --task {TASK_ID} --status complete`
 3. Validate criteria: `scripts/validate-plan --criteria plan.json --task {TASK_ID}`

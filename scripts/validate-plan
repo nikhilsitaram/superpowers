@@ -1091,7 +1091,7 @@ check_review_record() {
   verdict=$(echo "$record" | jq -r '.verdict // "missing"')
   remaining=$(echo "$record" | jq -r '.remaining // 0')
 
-  if [[ "$verdict" == "pass" && "$remaining" -eq 0 ]]; then
+  if [[ ("$verdict" == "pass" || "$verdict" == "skip") && "$remaining" -eq 0 ]]; then
     return 0
   fi
 
