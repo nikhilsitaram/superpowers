@@ -31,7 +31,8 @@
         "./skills/pr-merge",
         "./skills/skill-eval",
         "./skills/caliper-settings"
-      ]
+      ],
+      "hooks": "./hooks/hooks-flat.json"
     },
     {
       "name": "claude-caliper-workflow",
