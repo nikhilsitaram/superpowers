@@ -1,50 +1,3 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-input=$(cat)
-
-tool_name=$(echo "$input" | jq -r '.tool_name // empty')
-
-case "$tool_name" in
-  Read|Glob|Grep|Skill|WebFetch|WebSearch|ToolSearch)
-    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\n'
-    exit 0
-    ;;
-  Bash) ;;
-  *) exit 0 ;;
-esac
-
-cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
-[[ -n "$cmd" ]] || exit 0
-
-caliper_only=true
-while IFS= read -r _seg; do
-  _seg="${_seg#"${_seg%%[![:space:]]*}"}"
-  [[ -z "$_seg" ]] && continue
-  if [[ "$_seg" != *"/.claude/claude-caliper/"* ]]; then
-    caliper_only=false
-    break
-  fi
-done < <(printf '%s\n' "$cmd" | tr ';&|' '\n')
-if [[ "$caliper_only" == "true" ]]; then
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\n'
-  exit 0
-fi
-
-BUNDLED_SAFE_FILE="$SCRIPT_DIR/safe-commands.txt"
-USER_SAFE_FILE="${CLAUDE_SAFE_COMMANDS_FILE:-$HOME/.claude/safe-commands.txt}"
-LOG_FILE="${CLAUDE_SAFE_CMDS_LOG:-${TMPDIR:-/tmp}/claude-safe-cmds-nonmatch.log}"
-
-if [[ -f "$USER_SAFE_FILE" ]]; then
-  SAFE_FILE="$USER_SAFE_FILE"
-elif [[ -f "$BUNDLED_SAFE_FILE" ]]; then
-  SAFE_FILE="$BUNDLED_SAFE_FILE"
-else
-  exit 0
-fi
-
 extract_segments() {
   local input_cmd="$1"
   local -a words=()
@@ -196,7 +149,6 @@ extract_command_words_from_segment() {
   else
     local word="${seg%% *}"
     outer_cmd="${word##*/}"
-    # Shell interpreter resolution: bash/sh/zsh script.sh -> script.sh
     if [[ "$outer_cmd" == "bash" || "$outer_cmd" == "sh" || "$outer_cmd" == "zsh" ]]; then
       local rest="${seg#"${seg%% *}" }"
       rest="${rest#"${rest%%[![:space:]]*}"}"
@@ -252,18 +204,21 @@ extract_command_words_from_segment() {
   done
 }
 
-exact_list=()
-prefix_list=()
-while IFS= read -r line; do
-  [[ -z "$line" ]] && continue
-  if [[ "$line" == *'*' ]]; then
-    prefix="${line%\*}"
-    [[ -z "$prefix" ]] && continue
-    prefix_list+=("$prefix")
-  else
-    exact_list+=("$line")
-  fi
-done < "$SAFE_FILE"
+load_safe_commands() {
+  local safe_file="$1"
+  exact_list=()
+  prefix_list=()
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    if [[ "$line" == *'*' ]]; then
+      prefix="${line%\*}"
+      [[ -z "$prefix" ]] && continue
+      prefix_list+=("$prefix")
+    else
+      exact_list+=("$line")
+    fi
+  done < "$safe_file"
+}
 
 is_safe() {
   local word="$1"
@@ -277,93 +232,3 @@ is_safe() {
   done
   return 1
 }
-
-extract_segments "$cmd"
-segments=("${SEGMENTS[@]+"${SEGMENTS[@]}"}")
-
-# Pre-check: deny bash/sh/zsh used as script runners or with -c
-for seg in "${segments[@]+"${segments[@]}"}"; do
-  _trimmed="${seg#"${seg%%[![:space:]]*}"}"
-  _first_word="${_trimmed%% *}"
-  _first_word="${_first_word##*/}"
-  if [[ "$_first_word" == "bash" || "$_first_word" == "sh" || "$_first_word" == "zsh" ]]; then
-    if [[ "$_trimmed" == "$_first_word" ]]; then continue; fi
-    _rest="${_trimmed#"${_trimmed%% *}" }"
-    _rest="${_rest#"${_rest%%[![:space:]]*}"}"
-    while [[ -n "$_rest" ]]; do
-      _token="${_rest%% *}"
-      if [[ "$_token" == "-c" ]]; then
-        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Do not use %s -c. Run the actual command directly."}}\n' "$_first_word"
-        exit 0
-      elif [[ "$_token" == -* && "$_token" != "--" ]]; then
-        _skip_next=0
-        if [[ "$_token" =~ o$ ]]; then _skip_next=1; fi
-        _rest="${_rest#"$_token"}"
-        _rest="${_rest#"${_rest%%[![:space:]]*}"}"
-        if [[ $_skip_next -eq 1 && -n "$_rest" ]]; then
-          _token="${_rest%% *}"
-          _rest="${_rest#"$_token"}"
-          _rest="${_rest#"${_rest%%[![:space:]]*}"}"
-        fi
-        continue
-      elif [[ "$_token" == "--" ]]; then
-        _rest="${_rest#"$_token"}"
-        _rest="${_rest#"${_rest%%[![:space:]]*}"}"
-        if [[ -n "$_rest" ]]; then
-          _script="${_rest%% *}"
-          printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Do not use %s to run scripts. Ensure the script has a shebang (#!/usr/bin/env bash) and executable bit (chmod +x), then invoke it directly: ./%s"}}\n' "$_first_word" "$_script"
-          exit 0
-        fi
-        break
-      else
-        printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Do not use %s to run scripts. Ensure the script has a shebang (#!/usr/bin/env bash) and executable bit (chmod +x), then invoke it directly: ./%s"}}\n' "$_first_word" "$_token"
-        exit 0
-      fi
-    done
-  fi
-done
-
-count=0
-all_safe=1
-variable_as_command=0
-declare -a non_matching=()
-
-for seg in "${segments[@]+"${segments[@]}"}"; do
-  [[ $count -ge 20 ]] && break
-  mapfile -t seg_cmds < <(extract_command_words_from_segment "$seg")
-  for word in "${seg_cmds[@]+"${seg_cmds[@]}"}"; do
-    [[ $count -ge 20 ]] && break
-    [[ -z "$word" ]] && continue
-    stripped="$word"
-    stripped="${stripped#\"}"
-    stripped="${stripped%\"}"
-    stripped="${stripped#\'}"
-    stripped="${stripped%\'}"
-    if [[ "$stripped" == \$* ]]; then
-      variable_as_command=1
-      all_safe=0
-      non_matching+=("$word")
-      continue
-    fi
-    count=$((count+1))
-    if ! is_safe "$stripped"; then
-      all_safe=0
-      non_matching+=("$stripped")
-    fi
-  done
-done
-
-if [[ $all_safe -eq 1 ]]; then
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}\n'
-elif [[ $variable_as_command -eq 1 ]]; then
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Command word is a shell variable — the safe commands hook cannot verify safety. Use the literal command/path instead of variable indirection."}}\n'
-  for nm in "${non_matching[@]}"; do
-    printf '%s\n' "$nm" >> "$LOG_FILE"
-  done
-else
-  for nm in "${non_matching[@]}"; do
-    printf '%s\n' "$nm" >> "$LOG_FILE"
-  done
-fi
-
-exit 0
