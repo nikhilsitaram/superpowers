@@ -83,26 +83,26 @@ else
   ((PASS++)) || true
 fi
 
-PRETOOLUSE_HOOK="$REPO_ROOT/hooks/pretooluse-safe-commands.sh"
+ALLOW_HOOK="$REPO_ROOT/hooks/permission-request-allow.sh"
 
-run_pretooluse() {
+run_allow() {
   local command="$1"
   local json
   json=$(jq -n --arg cmd "$command" '{tool_name: "Bash", tool_input: {command: $cmd}, session_id: "test-session"}')
-  echo "$json" | CLAUDE_SAFE_COMMANDS_FILE="$REPO_ROOT/hooks/safe-commands.txt" CLAUDE_SAFE_CMDS_LOG="/dev/null" bash "$PRETOOLUSE_HOOK" 2>/dev/null || true
+  echo "$json" | CLAUDE_SAFE_COMMANDS_FILE="$REPO_ROOT/hooks/safe-commands.txt" CLAUDE_SAFE_CMDS_LOG="/dev/null" "$ALLOW_HOOK" 2>/dev/null || true
 }
 
-echo "Test 6: Bash rm on .claude/claude-caliper/ path auto-allowed via PreToolUse"
-OUTPUT6=$(run_pretooluse "rm /some/project/.claude/claude-caliper/2026-03-31-topic/phase-a/a7.md")
-assert_output_contains "Bash rm on plan path auto-allowed" "$OUTPUT6" '"permissionDecision":"allow"'
+echo "Test 6: Bash rm on .claude/claude-caliper/ path auto-allowed via PermissionRequest"
+OUTPUT6=$(run_allow "rm /some/project/.claude/claude-caliper/2026-03-31-topic/phase-a/a7.md")
+assert_output_contains "Bash rm on plan path auto-allowed" "$OUTPUT6" '"behavior":"allow"'
 
-echo "Test 7: Bash mkdir on .claude/claude-caliper/ path auto-allowed via PreToolUse"
-OUTPUT7=$(run_pretooluse "mkdir -p /project/.claude/claude-caliper/2026-03-31-topic/phase-b")
-assert_output_contains "Bash mkdir on plan path auto-allowed" "$OUTPUT7" '"permissionDecision":"allow"'
+echo "Test 7: Bash mkdir on .claude/claude-caliper/ path auto-allowed via PermissionRequest"
+OUTPUT7=$(run_allow "mkdir -p /project/.claude/claude-caliper/2026-03-31-topic/phase-b")
+assert_output_contains "Bash mkdir on plan path auto-allowed" "$OUTPUT7" '"behavior":"allow"'
 
 echo "Test 8: Bash on non-plan .claude/ path NOT auto-allowed (falls through)"
-OUTPUT8=$(run_pretooluse "rm /project/.claude/settings.json")
-if echo "$OUTPUT8" | grep -qF '"permissionDecision":"allow"'; then
+OUTPUT8=$(run_allow "rm /project/.claude/settings.json")
+if echo "$OUTPUT8" | grep -qF '"behavior":"allow"'; then
   echo "FAIL: non-plan .claude/ path should not be auto-allowed"
   ((FAIL++)) || true
 else
@@ -110,9 +110,9 @@ else
   ((PASS++)) || true
 fi
 
-echo "Test 9: Non-Bash tool ignored by PreToolUse hook"
+echo "Test 9: Non-Bash tool ignored by allow hook"
 INPUT9=$(jq -n '{tool_name: "Edit", tool_input: {file_path: "/.claude/claude-caliper/foo"}, session_id: "test-session"}')
-OUTPUT9=$(echo "$INPUT9" | CLAUDE_SAFE_COMMANDS_FILE="$REPO_ROOT/hooks/safe-commands.txt" CLAUDE_SAFE_CMDS_LOG="/dev/null" bash "$PRETOOLUSE_HOOK" 2>/dev/null || true)
+OUTPUT9=$(echo "$INPUT9" | CLAUDE_SAFE_COMMANDS_FILE="$REPO_ROOT/hooks/safe-commands.txt" CLAUDE_SAFE_CMDS_LOG="/dev/null" "$ALLOW_HOOK" 2>/dev/null || true)
 assert_output_empty "non-Bash tool ignored" "$OUTPUT9"
 
 echo ""
