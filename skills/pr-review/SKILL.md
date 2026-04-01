@@ -32,7 +32,7 @@ mode=$("${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings" get review_mode)
 ```
 
 - If a mode is returned (`automated` or `deliberate`): the user explicitly configured this. Use it.
-- If `PROMPT_REQUIRED`: no explicit preference — prompt the user to choose:
+- If `PROMPT_REQUIRED`: no explicit preference — use AskUserQuestion to ask:
   - **Automated** — Fix all actionable findings without interaction.
   - **Deliberate** — Collect all feedback, present unified triage, choose what to fix.
 

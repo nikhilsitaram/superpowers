@@ -111,10 +111,6 @@ When `--base` is provided (e.g., from orchestrate for phase PRs), the PR targets
 
 Report: branch name, test results, files changed, commit hash, PR URL.
 
-If running inside a worktree, tell the user:
-
-> PR is open for review. When ready to address feedback: `/exit` this session, `cd` to the main repo, then run `/pr-review`. Starting fresh from the main repo avoids worktree CWD issues during cleanup.
-
 ## Arguments
 
 | Arg | Effect |
