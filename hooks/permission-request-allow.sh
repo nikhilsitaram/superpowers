@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib-command-parser.sh"
 
 input=$(cat)
@@ -25,17 +25,19 @@ esac
 cmd=$(echo "$input" | jq -r '.tool_input.command // empty')
 [[ -n "$cmd" ]] || exit 0
 
+extract_segments "$cmd"
+caliper_segments=("${SEGMENTS[@]+"${SEGMENTS[@]}"}")
 caliper_only=true
-while IFS= read -r _seg; do
+for _seg in "${caliper_segments[@]+"${caliper_segments[@]}"}"; do
   _seg="${_seg#"${_seg%%[![:space:]]*}"}"
   [[ -z "$_seg" ]] && continue
   if [[ "$_seg" != *"/.claude/claude-caliper/"* ]]; then
     caliper_only=false
     break
   fi
-done < <(printf '%s\n' "$cmd" | tr ';&|' '\n')
+done
 if [[ "$caliper_only" == "true" ]]; then
-  allow_with_rules '[{"toolName":"Bash"}]'
+  printf '{"hookSpecificOutput":{"hookEventName":"PermissionRequest","decision":{"behavior":"allow"}}}\n'
   exit 0
 fi
 
