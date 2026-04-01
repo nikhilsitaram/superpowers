@@ -10,7 +10,7 @@ Use this template when dispatching a task-implementer agent. The agent's static 
 - `{PLAN_DIR}` — absolute path to plan directory
 - `{PHASE_DIR}` — absolute path to phase directory
 - `{TASK_IMPLEMENTER_MODEL}` — model for the implementer agent (from caliper-settings)
-- `{WORKTREE_PATH}` — absolute path to the task's worktree (created by orchestrator)
+- `{WORKTREE_PATH}` — absolute path to the task's worktree (subagents mode only — orchestrator creates via `git worktree add`). In agent-teams mode, omit this variable — the teammate uses its auto-provisioned CWD.
 
 ```text
 Agent(

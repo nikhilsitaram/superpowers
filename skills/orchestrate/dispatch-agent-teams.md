@@ -46,7 +46,7 @@ Teammate spawn:
   model: "{TASK_IMPLEMENTER_MODEL}"
   mode: "acceptEdits"
   description: "Implement {TASK_ID}: [task name]"
-  prompt: <filled from implementer-prompt.md template>
+  prompt: <filled from implementer-prompt.md template, omitting {WORKTREE_PATH} — the teammate uses its auto-provisioned CWD>
 ```
 
 Task reviewer teammates use the template in `./task-reviewer-prompt.md`. Key spawn parameters:
