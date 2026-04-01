@@ -28,6 +28,7 @@ reset_fixture() {
 }
 
 reset_fixture
+jq '.status = "In Development" | .phases[0].status = "In Progress"' "$TMPDIR/plan.json" > "$TMPDIR/plan_tmp.json" && mv "$TMPDIR/plan_tmp.json" "$TMPDIR/plan.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A1 --status in_progress
 actual=$(jq -r '.phases[0].tasks[0].status' "$TMPDIR/plan.json")
 assert_eq "task status updated to in_progress" "in_progress" "$actual"
@@ -40,6 +41,7 @@ else
   ((FAIL++)) || true
 fi
 
+printf '[{"type":"task-review","scope":"A1","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A1 --status complete
 if grep -q '\[x\] A1' "$TMPDIR/plan.md"; then
   echo "PASS: complete task renders as [x]"
@@ -50,6 +52,7 @@ else
 fi
 
 reset_fixture
+jq '.status = "In Development"' "$TMPDIR/plan.json" > "$TMPDIR/plan_tmp.json" && mv "$TMPDIR/plan_tmp.json" "$TMPDIR/plan.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --phase A --status "In Progress"
 actual=$(jq -r '.phases[0].status' "$TMPDIR/plan.json")
 assert_eq "phase status updated" "In Progress" "$actual"

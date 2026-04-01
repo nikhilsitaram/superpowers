@@ -46,8 +46,10 @@ assert_eq "plan status" "In Development" "$(jq -r '.status' "$TMPDIR/plan.json")
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --phase A --status "In Progress"
 
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A1 --status in_progress
+printf '[{"type":"task-review","scope":"A1","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A1 --status complete
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A2 --status in_progress
+printf '[{"type":"task-review","scope":"A1","verdict":"pass","remaining":0},{"type":"task-review","scope":"A2","verdict":"pass","remaining":0}]' > "$TMPDIR/reviews.json"
 "$VALIDATE" --update-status "$TMPDIR/plan.json" --task A2 --status complete
 
 echo "# A1 Completion" > "$TMPDIR/phase-a/a1-completion.md"

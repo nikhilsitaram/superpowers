@@ -598,29 +598,19 @@ do_consistency() {
       [[ "${_ct[$ibase]}" != "$p" ]] && continue
       local tid="${_ct[$((ibase+1))]}" ts="${_ct[$((ibase+2))]}"
       local deps_str="${_ct[$((ibase+3))]}"
-      if [[ "$ts" == "complete" ]]; then
+      if [[ "$ts" == "complete" || "$ts" == "in_progress" ]]; then
         if [[ -n "$deps_str" ]]; then
           IFS=',' read -ra dep_arr <<< "$deps_str"
           for dep_id in "${dep_arr[@]}"; do
             [[ -z "$dep_id" ]] && continue
             local dep_status="${_task_status_map[$dep_id]:-}"
             if [[ "$dep_status" == "pending" || "$dep_status" == "in_progress" ]]; then
-              err "ERROR: status_inconsistency: task $tid is 'complete' but dependency $dep_id is '$dep_status'"
+              err "ERROR: status_inconsistency: task $tid is '$ts' but dependency $dep_id is '$dep_status'"
             fi
           done
         fi
-        if ! check_review_record "$_plan_dir_cons" "task-review" "$tid" > /dev/null 2>&1; then
-          err "ERROR: status_inconsistency: task $tid is 'complete' but no passing task-review record"
-        fi
       fi
     done
-
-    if [[ "$phase_status" =~ ^Complete ]]; then
-      local letter_lower="${letter,,}"
-      if ! check_review_record "$_plan_dir_cons" "impl-review" "phase-$letter_lower" > /dev/null 2>&1; then
-        err "ERROR: status_inconsistency: phase $letter is '$phase_status' but no passing impl-review record for scope phase-$letter_lower"
-      fi
-    fi
   done
 
   if [[ "$plan_status" == "Not Yet Started" ]]; then
@@ -812,6 +802,44 @@ do_update_status_task() {
     echo "ERROR: task_not_found: '$task_id' not found in plan" >&2
     exit 1
   fi
+  if [[ "$new_status" == "in_progress" || "$new_status" == "complete" ]]; then
+    local phase_status
+    phase_status=$(jq -r --arg id "$task_id" '.phases[] | select(.tasks[] | .id == $id) | .status' "$plan_json")
+    if [[ "$phase_status" == "Not Started" ]]; then
+      unlock_plan "$plan_json"
+      trap - EXIT
+      echo "ERROR: cannot advance task $task_id — parent phase is 'Not Started'" >&2
+      exit 1
+    fi
+    local incomplete_deps
+    incomplete_deps=$(jq -r --arg id "$task_id" '
+      .phases[].tasks[] | select(.id == $id) | .depends_on // [] | .[]' "$plan_json" |
+      while read -r dep_id; do
+        [[ -z "$dep_id" ]] && continue
+        local dep_status
+        dep_status=$(jq -r --arg did "$dep_id" '.phases[].tasks[] | select(.id == $did) | .status' "$plan_json")
+        if [[ "$dep_status" != "complete" && "$dep_status" != "skipped" ]]; then
+          echo "$dep_id ($dep_status)"
+        fi
+      done)
+    if [[ -n "$incomplete_deps" ]]; then
+      unlock_plan "$plan_json"
+      trap - EXIT
+      echo "ERROR: cannot advance task $task_id — dependencies not complete: $incomplete_deps" >&2
+      exit 1
+    fi
+  fi
+  if [[ "$new_status" == "complete" ]]; then
+    local plan_dir
+    plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
+    local gate_result
+    if ! gate_result=$(check_review_record "$plan_dir" "task-review" "$task_id"); then
+      unlock_plan "$plan_json"
+      trap - EXIT
+      echo "ERROR: cannot mark task $task_id complete — $gate_result" >&2
+      exit 1
+    fi
+  fi
   local tmp="${plan_json}.tmp.$$"
   jq --arg id "$task_id" --arg status "$new_status" '
     (.phases[].tasks[] | select(.id == $id)).status = $status
@@ -838,16 +866,43 @@ do_update_status_phase() {
     echo "ERROR: phase_not_found: '$phase_letter' not found in plan" >&2
     exit 1
   fi
+  if [[ "$new_status" == "In Progress" || "$new_status" =~ ^Complete ]]; then
+    local plan_status
+    plan_status=$(jq -r '.status' "$plan_json")
+    if [[ "$plan_status" == "Not Yet Started" ]]; then
+      unlock_plan "$plan_json"
+      trap - EXIT
+      echo "ERROR: cannot advance phase $phase_letter — plan is 'Not Yet Started'" >&2
+      exit 1
+    fi
+  fi
   if [[ "$new_status" =~ ^Complete ]]; then
     local plan_dir
     plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
     local phase_lower
     phase_lower=$(echo "$phase_letter" | tr '[:upper:]' '[:lower:]')
+    local gate_errors=()
     local gate_result
+    local task_data
+    task_data=$(jq -r --arg letter "$phase_letter" '.phases[] | select(.letter == $letter) | .tasks[] | "\(.id) \(.status)"' "$plan_json")
+    while IFS=' ' read -r tid tstatus; do
+      [[ -z "$tid" ]] && continue
+      if [[ "$tstatus" != "complete" && "$tstatus" != "skipped" ]]; then
+        gate_errors+=("task $tid is '$tstatus'")
+      elif [[ "$tstatus" == "complete" ]]; then
+        if ! gate_result=$(check_review_record "$plan_dir" "task-review" "$tid"); then
+          gate_errors+=("task $tid: $gate_result")
+        fi
+      fi
+    done <<< "$task_data"
     if ! gate_result=$(check_review_record "$plan_dir" "impl-review" "phase-$phase_lower"); then
+      gate_errors+=("$gate_result")
+    fi
+    if [[ ${#gate_errors[@]} -gt 0 ]]; then
       unlock_plan "$plan_json"
       trap - EXIT
-      echo "ERROR: cannot mark phase $phase_letter complete — $gate_result" >&2
+      echo "ERROR: cannot mark phase $phase_letter complete:" >&2
+      for ge in "${gate_errors[@]}"; do echo "  - $ge" >&2; done
       exit 1
     fi
   fi

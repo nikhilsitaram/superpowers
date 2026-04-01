@@ -76,8 +76,7 @@ After all tasks complete and branches merged:
 3. Append review changes to `${PHASE_DIR}/completion.md`
 4. Run phase criteria: `scripts/validate-plan --criteria "$PLAN_JSON" --phase {LETTER}`
 5. Update status: `scripts/validate-plan --update-status "$PLAN_JSON" --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
-6. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"` (catches state drift after status updates)
-7. (Multi-phase) Create phase PR, external review gate, merge, clean up worktree
+6. (Multi-phase) Create phase PR, external review gate, merge, clean up worktree
 
 ## Review Loop Protocol
 
@@ -103,8 +102,7 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 3. `scripts/validate-plan --check-review "$PLAN_JSON" --type impl-review --scope phase-a`
 4. Run plan criteria: `scripts/validate-plan --criteria "$PLAN_JSON" --plan`
 5. `scripts/validate-plan --update-status "$PLAN_JSON" --plan --status Complete`
-6. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"`
-7. Route on workflow:
+6. Route on workflow:
    - `"pr-create"`: invoke pr-create (targets main), `scripts/validate-plan --check-workflow "$PLAN_JSON"`, stop
    - `"pr-merge"`: invoke pr-create, read `REVIEW_WAIT=$(${CLAUDE_PLUGIN_ROOT}/scripts/caliper-settings get review_wait_minutes)`, poll checks + pr-review --automated (skip if $REVIEW_WAIT is 0; if skipped, invoke pr-merge directly), `scripts/validate-plan --check-workflow "$PLAN_JSON"`
 
@@ -114,8 +112,7 @@ Skip integration branch and phase worktrees. Work directly in the feature worktr
 2. Final review: dispatch implementation-review with `PLAN_BASE_SHA..HEAD`, run Review Loop Protocol (scope: `final`)
 3. `scripts/validate-plan --check-review "$PLAN_JSON" --type impl-review --scope final`
 4. `scripts/validate-plan --update-status "$PLAN_JSON" --plan --status Complete`
-5. Re-validate consistency: `scripts/validate-plan --consistency "$PLAN_JSON"`
-6. Route on workflow:
+5. Route on workflow:
    - `"pr-merge"`: create final PR, poll checks, pr-review --automated, `scripts/validate-plan --check-workflow "$PLAN_JSON"`, clean up
    - `"pr-create"`: create final PR, `scripts/validate-plan --check-workflow "$PLAN_JSON"`, stop
 
