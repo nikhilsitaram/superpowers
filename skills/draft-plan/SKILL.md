@@ -78,7 +78,7 @@ Write implementation plans assuming the executor has zero codebase context. Docu
 }
 ```
 
-Optional: `success_criteria` at plan/phase/task levels. `workflow`: `pr-create` (default), `pr-merge`, or `plan-only` — set by design skill. `execution_mode`: `subagents` (default placeholder) or `agent-teams` — design skill overwrites after draft-plan. `review_wait_minutes`: max wait for external reviewers (default 10, 0 to skip).
+Optional: `success_criteria` at plan/phase/task levels. `workflow`: `pr-create` (default), `pr-merge`, or `plan-only` — set by design skill. `execution_mode`: `subagents` (default placeholder) or `agent-teams` — design skill overwrites after draft-plan. `review_wait_minutes`: max wait for external reviewers (default 5, 0 to skip).
 
 **See:** `schema-reference.md` for full schema reference.
 

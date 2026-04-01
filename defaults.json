@@ -99,11 +99,5 @@
     "default": "opus",
     "description": "Model for PR review",
     "used_by": ["pr-review"]
-  },
-  "bot_poll_timeout_minutes": {
-    "type": "int",
-    "default": 10,
-    "description": "Maximum minutes to wait for external bot reviews before proceeding",
-    "used_by": ["pr-review"]
   }
 }
