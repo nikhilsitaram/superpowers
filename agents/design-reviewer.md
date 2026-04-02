@@ -148,8 +148,8 @@ Severity mapping for design-review:
 
 ```json review-summary
 {
-  "issues_found": 7,
-  "severity": { "critical": 1, "high": 2, "medium": 3, "low": 1 },
+  "issues_found": 1,
+  "severity": { "critical": 1, "high": 0, "medium": 0, "low": 0 },
   "verdict": "fail",
   "issues": [
     { "id": 1, "severity": "critical", "category": "Problem clarity", "file": "N/A", "problem": "Problem statement describes solution not problem", "fix": "Rewrite problem statement to focus on user impact" }

@@ -67,7 +67,7 @@ If adequate: "Integration test coverage is adequate -- [brief rationale]."
 
 ### Assessment
 
-**Issues found:** [count] | **Severity:** [Critical/Important/Minor]
+**Issues found:** [count] | **Severity:** [Critical/Important/Moderate/Minor]
 **Ready to merge after fixing?** [Yes/No]
 **Ready for next phase?** [Yes/No] (inter-phase reviews only)
 
