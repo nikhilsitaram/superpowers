@@ -351,6 +351,30 @@ OUT51=$(run_allow "git status" "$SAFE51")
 assert_output_contains "session rule present" "$OUT51" '"destination":"session"'
 assert_output_contains "rule has git pattern" "$OUT51" '"ruleContent":"git *"'
 
+echo "Test 52: Chained env var assignments with trailing command extracts trailing cmd"
+SAFE52="$TMPDIR_TEST/safe52.txt"
+printf 'uv\n' > "$SAFE52"
+# shellcheck disable=SC2016
+OUT52=$(run_allow 'MSSQL_AUTH_TYPE=sql MSSQL_SERVER="$SWYFFT_MSSQL_SERVER" MSSQL_DATABASE="$SWYFFT_MSSQL_DATABASE" MSSQL_USER="$SWYFFT_MSSQL_USER" MSSQL_PASSWORD="$SWYFFT_MSSQL_PASSWORD" uv run python -c "print(1)"' "$SAFE52")
+assert_output_contains "chained env vars with trailing safe cmd allowed" "$OUT52" '"behavior":"allow"'
+
+echo "Test 53: Chained env var assignments with unsafe trailing command blocked"
+SAFE53="$TMPDIR_TEST/safe53.txt"
+LOG53="$TMPDIR_TEST/log53.txt"
+printf 'git\n' > "$SAFE53"
+# shellcheck disable=SC2016
+OUT53=$(run_allow 'FOO=bar BAZ="qux" rm -rf /' "$SAFE53" "$LOG53")
+assert_output_empty "chained env vars with unsafe trailing cmd blocked" "$OUT53"
+assert_file_contains "rm logged as non-matching" "$LOG53" "rm"
+
+echo "Test 54: Quote concatenation bypass blocked (B=\"x\"uv is one word, rm is the command)"
+SAFE54="$TMPDIR_TEST/safe54.txt"
+LOG54="$TMPDIR_TEST/log54.txt"
+printf 'uv\n' > "$SAFE54"
+OUT54=$(run_allow 'A=1 B="x"uv rm -rf /' "$SAFE54" "$LOG54")
+assert_output_empty "quote concat bypass blocked" "$OUT54"
+assert_file_contains "rm logged as non-matching" "$LOG54" "rm"
+
 echo ""
 echo "=== PreToolUse Deny Tests ==="
 
