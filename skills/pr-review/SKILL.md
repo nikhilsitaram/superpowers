@@ -28,7 +28,7 @@ If `--automated`/`-A` passed, use automated mode. `--automated` + `--skip-fixes`
 If no flag, read the user's preference:
 
 ```bash
-mode=$("caliper-settings" get review_mode)
+mode=$(caliper-settings get review_mode)
 ```
 
 - If a mode is returned (`automated` or `deliberate`): the user explicitly configured this. Use it.
