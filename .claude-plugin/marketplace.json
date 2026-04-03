@@ -64,7 +64,7 @@
       "description": "Standalone tools: codebase audit and skill evaluation",
 
 
-      "version": "1.28.0"
+      "version": "1.28.0",
 
       "source": "./",
       "author": {
