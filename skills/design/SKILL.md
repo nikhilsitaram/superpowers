@@ -95,13 +95,13 @@ Agent(
 )
 ```
 
-**Iteration tracking:** Initialize `ITER=1` at first dispatch (step 10). Increment `ITER` by 1 each time you reach step 6 (re-dispatch). Use `ITER` as `N` in all reviews.json writes and in the `iter ≥2` / `after iteration 3` conditions below.
+**Iteration tracking:** Initialize `ITER=1` at first dispatch (step 10). Increment `ITER` by 1 on each re-dispatch (step 6 of "If reviewer finds issues" below). Use `ITER` as `N` in all reviews.json writes and in the `iter ≥2` / `after iteration 3` conditions below.
 
 After each reviewer dispatch, extract the `json review-summary` block from the response.
 
 **Per-iteration reviews.json write:** Write a record after EVERY iteration (not just the final pass). Initialize `reviews.json` with `[]` if it doesn't exist. `actionable` = issues_found minus dismissed. Each record:
 
-`jq --argjson entry '{"type":"design-review","scope":"design","iteration":N,"issues_found":N,"severity":{"critical":C,"high":H,"medium":M,"low":L},"actionable":N,"dismissed":D,"dismissals":[{"id":ID,"reasoning":"..."}],"fixed":F,"remaining":R,"verdict":"pass|fail","timestamp":"<ISO8601>"}' '. += [$entry]' reviews.json > tmp && mv tmp reviews.json`
+`jq --argjson entry '{"type":"design-review","scope":"design","iteration":N,"issues_found":N,"severity":{"critical":C,"high":H,"medium":M,"low":L},"actionable":N,"dismissed":D,"dismissals":[{"id":ID,"reasoning":"..."}],"fixed":F,"remaining":0,"verdict":"pass|fail","timestamp":"<ISO8601>"}' '. += [$entry]' reviews.json > tmp && mv tmp reviews.json`
 
 **If reviewer finds issues:**
 
@@ -109,8 +109,8 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
 2. **Present all issues to the user** for triage — the user decides fix vs dismiss for each, with a reason for dismissals
 3. **Apply all fixes and dismissals in a single editing pass** — do not dispatch a reviewer between individual fixes
 4. **Apply severity-gated termination:** After iteration 3 (`ITER > 3`), auto-dismiss any remaining `low` and `medium` issues — add them to the dismissals list with reasoning "auto-dismissed: severity gate after iter 3"
-5. **Write the iteration record** to reviews.json — include all dismissals (user-triaged + auto-dismissed), fixed count, remaining count, and verdict. If no `high` or `critical` issues remain after step 4, verdict is `pass` — write the record and proceed to step 11 (planning), **skip step 6**. If `high` or `critical` issues remain, verdict is `fail` — write the record and continue to step 6.
-6. **Construct delta context and re-dispatch** (`ITER` += 1): On `ITER ≥ 2`, enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
+5. **Write the iteration record** to reviews.json — verdict is `fail`; `remaining` is always 0 (all issues are fixed or dismissed after steps 3–4).
+6. **Construct delta context and re-dispatch** (`ITER` += 1): enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
    - `resolution`: `"fixed"` or `"dismissed"`
    - `dismissal_reason`: present only when dismissed
 
@@ -129,7 +129,7 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
    )
    ```
 
-**If reviewer passes (zero issues):** Write the passing record to reviews.json (`ITER`, verdict: pass) and proceed to step 11.
+**If reviewer passes (zero issues):** Write the passing record to reviews.json (`ITER`, `remaining`:0, verdict: pass) and proceed to step 11.
 
 Read the planner model: `PLANNER_MODEL=$(caliper-settings get planner_model)`
 
