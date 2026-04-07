@@ -137,18 +137,12 @@ For each issue:
 | Handoff quality | PASS/FAIL |
 
 **Issues:** [count]
-**Severity:** Critical (blocks planning) / High (likely causes plan failure) / Medium (may cause confusion) / Low (cosmetic)
+**Severity:** critical / high / medium / low (see Severity Calibration section)
 **Ready for planning?** Yes / Yes after fixes / No, needs rework
 
 ### Review Summary (Machine-Readable)
 
 After the human-readable output above, emit a fenced code block with the info string `json review-summary`. This block is parsed by the controlling agent to enforce review gates — if it is missing or malformed, the review is treated as failed and a fresh reviewer is dispatched.
-
-Severity mapping for design-review:
-- "Critical (blocks planning)" -> critical
-- "High (likely causes plan failure)" -> high
-- "Medium (may cause confusion)" -> medium
-- "Low (cosmetic)" -> low
 
 ```json review-summary
 {

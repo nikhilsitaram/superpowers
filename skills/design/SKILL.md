@@ -65,12 +65,13 @@ Complete in order:
    Before dispatching design-review, verify the doc satisfies this quality checklist (catches the most common reviewer findings on first pass):
    - Success criteria are behavioral outcomes, not implementation details ("users can log in" not "tests pass" or "middleware installed")
    - Non-goals each include a brief rationale for why they're excluded
-   - Every entry in the file change table appears in the architecture prose (and vice versa)
+   - Every file mentioned in the implementation approach is covered in the architecture section (and vice versa)
    - Test impact is noted for every behavior change
    - Migration/operational steps are captured if the change touches data or config
-9. **Dispatch design-review subagent** — fresh reviewer agent validates design before planning (hard gate)
-10. **Dispatch draft-plan subagent** — fresh implementer agent with design doc path and worktree path (zero design context)
-11. **Route workflow** — Map step 7 choices to schema values:
+9. **Self-review pass** — before dispatching the external reviewer, read through the design doc yourself against the 8-point checklist in `agents/design-reviewer.md`. Fix any issues you find. Goal: catch obvious gaps so the external reviewer surfaces only non-obvious ones. This is an inline check, not a subagent dispatch — no output format required, just fix what you find.
+10. **Dispatch design-review subagent** — fresh reviewer agent validates design before planning (hard gate)
+11. **Dispatch draft-plan subagent** — fresh implementer agent with design doc path and worktree path (zero design context)
+12. **Route workflow** — Map step 7 choices to schema values:
     - Workflow: `Create PR` → `pr-create`, `Merge PR` → `pr-merge`, `Plan only` → `plan-only`
     - Exec mode: `Subagents` → `subagents`, `Agent teams` → `agent-teams`
 
@@ -105,8 +106,8 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
 1. **Extract ALL issues** from the `json review-summary` `issues[]` array
 2. **Present all issues to the user** for triage — the user decides fix vs dismiss for each, with a reason for dismissals
 3. **Apply all fixes and dismissals in a single editing pass** — do not dispatch a reviewer between individual fixes
-4. **Write the iteration record** to reviews.json (dismissed count, dismissals array with id + reasoning, fixed count, remaining count)
-5. **Check severity-gated termination:** After iteration 3, auto-dismiss any remaining `low` and `medium` issues — log them in the reviews.json record with reasoning "auto-dismissed: severity gate after iter 3". If no `high` or `critical` issues remain, write the passing record and proceed to step 10 (planning) — **skip step 6**. If `high` or `critical` issues remain, continue to step 6.
+4. **Apply severity-gated termination:** After iteration 3, auto-dismiss any remaining `low` and `medium` issues — add them to the dismissals list with reasoning "auto-dismissed: severity gate after iter 3"
+5. **Write the iteration record** to reviews.json — include all dismissals (user-triaged + auto-dismissed), fixed count, remaining count, and verdict. If no `high` or `critical` issues remain after step 4, verdict is `pass` — write the record and proceed to step 11 (planning), **skip step 6**. If `high` or `critical` issues remain, verdict is `fail` — write the record and continue to step 6.
 6. **Construct delta context and re-dispatch:** On iter ≥2, enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
    - `resolution`: `"fixed"` or `"dismissed"`
    - `dismissal_reason`: present only when dismissed
@@ -128,7 +129,7 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
 
    On iter 1 (no prior issues), dispatch without the `## Prior Issues` section.
 
-**If reviewer passes (zero issues):** Write the passing record to reviews.json and proceed to step 10.
+**If reviewer passes (zero issues):** Write the passing record to reviews.json and proceed to step 11.
 
 Read the planner model: `PLANNER_MODEL=$(caliper-settings get planner_model)`
 
