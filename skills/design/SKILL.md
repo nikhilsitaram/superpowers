@@ -95,6 +95,8 @@ Agent(
 )
 ```
 
+**Iteration tracking:** Initialize `ITER=1` at first dispatch (step 10). Increment `ITER` by 1 each time you reach step 6 (re-dispatch). Use `ITER` as `N` in all reviews.json writes and in the `iter ≥2` / `after iteration 3` conditions below.
+
 After each reviewer dispatch, extract the `json review-summary` block from the response.
 
 **Per-iteration reviews.json write:** Write a record after EVERY iteration (not just the final pass). Initialize `reviews.json` with `[]` if it doesn't exist. `actionable` = issues_found minus dismissed. Each record:
@@ -106,9 +108,9 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
 1. **Extract ALL issues** from the `json review-summary` `issues[]` array
 2. **Present all issues to the user** for triage — the user decides fix vs dismiss for each, with a reason for dismissals
 3. **Apply all fixes and dismissals in a single editing pass** — do not dispatch a reviewer between individual fixes
-4. **Apply severity-gated termination:** After iteration 3, auto-dismiss any remaining `low` and `medium` issues — add them to the dismissals list with reasoning "auto-dismissed: severity gate after iter 3"
+4. **Apply severity-gated termination:** After iteration 3 (`ITER > 3`), auto-dismiss any remaining `low` and `medium` issues — add them to the dismissals list with reasoning "auto-dismissed: severity gate after iter 3"
 5. **Write the iteration record** to reviews.json — include all dismissals (user-triaged + auto-dismissed), fixed count, remaining count, and verdict. If no `high` or `critical` issues remain after step 4, verdict is `pass` — write the record and proceed to step 11 (planning), **skip step 6**. If `high` or `critical` issues remain, verdict is `fail` — write the record and continue to step 6.
-6. **Construct delta context and re-dispatch:** On iter ≥2, enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
+6. **Construct delta context and re-dispatch** (`ITER` += 1): On `ITER ≥ 2`, enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
    - `resolution`: `"fixed"` or `"dismissed"`
    - `dismissal_reason`: present only when dismissed
 
@@ -127,9 +129,7 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
    )
    ```
 
-   On iter 1 (no prior issues), dispatch without the `## Prior Issues` section.
-
-**If reviewer passes (zero issues):** Write the passing record to reviews.json and proceed to step 11.
+**If reviewer passes (zero issues):** Write the passing record to reviews.json (`ITER`, verdict: pass) and proceed to step 11.
 
 Read the planner model: `PLANNER_MODEL=$(caliper-settings get planner_model)`
 
@@ -160,7 +160,7 @@ Agent(
 )
 ```
 
-Extract the `json review-summary` block from the response. Triage issues (fix plan files or dismiss with reasoning). Read the threshold: `caliper-settings get re_review_threshold`. If actionable issues exceed this threshold, fix and re-dispatch reviewer (max 3 iterations, then escalate to user). Write review record to `{PLAN_DIR}/reviews.json`: `{"type":"plan-review","scope":"plan","iteration":N,"issues_found":N,"severity":{...},"actionable":N,"dismissed":N,"dismissals":[...],"fixed":N,"remaining":0,"verdict":"pass","timestamp":"ISO8601"}`
+Extract the `json review-summary` block from the response. Triage issues (fix plan files or dismiss with reasoning). Read the threshold: `caliper-settings get re_review_threshold`. If actionable issues exceed this threshold, fix and re-dispatch reviewer (max 3 iterations, then escalate to user). Write review record to `{PLAN_DIR}/reviews.json`: `{"type":"plan-review","scope":"plan","iteration":N,"issues_found":N,"severity":{...},"actionable":N,"dismissed":N,"dismissals":[...],"fixed":N,"remaining":0,"verdict":"pass","timestamp":"ISO8601"}` (Note: plan-review intentionally uses the `re_review_threshold`-based gate, not severity-gated termination — the two loops use different termination models by design.)
 
 
 ## Challenging Assumptions

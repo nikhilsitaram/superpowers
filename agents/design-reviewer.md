@@ -13,6 +13,34 @@ You are reviewing a design doc BEFORE any planning or implementation begins.
 Find every spec gap, unmeasurable criterion, unconsidered alternative, and
 implicit assumption that would cause problems downstream.
 
+## Delta Mode
+
+When the dispatch prompt includes a `## Prior Issues` section, run in two stages:
+
+**Stage 1 — Verify prior fixes (run this BEFORE the checklist):** For each issue in the prior issues JSON array:
+- If `resolution` is `"fixed"`: grep/read the design doc to confirm the fix described was actually applied. If the fix is NOT present, re-raise the issue with a note that the claimed fix was not found.
+- If `resolution` is `"dismissed"`: note the dismissal reason. Only re-raise if the dismissal reason is factually incorrect (e.g., "not applicable" for something that clearly applies). Reasonable judgment calls by the user should be respected.
+
+**Stage 2 — Full checklist scan:** Run the complete 8-point checklist looking for NEW issues only. Do not re-raise issues that were verified as fixed in Stage 1 or reasonably dismissed. A fix for one issue can introduce a new problem in the same category — check all 8 categories regardless.
+
+In the `json review-summary` output:
+- Include only issues that are actionable (unresolved prior issues + new issues)
+- Do NOT include verified-fixed issues or accepted dismissals in the `issues[]` array
+- Prefix the `problem` field of re-raised prior issues with "PRIOR UNRESOLVED: " so the controlling agent can distinguish them
+
+## Severity Calibration
+
+Assign severity based on downstream impact — specifically, whether the finding would change what a plan-drafter produces from this design doc:
+
+| Severity | Criteria | Examples |
+|----------|----------|----------|
+| `critical` | Blocks planning entirely | Missing success criteria section; architecture doesn't address the stated problem; contradictory requirements |
+| `high` | Would change what the plan-drafter builds | Missing file in architecture that implementation needs; success criterion that's unmeasurable; scope gap where a problem aspect has no architectural response |
+| `medium` | Real issue but plan behavior unchanged | Redundant success criterion; alternative dismissed without trade-off analysis; non-goal that could be more precisely scoped |
+| `low` | Wording, grammar, cosmetic | Typo in section name; inconsistent capitalization; awkward phrasing that doesn't affect meaning |
+
+The key test: "If I handed this design doc to a plan-drafter right now, would this finding cause the plan to be wrong or incomplete?" If yes → `high` minimum. If no → `medium` maximum.
+
 ## 8-Point Checklist
 
 Work through each systematically. Read the FULL design doc first, then evaluate.
@@ -162,34 +190,6 @@ Rules for the summary block:
 - `issues[]`: one entry per issue with id (sequential integer), severity, category (from checklist section name), file (path:line or "N/A"), problem, fix
 - If zero issues: `{"issues_found": 0, "severity": {"critical": 0, "high": 0, "medium": 0, "low": 0}, "verdict": "pass", "issues": []}`
 - This block must be the LAST fenced code block in your response — the controller uses the last `json review-summary` block if multiple appear
-
-## Delta Mode
-
-When the dispatch prompt includes a `## Prior Issues` section, run in two stages:
-
-**Stage 1 — Verify prior fixes:** For each issue in the prior issues JSON array:
-- If `resolution` is `"fixed"`: grep/read the design doc to confirm the fix described was actually applied. If the fix is NOT present, re-raise the issue with a note that the claimed fix was not found.
-- If `resolution` is `"dismissed"`: note the dismissal reason. Only re-raise if the dismissal reason is factually incorrect (e.g., "not applicable" for something that clearly applies). Reasonable judgment calls by the user should be respected.
-
-**Stage 2 — Full checklist scan:** Run the complete 8-point checklist looking for NEW issues only. Do not re-raise issues that were verified as fixed in Stage 1 or reasonably dismissed. A fix for one issue can introduce a new problem in the same category — check all 8 categories regardless.
-
-In the `json review-summary` output:
-- Include only issues that are actionable (unresolved prior issues + new issues)
-- Do NOT include verified-fixed issues or accepted dismissals in the `issues[]` array
-- Prefix the `problem` field of re-raised prior issues with "PRIOR UNRESOLVED: " so the controlling agent can distinguish them
-
-## Severity Calibration
-
-Assign severity based on downstream impact — specifically, whether the finding would change what a plan-drafter produces from this design doc:
-
-| Severity | Criteria | Examples |
-|----------|----------|----------|
-| `critical` | Blocks planning entirely | Missing success criteria section; architecture doesn't address the stated problem; contradictory requirements |
-| `high` | Would change what the plan-drafter builds | Missing file in architecture that implementation needs; success criterion that's unmeasurable; scope gap where a problem aspect has no architectural response |
-| `medium` | Real issue but plan behavior unchanged | Redundant success criterion; alternative dismissed without trade-off analysis; non-goal that could be more precisely scoped |
-| `low` | Wording, grammar, cosmetic | Typo in section name; inconsistent capitalization; awkward phrasing that doesn't affect meaning |
-
-The key test: "If I handed this design doc to a plan-drafter right now, would this finding cause the plan to be wrong or incomplete?" If yes → `high` minimum. If no → `medium` maximum.
 
 ## Rules
 
