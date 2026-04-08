@@ -110,7 +110,7 @@ After each reviewer dispatch, extract the `json review-summary` block from the r
 3. **Apply all fixes and dismissals in a single editing pass** — do not dispatch a reviewer between individual fixes
 4. **Apply severity-gated termination:**
    - **Iterations 1–3, only `medium`/`low` remain:** if all remaining issues are `medium` or `low` (no `critical` or `high`), you may fix all issues, write verdict `"pass"`, and proceed directly to step 11 — or fix all issues and re-dispatch for another pass if there are many issues or you want more confidence.
-   - **After iteration 3 (`ITER > 3`), only `medium`/`low` remain:** fix all remaining issues, write verdict `"pass"`, and skip steps 5–6 (proceed to step 11). Re-dispatch is not allowed.
+   - **After iteration 3 (`ITER > 3`), only `medium`/`low` remain:** fix all remaining issues, write the reviews.json record with verdict `"pass"` (skip step 5's `fail` path), and skip step 6 (no re-dispatch). Proceed to step 11.
 5. **Write the iteration record** to reviews.json — verdict is `fail`; `remaining` is always 0 (all issues are fixed or dismissed after steps 3–4).
 6. **Construct delta context and re-dispatch** (`ITER` += 1): enrich the reviewer's `issues[]` array from the prior iteration with two fields based on triage decisions:
    - `resolution`: `"fixed"` or `"dismissed"`
