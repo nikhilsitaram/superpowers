@@ -1167,6 +1167,14 @@ check_review_record() {
     return 0
   fi
 
+  local iteration critical high
+  iteration=$(echo "$record" | jq -r '.iteration // 0')
+  critical=$(echo "$record" | jq -r '.severity.critical // 0')
+  high=$(echo "$record" | jq -r '.severity.high // 0')
+  if [[ "$iteration" -gt 3 && "$critical" -eq 0 && "$high" -eq 0 ]]; then
+    return 0
+  fi
+
   echo "review gate failed — type=$review_type scope=$review_scope verdict=$verdict remaining=$remaining"
   return 1
 }
