@@ -5,11 +5,11 @@ description: Use when work is complete and ready to create a PR for review. Trig
 
 # Create PR
 
-Commit, push, and create PR — ready for CodeRabbit review.
+Commit, push, and create PR — ready for external review.
 
 **Core principle:** Never commit directly to main. All changes go through feature branches and PRs.
 
-**Workflow stops at PR creation.** After CodeRabbit reviews, use `/pr-review` to address feedback, then `/pr-merge` to merge and clean up.
+**Workflow stops at PR creation.** After bots and reviewers post feedback, use `/pr-review` to address it, then `/pr-merge` to merge and clean up.
 
 ## Workflow
 
@@ -131,10 +131,10 @@ Report: branch name, test results, files changed, commit hash, PR URL.
 | Using `pwd` for worktree detection | Fails in subdirectories — compare `--git-dir` vs `--git-common-dir` |
 | Pushing unknown commits on local main | May push unintended WIP/experimental work |
 | Using `--force` instead of `--force-with-lease` | Can overwrite others' work |
-| Merging in /pr-create | Always stop at PR creation for CodeRabbit review |
+| Merging in /pr-create | Always stop at PR creation for external review |
 
 ## Integration
 
 **Auto-invoked by:** orchestrate — after implementation-review passes
 
-**Followed by:** pr-review — after CodeRabbit reviews
+**Followed by:** pr-review — after bots and reviewers post feedback
