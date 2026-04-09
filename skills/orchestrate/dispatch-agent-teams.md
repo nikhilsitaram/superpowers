@@ -8,7 +8,13 @@ Before dispatching any teammates, verify: `[[ "$CLAUDE_CODE_EXPERIMENTAL_AGENT_T
 
 ## Spawn Implementer Teammates
 
-Spawn implementer teammates for tasks with no unmet dependencies (verified via `validate-plan --check-deps`). Each teammate:
+Get all tasks with no unmet dependencies: `validate-plan --check-deps "$PLAN_JSON"`. For each ready task, prepare its metadata:
+
+```bash
+TASK_METADATA=$(jq 'del(.status, .depends_on)' <<< "$TASK_METADATA_RAW")
+```
+
+Spawn **all ready implementer teammates in a single message** — one TeamCreate per task, all in the same turn. Splitting spawns across turns breaks parallelism. Each teammate:
 - Uses `claude-caliper:task-implementer` agent with dynamic context from `./implementer-prompt.md`
 - Gets its own auto-provisioned worktree
 - Manages its own lifecycle (marks in-progress, writes completion notes, marks complete)
