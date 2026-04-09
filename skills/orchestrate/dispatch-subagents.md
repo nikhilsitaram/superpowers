@@ -4,11 +4,11 @@ Parallel task execution via Agent tool dispatches with worktree isolation. No ex
 
 ## Dispatch Implementers
 
-Get all tasks with no unmet dependencies: `validate-plan --check-deps "$PLAN_JSON"`. For each ready task, create a worktree and prepare its metadata:
+For each task in the phase, check deps: `validate-plan --check-deps "$PLAN_JSON" --task {TASK_ID}`. Collect all tasks that pass. For each ready task, create a worktree and extract metadata (strip `status` — orchestrator state not needed by implementer):
 
 ```bash
 git worktree add .claude/worktrees/{TASK_ID_LOWER} -b {TASK_ID_LOWER} HEAD
-TASK_METADATA=$(jq 'del(.status, .depends_on)' <<< "$TASK_METADATA_RAW")
+TASK_METADATA=$(jq -c --arg id "{TASK_ID}" '[.phases[].tasks[] | select(.id == $id)][0] | del(.status)' "$PLAN_JSON")
 ```
 
 Then dispatch **all ready implementers in a single message** with multiple Agent tool calls — one per task. Splitting them across turns breaks parallelism and forces cache reloads for each agent.
