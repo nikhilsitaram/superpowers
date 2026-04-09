@@ -68,7 +68,7 @@ Subagent posts findings as `gh pr comment`, then returns them for Step 6.
 - User-selected automated: wait 60s warm-up, then poll every 60s.
 - Deliberate: no warm-up, poll every 60s.
 - Poll until all checks complete and no "processing"/"in progress" indicators in comments.
-- CodeRabbit rate-limit warning = treat as ready.
+- Bot rate-limit warning = treat as ready.
 - Timeout: `caliper-settings get review_wait_minutes` (default: 5).
 
 **Collect from all three sources:**
