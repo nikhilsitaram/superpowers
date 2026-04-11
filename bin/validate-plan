@@ -682,11 +682,8 @@ do_check_base() {
   local json
   json=$(cat "$plan_json")
 
-  local plan_dir
-  plan_dir="$(cd "$(dirname "$plan_json")" && pwd)"
-
   local current_branch
-  current_branch=$(git -C "$plan_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [[ -z "$current_branch" ]]; then
     echo "ERROR: not in a git repository" >&2
     exit 1

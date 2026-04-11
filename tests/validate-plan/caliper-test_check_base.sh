@@ -100,6 +100,21 @@ jq '.integration_branch = ""' "$TMPDIR/plan.json" > "$TMPDIR/plan2.json" && mv "
 assert_fail "empty integration_branch fails" "base_branch_mismatch" \
   run_in_dir "$TMPDIR" "$VALIDATE" --check-base "$TMPDIR/plan.json"
 
+echo "Test 6: plan.json in main repo, CWD in feature worktree passes (issue 189)"
+MAIN_REPO="$TMPDIR/main-repo"
+WORKTREE_DIR="$TMPDIR/worktree-feat"
+mkdir -p "$MAIN_REPO" "$WORKTREE_DIR"
+init_git_repo "$MAIN_REPO"
+init_git_repo "$WORKTREE_DIR"
+git -C "$WORKTREE_DIR" checkout -b feat/cross-dir -q 2>/dev/null
+setup_valid_plan "$MAIN_REPO"
+assert_pass "plan.json in main repo, CWD in feature worktree" \
+  run_in_dir "$WORKTREE_DIR" "$VALIDATE" --check-base "$MAIN_REPO/plan.json"
+
+echo "Test 7: plan.json in main repo, CWD on main branch fails (issue 189)"
+assert_fail "plan.json in main repo, CWD on main branch" "base_branch_mismatch" \
+  run_in_dir "$MAIN_REPO" "$VALIDATE" --check-base "$MAIN_REPO/plan.json"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 exit $FAIL
