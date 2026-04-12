@@ -58,7 +58,7 @@ For each task with test steps:
 - Test imports from correct path?
 - Function signatures match between test and implementation?
 - Return values consistent?
-- TDD 5-step cycle present? (write fail, verify fail, implement, verify pass, commit)
+- TDD 5-step cycle present? (write fail, verify fail, implement, verify pass, commit) Exception: consolidated mechanical tasks may specify suite-level verification instead — verify the task is clearly mechanical and the verification command is runnable.
 
 For multi-task plans with cross-task data flow:
 - First task (e.g., A1) as broad integration tests present?

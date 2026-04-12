@@ -137,7 +137,7 @@ Every task splits metadata (plan.json) and prose (task .md file).
 | Field | Requirement | Good |
 |-------|-------------|------|
 | **Avoid + WHY** | Pitfalls with reasoning | "Use jose not jsonwebtoken — CJS/Edge issues" |
-| **Steps** | TDD cycle per step | Write failing test, verify fail, implement, verify pass, commit |
+| **Steps** | TDD cycle per step (consolidated mechanical tasks: list changes + suite-level verification) | Write failing test, verify fail, implement, verify pass, commit |
 
 Write complete code in each step — not "add validation" or "implement the handler."
 
