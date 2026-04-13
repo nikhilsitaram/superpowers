@@ -164,7 +164,7 @@ do_check() {
   fi
 
   # ----------------------------------------------------------------
-  # Check 6: Scope Estimate mentions "phase"
+  # Check 6: Scope Estimate mentions "phase" and "task"
   # ----------------------------------------------------------------
   local scope_line scope_next
   scope_line="$(grep -nE "^## Scope Estimate$" "$doc" | head -1 | cut -d: -f1 || true)"
@@ -178,6 +178,9 @@ do_check() {
 
     if ! echo "$scope_content" | grep -iqE 'phase'; then
       err "missing_scope_estimate: '## Scope Estimate' does not mention phase count"
+    fi
+    if ! echo "$scope_content" | grep -iqE 'task'; then
+      err "missing_scope_estimate: '## Scope Estimate' does not mention task count"
     fi
   fi
 

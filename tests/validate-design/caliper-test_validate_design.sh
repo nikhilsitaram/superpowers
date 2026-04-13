@@ -41,7 +41,8 @@ assert_fail "out-of-order sections detected" "section_order" "$VALIDATE" --check
 assert_fail "empty section detected" "empty_section" "$VALIDATE" --check "$FIXTURES/empty-section.md"
 assert_fail "cross-reference mismatch detected" "cross_ref_mismatch" "$VALIDATE" --check "$FIXTURES/cross-ref-mismatch.md"
 assert_fail "non-goal without rationale detected" "non_goal_rationale" "$VALIDATE" --check "$FIXTURES/no-rationale.md"
-assert_fail "missing scope estimate phase count" "missing_scope_estimate" "$VALIDATE" --check "$FIXTURES/missing-scope.md"
+assert_fail "missing scope estimate phase count" "does not mention phase count" "$VALIDATE" --check "$FIXTURES/missing-scope.md"
+assert_fail "missing scope estimate task count" "does not mention task count" "$VALIDATE" --check "$FIXTURES/missing-task-count.md"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
