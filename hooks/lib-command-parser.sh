@@ -71,6 +71,15 @@ extract_segments() {
       continue
     fi
 
+    if [[ "$char" == $'\n' ]]; then
+      if [[ -n "${segment// }" ]]; then
+        words+=("$segment")
+      fi
+      segment=""
+      i=$((i+1))
+      continue
+    fi
+
     if [[ "$char" == "|" || "$char" == ";" ]]; then
       if [[ -n "${segment// }" ]]; then
         words+=("$segment")
