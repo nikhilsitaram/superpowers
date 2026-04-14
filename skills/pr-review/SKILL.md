@@ -23,7 +23,7 @@ If not on PR branch: use existing worktree if found (`cd` into it), otherwise `g
 
 ### Step 2: Mode Selection
 
-If `--automated-fix`/`-A` passed, use automated-fix mode. If `--automated-merge`/`-M` passed, use automated-merge mode. Either automated flag + `--skip-fixes` is invalid — fail fast.
+If `--automated-fix`/`-A` passed, use automated-fix mode. If `--automated-merge`/`-M` passed, use automated-merge mode. Both flags together is invalid — fail fast. Either automated flag + `--skip-fixes` is also invalid — fail fast.
 
 If no flag, read the user's preference:
 
@@ -116,7 +116,7 @@ Skip if `--skip-fixes`. Fix each item, run tests (fail = stop), commit and push.
 
 Post `gh pr comment`: what was fixed, dismissed (with reasons), no-action. Omit empty sections.
 
-Report PR URL and item counts. Automated-merge mode: invoke pr-merge. Automated-fix and deliberate modes: offer merge or tell user to run `/pr-merge` when ready.
+Report PR URL and item counts. Automated-merge mode: invoke pr-merge. Automated-fix mode: tell user to run `/pr-merge` when ready. Deliberate mode: offer merge or tell user to run `/pr-merge` when ready.
 
 ## Arguments
 
