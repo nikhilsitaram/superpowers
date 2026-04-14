@@ -73,7 +73,6 @@ When `reviewer_needed: false` in the task metadata, the review is skipped before
    ```bash
    jq '. += [{"type":"task-review","scope":"{TASK_ID}","verdict":"pass","remaining":0}]' "$PLAN_DIR/reviews.json" > "$PLAN_DIR/reviews.json.tmp" && mv "$PLAN_DIR/reviews.json.tmp" "$PLAN_DIR/reviews.json"
    ```
-   To skip review: use `"verdict":"skip","reason":"<justification>"` instead of `"verdict":"pass"`.
    If `reviews.json` doesn't exist yet, create it: `echo '[]' > "$PLAN_DIR/reviews.json"` first.
 2. Mark task complete: `validate-plan --update-status plan.json --task {TASK_ID} --status complete`
 3. Validate criteria: `validate-plan --criteria plan.json --task {TASK_ID}`
