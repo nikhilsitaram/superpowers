@@ -39,7 +39,7 @@ When a background agent completes (push notification — do not poll):
 
 1. Read the agent's return message for completion notes and task summary
 2. Check `REVIEWER_NEEDED`:
-   - If `"false"`: record a skip in reviews.json (`"verdict":"skip","reason":"reviewer_needed: false"`) and proceed directly to "After Review Passes" steps. Skip steps 3-4.
+   - If `"false"`: record a skip in reviews.json (`"verdict":"skip","reason":"reviewer_needed: false"`) and proceed directly to step 2 of "After Review Passes" (skip step 1 — verdict already recorded). Skip steps 3-4.
    - If `"true"`: dispatch a reviewer (synchronous — override background with `run_in_background: false` so the lead waits for results):
 
 ```text
@@ -67,7 +67,7 @@ If fixes needed, dispatch a new `claude-caliper:task-implementer` agent (with `m
 
 ## After Review Passes (or Skip)
 
-When `reviewer_needed: false` in the task metadata, the review is skipped before reaching this point (recorded as `"verdict":"skip","reason":"reviewer_needed: false"`). All tasks reaching this section have passed review.
+When `REVIEWER_NEEDED` was `"false"`, skip step 1 — the skip verdict was already recorded in step 2 of Process Completions. Start at step 2.
 
 1. Record the task-review in `reviews.json` (in the plan directory alongside plan.json):
    ```bash
