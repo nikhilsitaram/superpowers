@@ -80,11 +80,11 @@ After all tasks complete and branches merged:
 4. Run phase criteria: `validate-plan --criteria "$PLAN_JSON" --phase {LETTER}`
 5. Update status: `validate-plan --update-status "$PLAN_JSON" --phase {LETTER} --status "Complete (YYYY-MM-DD)"`
 6. (Multi-phase) Merge phase PR into integration branch — runs unconditionally for every phase including the last, regardless of `workflow` setting. The final integrate->main PR is created separately in "After All Phases".
-   a. Open the phase PR: if one already exists (`gh pr view phase-<letter> --json url 2>/dev/null`), reuse it; otherwise run `pr-create --base integrate/<feature>`.
+   a. Open the phase PR: if one already exists and is open (`gh pr list --head phase-<letter> --state open --json url --jq '.[0].url'`), reuse it; otherwise run `pr-create --base integrate/<feature>`.
    b. `REVIEW_WAIT=$(caliper-settings get review_wait_minutes)`
    c. If `$REVIEW_WAIT` == 0: invoke `pr-merge` directly. Else: poll `gh pr checks` then invoke `pr-review --automated-merge` (which invokes `pr-merge` on pass)
-   d. In the integration worktree (`.claude/worktrees/<feature>` — the orchestrate lead's primary CWD established at Setup; cd back if currently in a phase worktree): `git fetch origin && git reset --hard origin/integrate/<feature>` to fast-forward local integrate to the merged tip
-   e. Remove phase worktree: `git worktree remove .claude/worktrees/<feature>-phase-<letter>` (path/branch convention from pr-merge/SKILL.md:65-66)
+   d. Return to the integration worktree (the orchestrate lead's primary CWD established at Setup) and fast-forward local integrate to the merged tip: `cd .claude/worktrees/<feature> && git fetch origin && git reset --hard origin/integrate/<feature>`
+   e. Remove phase worktree if it still exists (pr-merge typically removes it during cleanup; on resumption it may already be gone): `git worktree list --porcelain | grep -q "phase-<letter>$" && git worktree remove .claude/worktrees/<feature>-phase-<letter> --force || true`
    f. Continuity: only Rule 4 deviations stop the loop. Review feedback is auto-fixed by `pr-review --automated-merge`.
 
 ## Review Loop Protocol
