@@ -375,8 +375,34 @@ OUT54=$(run_allow 'A=1 B="x"uv rm -rf /' "$SAFE54" "$LOG54")
 assert_output_empty "quote concat bypass blocked" "$OUT54"
 assert_file_contains "rm logged as non-matching" "$LOG54" "rm"
 
+echo "Test 55: VAR=\$OTHER/path; safe_cmd — variable ref assignment not extracted as command"
+SAFE55="$TMPDIR_TEST/safe55.txt"
+printf 'jq\n' > "$SAFE55"
+# shellcheck disable=SC2016
+OUT55=$(run_allow 'PLAN_JSON=$PLAN_DIR/plan.json; jq ".tasks" "$PLAN_JSON"' "$SAFE55")
+assert_output_contains "VAR=\$ref with safe trailing cmd allowed" "$OUT55" '"behavior":"allow"'
+
+echo "Test 56: Multi-level var refs with printf — full orchestration pattern"
+SAFE56="$TMPDIR_TEST/safe56.txt"
+cp "$REPO_ROOT/hooks/safe-commands.txt" "$SAFE56"
+# shellcheck disable=SC2016
+OUT56=$(run_allow 'PLAN_DIR=/repo/.claude/caliper/plan; PLAN_JSON=$PLAN_DIR/plan.json; PHASE_DIR=$PLAN_DIR/phase-a; printf "## Review\n" >> "$PHASE_DIR/completion.md" && validate-plan --criteria "$PLAN_JSON" --plan && echo "DONE"' "$SAFE56")
+assert_output_contains "multi-level var refs with printf allowed" "$OUT56" '"behavior":"allow"'
+
 echo ""
 echo "=== PreToolUse Deny Tests ==="
+
+echo "Test 27a: for-loop with bash \"\$t\" denied; message uses extracted loop var"
+# shellcheck disable=SC2016
+OUT27A=$(run_deny 'for t in $(find tests -maxdepth 3 -name "*.sh" -executable); do echo "=== $t ==="; bash "$t" 2>&1 | tail -3 || echo "FAIL: $t"; done 2>&1 | tail -40')
+assert_output_contains_deny_with_reason "for-loop bash \$t denied" "$OUT27A" 'for-loop with bash'
+assert_output_contains_deny_with_reason "for-loop message uses var t" "$OUT27A" '$t'
+
+echo "Test 27b: for-loop with result=\$(bash \"\$f\") denied; message uses loop var f"
+# shellcheck disable=SC2016
+OUT27B=$(run_deny 'for f in $(find tests -maxdepth 3 -name "*.sh" -executable); do result=$(bash "$f" 2>&1 | tail -1); if echo "$result" | grep -qi "fail"; then echo "FAILED: $f"; fi; done')
+assert_output_contains_deny_with_reason "for-loop result=\$(bash \$f) denied" "$OUT27B" 'for-loop with bash'
+assert_output_contains_deny_with_reason "for-loop message uses var f" "$OUT27B" '$f'
 
 echo "Test 27: bash bin/validate-plan denied with guidance"
 OUT27=$(run_deny "bash bin/validate-plan --schema plan.json")

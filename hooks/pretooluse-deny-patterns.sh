@@ -17,6 +17,16 @@ if [[ -z "$cmd" ]]; then
   exit 0
 fi
 
+# Fast path: deny for-loops with bash "$var" before extract_segments runs.
+# Must precede extract_segments — Claude Code's internal parser fires on complex
+# for-loops before PreToolUse hooks complete, producing confusing internal errors.
+if [[ "$cmd" == for\ * && "$cmd" == *'bash "$'* ]]; then
+  _loop_var="${cmd#for }"
+  _loop_var="${_loop_var%% *}"
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"for-loop with bash \"$%s\" detected. Invoke test scripts directly without bash: ./$%s"}}\n' "$_loop_var" "$_loop_var"
+  exit 0
+fi
+
 extract_segments "$cmd"
 # shellcheck disable=SC2153
 segments=("${SEGMENTS[@]+"${SEGMENTS[@]}"}")
