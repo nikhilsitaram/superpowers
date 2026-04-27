@@ -10,7 +10,7 @@ Hook scripts and configuration for the claude-caliper plugin.
 | `lib-command-parser.sh` | Shared library: segment extraction, command word parsing, safe-commands loading |
 | `pretooluse-deny-patterns.sh` | PreToolUse(Bash): denies `bash -c`, `bash script.sh`, `$VAR` commands with feedback to Claude |
 | `permission-request-allow.sh` | PermissionRequest(Read/Glob/.../Bash): auto-allows safe tools/commands with session-scoped caching |
-| `permission-request-accept-edits.sh` | _Currently unwired_ — PermissionRequest(Edit/Write) hook to enable acceptEdits mode after design approval. Disabled pending [anthropics/claude-code#12070](https://github.com/anthropics/claude-code/issues/12070); re-wire tracked in #215. |
+| `permission-request-accept-edits.sh` | PermissionRequest(Edit/Write): consumes the `.design-approved` sentinel to enable acceptEdits mode for the session; auto-allows writes to `.claude/claude-caliper/` plan dirs. All fallthrough paths emit `{"continue": true}` to avoid [anthropics/claude-code#12070](https://github.com/anthropics/claude-code/issues/12070) (silent fallthrough = deny). |
 | `safe-commands.txt` | Bundled default safe command prefixes (~57 common dev tools) |
 
 ## Architecture
