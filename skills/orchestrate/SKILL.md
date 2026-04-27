@@ -21,7 +21,7 @@ Execute plans via the configured execution mode. Phases run sequentially; task d
 
 ## Progress Tracking
 
-TaskCreate per phase: "Execute tasks ({N})", "Implementation review", "Create PR". Final: "Mark plan complete". Set `addBlockedBy`. Mark `in_progress` / `completed` as you go.
+TaskCreate one entry per task in plan.json (e.g. "Implement A1", "Implement A2", ...) plus per phase "Phase {LETTER}: implementation review", and final "Create PR" / "Mark plan complete". Set `addBlockedBy` to mirror task `depends_on` and phase ordering. Mark `in_progress` when you dispatch a task and `completed` when its task review passes — granular per-task tracking surfaces stuck tasks immediately rather than hiding them inside a phase-wide "Execute tasks" entry.
 
 ## Setup
 
