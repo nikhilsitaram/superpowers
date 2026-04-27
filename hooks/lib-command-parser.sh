@@ -124,6 +124,7 @@ extract_command_words_from_segment() {
   local pure_subshell_re='^\$\((.+)\)$'
   local var_subshell_re='^[A-Za-z_][A-Za-z0-9_]*="?\$\((.+)\)"?$'
   local var_literal_re='^[A-Za-z_][A-Za-z0-9_]*=[^$]'
+  local var_ref_re='^[A-Za-z_][A-Za-z0-9_]*=\$[^(]'
   if [[ "$seg" =~ $pure_subshell_re ]]; then
     local inner="${BASH_REMATCH[1]}"
     inner="${inner#"${inner%%[![:space:]]*}"}"
@@ -132,6 +133,8 @@ extract_command_words_from_segment() {
     local inner="${BASH_REMATCH[1]}"
     inner="${inner#"${inner%%[![:space:]]*}"}"
     outer_cmd="${inner%% *}"
+  elif [[ "$seg" =~ $var_ref_re ]]; then
+    : # VAR=$other/path — variable reference assignment, not a command
   elif [[ "$seg" =~ $var_literal_re ]]; then
     local current="$seg"
     outer_cmd=""

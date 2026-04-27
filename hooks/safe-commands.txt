@@ -24,6 +24,7 @@ npx
 pytest
 python
 python3
+printf
 pwd
 readlink
 realpath

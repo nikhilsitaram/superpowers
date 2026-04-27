@@ -375,6 +375,20 @@ OUT54=$(run_allow 'A=1 B="x"uv rm -rf /' "$SAFE54" "$LOG54")
 assert_output_empty "quote concat bypass blocked" "$OUT54"
 assert_file_contains "rm logged as non-matching" "$LOG54" "rm"
 
+echo "Test 55: VAR=\$OTHER/path; safe_cmd — variable ref assignment not extracted as command"
+SAFE55="$TMPDIR_TEST/safe55.txt"
+printf 'jq\n' > "$SAFE55"
+# shellcheck disable=SC2016
+OUT55=$(run_allow 'PLAN_JSON=$PLAN_DIR/plan.json; jq ".tasks" "$PLAN_JSON"' "$SAFE55")
+assert_output_contains "VAR=\$ref with safe trailing cmd allowed" "$OUT55" '"behavior":"allow"'
+
+echo "Test 56: Multi-level var refs with printf — full orchestration pattern"
+SAFE56="$TMPDIR_TEST/safe56.txt"
+cp "$REPO_ROOT/hooks/safe-commands.txt" "$SAFE56"
+# shellcheck disable=SC2016
+OUT56=$(run_allow 'PLAN_DIR=/repo/.claude/caliper/plan; PLAN_JSON=$PLAN_DIR/plan.json; PHASE_DIR=$PLAN_DIR/phase-a; printf "## Review\n" >> "$PHASE_DIR/completion.md" && validate-plan --criteria "$PLAN_JSON" --plan && echo "DONE"' "$SAFE56")
+assert_output_contains "multi-level var refs with printf allowed" "$OUT56" '"behavior":"allow"'
+
 echo ""
 echo "=== PreToolUse Deny Tests ==="
 
