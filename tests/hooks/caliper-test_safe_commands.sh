@@ -392,15 +392,17 @@ assert_output_contains "multi-level var refs with printf allowed" "$OUT56" '"beh
 echo ""
 echo "=== PreToolUse Deny Tests ==="
 
-echo "Test 27a: for-loop with bash \"\$t\" denied with guidance"
+echo "Test 27a: for-loop with bash \"\$t\" denied; message uses extracted loop var"
 # shellcheck disable=SC2016
 OUT27A=$(run_deny 'for t in $(find tests -maxdepth 3 -name "*.sh" -executable); do echo "=== $t ==="; bash "$t" 2>&1 | tail -3 || echo "FAIL: $t"; done 2>&1 | tail -40')
 assert_output_contains_deny_with_reason "for-loop bash \$t denied" "$OUT27A" 'for-loop with bash'
+assert_output_contains_deny_with_reason "for-loop message uses var t" "$OUT27A" '$t'
 
-echo "Test 27b: for-loop with result=\$(bash \"\$t\") denied"
+echo "Test 27b: for-loop with result=\$(bash \"\$f\") denied; message uses loop var f"
 # shellcheck disable=SC2016
-OUT27B=$(run_deny 'for t in $(find tests -maxdepth 3 -name "*.sh" -executable); do result=$(bash "$t" 2>&1 | tail -1); if echo "$result" | grep -qi "fail"; then echo "FAILED: $t"; fi; done')
-assert_output_contains_deny_with_reason "for-loop result=\$(bash \$t) denied" "$OUT27B" 'for-loop with bash'
+OUT27B=$(run_deny 'for f in $(find tests -maxdepth 3 -name "*.sh" -executable); do result=$(bash "$f" 2>&1 | tail -1); if echo "$result" | grep -qi "fail"; then echo "FAILED: $f"; fi; done')
+assert_output_contains_deny_with_reason "for-loop result=\$(bash \$f) denied" "$OUT27B" 'for-loop with bash'
+assert_output_contains_deny_with_reason "for-loop message uses var f" "$OUT27B" '$f'
 
 echo "Test 27: bash bin/validate-plan denied with guidance"
 OUT27=$(run_deny "bash bin/validate-plan --schema plan.json")

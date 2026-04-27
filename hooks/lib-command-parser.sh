@@ -124,7 +124,7 @@ extract_command_words_from_segment() {
   local pure_subshell_re='^\$\((.+)\)$'
   local var_subshell_re='^[A-Za-z_][A-Za-z0-9_]*="?\$\((.+)\)"?$'
   local var_literal_re='^[A-Za-z_][A-Za-z0-9_]*=[^$]'
-  local var_ref_re='^[A-Za-z_][A-Za-z0-9_]*=\$[^(]'
+  local var_ref_re='^[A-Za-z_][A-Za-z0-9_]*=\$'
   if [[ "$seg" =~ $pure_subshell_re ]]; then
     local inner="${BASH_REMATCH[1]}"
     inner="${inner#"${inner%%[![:space:]]*}"}"
