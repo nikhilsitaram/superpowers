@@ -115,17 +115,21 @@ assert_pass "remove absent path exits 0" \
 
 echo "Test 6: --remove-file create succeeds and re-renders plan.md"
 setup_valid_plan "$TMPDIR"
+rm -f "$TMPDIR/plan.md"
 assert_pass "remove existing create path" \
   "$VALIDATE" --remove-file "$TMPDIR/plan.json" --task A1 --kind create --path "src/core.ts"
 assert_json "src/core.ts removed from A1.files.create" "$TMPDIR/plan.json" \
   '(.phases[0].tasks[0].files.create | index("src/core.ts")) == null'
+assert_file_contains "plan.md re-rendered after create remove" "$TMPDIR/plan.md" "A1: Create core module"
 
 echo "Test 7: --remove-file test succeeds"
 setup_valid_plan "$TMPDIR"
+rm -f "$TMPDIR/plan.md"
 assert_pass "remove existing test path" \
   "$VALIDATE" --remove-file "$TMPDIR/plan.json" --task A1 --kind test --path "tests/core.test.ts"
 assert_json "tests/core.test.ts removed from A1.files.test" "$TMPDIR/plan.json" \
   '(.phases[0].tasks[0].files.test | index("tests/core.test.ts")) == null'
+assert_file_contains "plan.md re-rendered after test remove" "$TMPDIR/plan.md" "A1: Create core module"
 
 echo "Test 8: invalid kind is rejected"
 setup_valid_plan "$TMPDIR"
