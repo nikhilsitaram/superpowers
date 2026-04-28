@@ -27,7 +27,7 @@ TaskCreate one entry per task in plan.json (e.g. "Implement A1", "Implement A2",
 
 Before first phase:
 - Resolve absolute path: `PLAN_JSON=$(realpath plan.json)` and `PLAN_DIR=$(dirname "$PLAN_JSON")`
-  Plan artifacts live under `.claude/claude-caliper/` (gitignored). Phase worktrees won't have these files, so all plan.json references must use the absolute `$PLAN_JSON` path — it points to the integration worktree where the plan was created.
+  Plan artifacts live in the main repo at `$MAIN_ROOT/.claude/claude-caliper/` (gitignored, decoupled from worktree lifetime so they survive cleanup). Phase worktrees don't have these files, so all references must use the absolute `$PLAN_JSON` / `$PLAN_DIR` paths.
 - Read workflow: `WORKFLOW=$(jq -r '.workflow' "$PLAN_JSON")`
 - Read execution mode: `EXEC_MODE=$(jq -r '.execution_mode' "$PLAN_JSON")`
 Note: `workflow` and `execution_mode` are read from plan.json (set by the design skill based on user selection and caliper-settings defaults), not from caliper-settings at runtime. This avoids two sources of truth — the plan is the single source once created.
