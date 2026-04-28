@@ -17,14 +17,31 @@ if [[ -z "$cmd" ]]; then
   exit 0
 fi
 
-# Fast path: deny for-loops with bash "$var" before extract_segments runs.
-# Must precede extract_segments — Claude Code's internal parser fires on complex
-# for-loops before PreToolUse hooks complete, producing confusing internal errors.
-if [[ "$cmd" == for\ * && "$cmd" == *'bash "$'* ]]; then
-  _loop_var="${cmd#for }"
-  _loop_var="${_loop_var%% *}"
-  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"for-loop with bash \"$%s\" detected. Invoke test scripts directly without bash: ./$%s"}}\n' "$_loop_var" "$_loop_var"
-  exit 0
+# Fast path: deny for-loops that trip Claude Code's tree-sitter parser before
+# extract_segments runs. The parser surfaces "Unhandled node type: string" /
+# "Contains for_statement" as a generic permission prompt without our deny
+# message — guide the agent to a non-loop pattern with a clear reason.
+# Match `for VAR in` anywhere in the command (loops can follow leading
+# variable assignments like FAIL=0; for f in ...).
+if [[ "$cmd" =~ (^|[^a-zA-Z0-9_])for[[:space:]]+([a-zA-Z_][a-zA-Z0-9_]*)[[:space:]]+in[[:space:]] ]]; then
+  _loop_var="${BASH_REMATCH[2]}"
+
+  if [[ "$cmd" == *"bash \"\$$_loop_var\""* ]]; then
+    printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"for-loop with bash \"$%s\" detected. Invoke test scripts directly without bash: ./$%s"}}\n' "$_loop_var" "$_loop_var"
+    exit 0
+  fi
+
+  case "$cmd" in
+    *"do \"\$$_loop_var\""*|\
+    *"; \"\$$_loop_var\""*|\
+    *"! \"\$$_loop_var\""*|\
+    *"&& \"\$$_loop_var\""*|\
+    *"|| \"\$$_loop_var\""*|\
+    *"then \"\$$_loop_var\""*)
+      printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"for-loop invoking \"$%s\" as a command trips Claude Code'"'"'s tree-sitter parser. Chain invocations with ; or && instead, or wrap them in a runner script."}}\n' "$_loop_var"
+      exit 0
+      ;;
+  esac
 fi
 
 extract_segments "$cmd"

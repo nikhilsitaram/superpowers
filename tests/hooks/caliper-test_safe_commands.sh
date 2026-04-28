@@ -413,6 +413,29 @@ assert_output_contains_deny_with_reason "for-loop result=\$(bash \$f) denied" "$
 # shellcheck disable=SC2016
 assert_output_contains_deny_with_reason "for-loop message uses var f" "$OUT27B" '$f'
 
+echo "Test 27c: for-loop with direct \"\$f\" exec after leading var assignment denied"
+# shellcheck disable=SC2016
+OUT27C=$(run_deny 'FAIL=0; for f in tests/validate-plan/caliper-test_*.sh tests/bin/caliper-test_*.sh; do [ -x "$f" ] || continue; if ! "$f" >/dev/null 2>&1; then echo "FAIL: $f"; FAIL=1; fi; done')
+assert_output_contains_deny_with_reason "for-loop direct \"\$f\" exec denied" "$OUT27C" 'tree-sitter parser'
+# shellcheck disable=SC2016
+assert_output_contains_deny_with_reason "Test 27c message uses var f" "$OUT27C" '$f'
+
+echo "Test 27d: for-loop with \"\$x\" at do position denied"
+# shellcheck disable=SC2016
+OUT27D=$(run_deny 'for x in *.sh; do "$x"; done')
+assert_output_contains_deny_with_reason "for-loop direct exec at do position denied" "$OUT27D" 'tree-sitter parser'
+
+echo "Test 27e: for-loop with quoted var only in echo (not command position) allowed"
+# shellcheck disable=SC2016
+OUT27E=$(run_deny 'for f in *.sh; do echo "$f"; done')
+if [[ -z "$OUT27E" ]]; then
+  echo "PASS: for-loop with echo \"\$f\" not denied"
+  ((PASS++)) || true
+else
+  echo "FAIL: for-loop with echo \"\$f\" should not be denied (got: $OUT27E)"
+  ((FAIL++)) || true
+fi
+
 echo "Test 27: bash bin/validate-plan denied with guidance"
 OUT27=$(run_deny "bash bin/validate-plan --schema plan.json")
 assert_output_contains_deny_with_reason "bash + script denied" "$OUT27" "Do not use"
