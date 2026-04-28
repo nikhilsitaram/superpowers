@@ -94,7 +94,8 @@ When `REVIEWER_NEEDED` was `"false"`, skip step 1 — the skip verdict was alrea
 3. Validate criteria: `validate-plan --criteria plan.json --task {TASK_ID}`
 4. Merge and clean up the agent's worktree:
    - Never `cd` into an agent worktree — always use `git -C <agent-worktree-path>` for inspection commands (`git log`, `git status`, `git diff`). This prevents CWD from pointing at a path that gets deleted during cleanup.
-   - Merge: `git -C <your worktree path> merge <agent-branch>`
+   - Guard before merge: `PARENT_BRANCH=$(git -C "$PARENT_WORKTREE" rev-parse --abbrev-ref HEAD)` — then `[[ "$PARENT_BRANCH" == integrate/* ]] && { echo "ERROR: PARENT_WORKTREE is on the integration branch. Task branches must merge into the phase branch; integration happens only in Phase Wrap-Up step 7." >&2; exit 1; }`. This catches state drift from the wrong-worktree recovery path where the phase branch was reset to integration HEAD.
+   - Merge: `git -C "$PARENT_WORKTREE" merge {TASK_ID_LOWER}` (task branch into the phase branch, never directly into integration)
    - Clean up: `git worktree remove <agent-worktree-path>` then `git branch -d <agent-branch>`
    - Reset CWD after removal: `cd <feature-worktree-path> && pwd` — run this after every worktree removal even if you believe CWD hasn't drifted
 5. Check if dependent tasks are now unblocked (`validate-plan --check-deps`)
