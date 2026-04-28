@@ -77,6 +77,14 @@ out=$(jq -n '{
 }' | "$HOOK" 2>/dev/null || true)
 assert_allow "Bash tool ignored" "$out"
 
+echo "Test 9: Edit on relative caliper plan.md is denied"
+out=$(run_hook "Edit" ".claude/claude-caliper/2026-04-28-topic/plan.md")
+assert_deny_contains "relative path denied" "$out" "--add-file"
+
+echo "Test 10: Edit on ./.claude caliper plan.md is denied"
+out=$(run_hook "Edit" "./.claude/claude-caliper/2026-04-28-topic/plan.md")
+assert_deny_contains "explicit ./ relative path denied" "$out" "--add-file"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 exit $FAIL

@@ -57,17 +57,6 @@ assert_file_contains() {
   fi
 }
 
-assert_file_not_contains() {
-  local desc="$1" file="$2" needle="$3"
-  if ! grep -qF "$needle" "$file"; then
-    echo "PASS: $desc"
-    ((PASS++)) || true
-  else
-    echo "FAIL: $desc (unexpected '$needle' in $file)"
-    ((FAIL++)) || true
-  fi
-}
-
 setup_valid_plan() {
   local dir="$1"
   rm -rf "${dir:?}/"*
