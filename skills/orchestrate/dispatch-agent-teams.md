@@ -15,6 +15,7 @@ Before spawning any teammates, create the team: `TeamCreate({team_name: "{PLAN_N
 For each task in the phase, check deps: `validate-plan --check-deps "$PLAN_JSON" --task {TASK_ID}`. Collect all tasks that pass. For each ready task, extract metadata (strip `status` — orchestrator state not needed by implementer):
 
 ```bash
+LEAD_WORKTREE="$(git rev-parse --show-toplevel)"
 TASK_METADATA=$(jq -c --arg id "{TASK_ID}" '[.phases[].tasks[] | select(.id == $id)][0] | del(.status)' "$PLAN_JSON")
 TASK_COMPLEXITY=$(echo "$TASK_METADATA" | jq -r '.complexity')
 REVIEWER_NEEDED=$(echo "$TASK_METADATA" | jq -r '.reviewer_needed')
@@ -47,7 +48,7 @@ When an implementer teammate goes idle (push notification — no polling):
 6. Validate with `validate-plan --criteria plan.json --task {TASK_ID}`
 7. Shut down implementer after review passes and criteria met: `SendMessage({to: "impl-{TASK_ID_LOWER}", message: {type: "shutdown_request"}})`. Wait for the teammate's idle notification confirming shutdown before proceeding — the teammate must fully terminate before its worktree can be removed.
 8. **Record task-review** (skip if `REVIEWER_NEEDED` was `"false"` — verdict already recorded as skip in step 2): Write a passing record to `reviews.json` (in the plan directory): `jq '. += [{"type":"task-review","scope":"{TASK_ID}","verdict":"pass","remaining":0}]' "$PLAN_DIR/reviews.json" > "$PLAN_DIR/reviews.json.tmp" && mv "$PLAN_DIR/reviews.json.tmp" "$PLAN_DIR/reviews.json"`. Create the file (`echo '[]'`) if it doesn't exist.
-9. **Incremental merge:** Merge this task's branch into the feature/integration branch so dependent tasks see prerequisite code. Use `git -C <your worktree path> merge <task-branch>` — the `-C` flag prevents CWD drift that occurs after processing teammate completions. After merge: `git worktree remove <teammate-worktree-path>` then `git branch -d <task-branch>`. Verify CWD with `pwd`; if it drifted, `cd` back.
+9. **Incremental merge:** Merge this task's branch into the phase (or feature) branch so dependent tasks see prerequisite code. Guard before merge: `[[ "$(git -C "$LEAD_WORKTREE" rev-parse --abbrev-ref HEAD)" == integrate/* ]] && { echo "ERROR: LEAD_WORKTREE is on the integration branch. Task branches must merge into the phase branch; integration happens only in Phase Wrap-Up step 7." >&2; exit 1; }`. Then: `git -C <your worktree path> merge <task-branch>` — the `-C` flag prevents CWD drift. After merge: `git worktree remove <teammate-worktree-path>` then `git branch -d <task-branch>`. Verify CWD with `pwd`; if it drifted, `cd` back.
 10. **Dependency gate:** Check if any blocked tasks are now unblocked. For each candidate, run `validate-plan --check-deps plan.json --task {TASK_ID}`. If all dependencies are complete, spawn a new implementer teammate for that task (worktree created from the now-updated feature branch).
 
 **Phase completion gate:** Lead cannot advance until ALL teammates for this phase (implementers and reviewers) are terminated. After the final phase completes (not each phase), call `TeamDelete()` to clean up team resources — the team persists across phases so dependent tasks in later phases can be dispatched to new teammates without recreating the team.
