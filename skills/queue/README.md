@@ -17,13 +17,26 @@ or CLI. So reset-mode depends on a thin statusline wrapper that captures those
 fields to a state file on the way through to your real statusline renderer.
 
 `scripts/statusline-wrapper.sh` does exactly that: it reads stdin once and writes
-both rolling windows to the state file. It then renders the statusline itself — a
+both rolling windows to a state file. It then renders the statusline itself — a
 compact `dir (branch) · model · 5h NN% (resets HH:MM)` line — so **no external
 statusline tool is required**. If you already use a statusline renderer
 (ccstatusline or anything else), set `QUEUE_STATUSLINE` and the wrapper forwards
 the same stdin to it instead of rendering its own line.
 
-### State-file shape
+### State is keyed per session
+
+The state file is **per session**: the wrapper writes
+`~/.claude/queue/state.d/<session_id>.json`, keying on the `session_id` the
+statusline payload carries. This matters because `~/.claude/queue` is shared by
+every Claude session on the machine — and a session signed into a *different*
+account or plan reports *its* usage. Without per-session keying, such a session
+could overwrite yours (e.g. a payload with no `five_hour` window nulled the 5h
+reading; a foreign weekly percentage on the same Monday reset silently replaced
+yours). The consumer scripts read your own session's file (via
+`$CLAUDE_CODE_SESSION_ID`), falling back to the freshest file with a numeric
+reading, then a legacy `state.json`. Files untouched for >24h are pruned.
+
+### State-file shape (each per-session file)
 
 ```jsonc
 {
@@ -79,7 +92,7 @@ Set it via the `statusLine.command`'s `env`, or export it before Claude starts.
 Give the terminal ~10–15 s to render once, then confirm:
 
 ```bash
-cat ~/.claude/queue/state.json   # see "State-file shape" above
+cat ~/.claude/queue/state.d/*.json   # per-session; see "State-file shape" above
 ```
 
 `rate_limits` (both windows) only appears for Pro/Max subscribers, after the
@@ -89,7 +102,8 @@ first API response of a session.
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| `QUEUE_STATE_FILE` | `~/.claude/queue/state.json` | Where state is read/written |
+| `QUEUE_STATE_DIR` | `~/.claude/queue` | Directory holding per-session state under `state.d/` |
+| `QUEUE_STATE_FILE` | _(unset)_ | Pin a single legacy state file instead of per-session keying (back-compat / tests) |
 | `QUEUE_STATUSLINE` | _(unset)_ | External statusline command to forward stdin to; unset renders the built-in line |
 
 ## Notes & limits

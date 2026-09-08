@@ -24,8 +24,9 @@ actions don't trip a real rate limit mid-action.
 ## How usage is read
 
 `./skills/usage-guard/scripts/check-usage.sh [--window 5h|7d] [threshold]`
-(invoke directly — executable, no `bash` prefix) reads `~/.claude/queue/state.json`,
-kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_PCT=`,
+(invoke directly — executable, no `bash` prefix) reads *this session's*
+`~/.claude/queue/state.d/<session_id>.json` (so another account's session can't
+skew it), kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_PCT=`,
 `VERDICT=` (UNDER/OVER), `CAPTURED_AGE_SEC=`, `STALE=` (yes/no), `RESETS_AT_HUMAN=`,
 `RESETS_IN_MIN=` and exits **0 = under**, **10 = at/over**, **1/2 = data unavailable**.
 
@@ -34,10 +35,12 @@ kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_P
   loop is otherwise identical; just thread the same `--window` value through every
   check this run so cadence and the threshold branch track one window.
 - This depends on the **queue skill's statusline wrapper** being wired in. If
-  check-usage exits 1/2, relay its stderr and stop — usage can't be read. One
-  exception: exit 2 with a *past `resets_at`* stderr is a transient cross-session
-  glitch (a stale blob from another session, overwritten within ~10s). Re-run once
-  after ~5s before stopping; only stop if it repeats.
+  check-usage exits 1/2, relay its stderr and stop — usage can't be read. Two
+  transient exceptions warrant re-running once after ~5s before stopping (only
+  stop if it repeats): a *past `resets_at`* stderr (a stale render, refreshed on
+  the next tick), and exit 2 right after a window reset — a fresh reset
+  legitimately reads null for the first request, until the first post-reset render
+  lands. If it clears to a low number, treat that ~0% as the new window's start.
 - `STALE=yes` (the same >90s cutoff `compute-fire.sh` uses) means the statusline
   hasn't rendered recently — terminal idle/unfocused — so `USED_PCT` lags reality.
   Note it; the number may be behind.
