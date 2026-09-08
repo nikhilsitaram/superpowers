@@ -9,11 +9,17 @@
 # OWN file and can never poison ours. This function picks which file a consumer
 # should read.
 #
-# resolve_state_file <window:5h|7d>
+# resolve_state_file <window:5h|7d> [need:used|resets]
 #   Returns 0 and sets RESOLVED_STATE_FILE (the path to read) +
 #   RESOLVED_SOURCE=pinned|own|fallback|legacy (so the caller can surface WHICH
 #   file it read — see the fallback caveat below). Returns 1 when no candidate
 #   exists at all (caller maps that to its "no state file" exit).
+#
+#   `need` is the field the consumer actually reads, so the freshest-numeric
+#   FALLBACK scan (step 2) requires THAT field to be numeric — `used`
+#   (used_percentage; check-usage) or `resets` (resets_at; compute-fire). Without
+#   it a file with a numeric percentage but a null reset time could be picked and
+#   then rejected by compute-fire. Default `used`.
 #
 #   Results come back in globals, NOT stdout: the caller must invoke this
 #   directly (`resolve_state_file 5h`), never in a `$(...)` — a command
@@ -47,7 +53,7 @@
 # (unset by default; set non-empty to pin a single legacy file).
 
 resolve_state_file() {
-  local window="$1"
+  local window="$1" need="${2:-used}"
   RESOLVED_STATE_FILE=""
   RESOLVED_SOURCE=""
 
@@ -69,9 +75,10 @@ resolve_state_file() {
     return 0
   fi
 
-  # 2. Freshest state.d file with a numeric value for this window.
-  local upath
-  if [ "$window" = "7d" ]; then upath='.seven_day.used_percentage'; else upath='.used_percentage'; fi
+  # 2. Freshest state.d file with a numeric value for the field this consumer needs.
+  local base upath
+  if [ "$need" = "resets" ]; then base="resets_at"; else base="used_percentage"; fi
+  if [ "$window" = "7d" ]; then upath=".seven_day.$base"; else upath=".$base"; fi
   if [ -d "$sd" ]; then
     local f
     for f in $(ls -t "$sd"/*.json 2>/dev/null); do

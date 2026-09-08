@@ -65,7 +65,7 @@ age=0
 if [ "$mode" = "reset" ]; then
   # Pick which per-session state file to read (own session's is authoritative).
   # Called directly (not in $(...)) so RESOLVED_SOURCE survives — see resolve-state.sh.
-  resolve_state_file "$WINDOW" || true
+  resolve_state_file "$WINDOW" resets || true
   STATE_FILE="$RESOLVED_STATE_FILE"
   if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
     echo "ERROR: no usage state file yet — the statusline hasn't captured a reset time." >&2

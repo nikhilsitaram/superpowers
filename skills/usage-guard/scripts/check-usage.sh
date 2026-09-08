@@ -64,7 +64,7 @@ fi
 
 # Pick which per-session state file to read (own session's is authoritative).
 # Called directly (not in $(...)) so RESOLVED_SOURCE survives — see resolve-state.sh.
-resolve_state_file "$WINDOW" || true
+resolve_state_file "$WINDOW" used || true
 STATE_FILE="$RESOLVED_STATE_FILE"
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   echo "ERROR: no usage state file yet — the queue statusline wrapper isn't capturing usage." >&2

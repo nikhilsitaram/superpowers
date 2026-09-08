@@ -81,8 +81,12 @@ assert "check-usage as ours reads own 7d (49), NOT foreign 4" '[[ "$(field USED_
 assert "own 7d read also reports SOURCE=own"           '[[ "$(field SOURCE)" == "own" ]]'
 
 # --- A set-but-EMPTY QUEUE_STATE_FILE is treated as unset (not a pin to "") ---
+# Bracketed in set +e/-e so a future regression (non-zero exit) still prints FAIL
+# rather than tripping the script's `set -e` before the assert runs.
+set +e
 STDOUT="$(env QUEUE_STATE_FILE="" QUEUE_STATE_DIR="$DIR" CLAUDE_CODE_SESSION_ID=sess-ours \
   PATH="$PATH" HOME="$HOME" bash "$CHECK_USAGE" 2>/dev/null)"; RC=$?
+set -e
 assert "empty QUEUE_STATE_FILE falls to per-session (own 59, not pin to '')" '[[ $RC -eq 0 && "$(field USED_PCT)" == "59.0" && "$(field SOURCE)" == "own" ]]'
 
 # --- Own file's window null => exit 2, NEVER fall through to a foreign number ---
@@ -104,6 +108,11 @@ assert "fallback read reports SOURCE=fallback"                    '[[ "$(field S
 run sess-unknown "$CHECK_USAGE" --window 7d
 assert "7d fallback picks freshest numeric 7d file (49, not 4)"   '[[ $RC -eq 0 && "$(field USED_PCT)" == "49.0" ]]'
 assert "7d fallback reports SOURCE=fallback"                      '[[ "$(field SOURCE)" == "fallback" ]]'
+# compute-fire's fallback predicate is resets_at (not used_percentage): sess-ours
+# has a null 5h resets_at, so the 5h fallback must skip it and pick sess-f2 (F5).
+run sess-unknown "$COMPUTE_FIRE"
+assert "compute-fire fallback selects by resets_at (exit 0)"      '[[ $RC -eq 0 && "$(field SOURCE)" == "fallback" ]]'
+assert "compute-fire fallback targets sess-f2's 5h reset (F5)"    "[[ \"\$(field FIRE_EPOCH)\" -ge $F5 ]]"
 
 # --- Legacy fallback: no state.d at all, but a legacy state.json exists ---
 rm -rf "$DIR/state.d"
