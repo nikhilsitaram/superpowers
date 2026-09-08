@@ -36,6 +36,15 @@ yours). The consumer scripts read your own session's file (via
 `$CLAUDE_CODE_SESSION_ID`), falling back to the freshest file with a numeric
 reading, then a legacy `state.json`. Files untouched for >24h are pruned.
 
+This own-session match relies on the statusline payload's `session_id` (which
+keys the write) equalling the reader's `$CLAUDE_CODE_SESSION_ID` — Claude Code
+populates both from the same session UUID, so they match for a consumer running
+in the **same session** that renders the statusline (where queue/usage-guard run
+them). A consumer invoked inside a **dispatched subagent** has its own session id
+and no own file, so it drops to the freshest-numeric fallback — which on a
+multi-account machine can be another session's number. The consumer scripts emit
+`SOURCE=own|fallback|legacy|pinned` so a non-`own` (weaker) read is visible.
+
 ### State-file shape (each per-session file)
 
 ```jsonc

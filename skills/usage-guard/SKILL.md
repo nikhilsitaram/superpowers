@@ -27,8 +27,9 @@ actions don't trip a real rate limit mid-action.
 (invoke directly — executable, no `bash` prefix) reads *this session's*
 `~/.claude/queue/state.d/<session_id>.json` (so another account's session can't
 skew it), kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_PCT=`,
-`VERDICT=` (UNDER/OVER), `CAPTURED_AGE_SEC=`, `STALE=` (yes/no), `RESETS_AT_HUMAN=`,
-`RESETS_IN_MIN=` and exits **0 = under**, **10 = at/over**, **1/2 = data unavailable**.
+`VERDICT=` (UNDER/OVER), `SOURCE=`, `CAPTURED_AGE_SEC=`, `STALE=` (yes/no),
+`RESETS_AT_HUMAN=`, `RESETS_IN_MIN=` and exits **0 = under**, **10 = at/over**,
+**1/2 = data unavailable**.
 
 - `--window` selects the rolling window (default `5h`). Pass `--window 7d` to guard
   the **weekly** cap instead — e.g. "stop when I'm near my 7-day limit". The work
@@ -36,11 +37,13 @@ skew it), kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=
   check this run so cadence and the threshold branch track one window.
 - This depends on the **queue skill's statusline wrapper** being wired in. If
   check-usage exits 1/2, relay its stderr and stop — usage can't be read. Two
-  transient exceptions warrant re-running once after ~5s before stopping (only
-  stop if it repeats): a *past `resets_at`* stderr (a stale render, refreshed on
-  the next tick), and exit 2 right after a window reset — a fresh reset
-  legitimately reads null for the first request, until the first post-reset render
-  lands. If it clears to a low number, treat that ~0% as the new window's start.
+  transient exit-2 cases warrant one re-run after ~5s before stopping (only stop
+  if it repeats): a *past `resets_at`* (a stale render), and right after a window
+  reset (a fresh reset reads null until the first post-reset render lands — if it
+  then clears to a low number, treat that ~0% as the new window's start).
+- `SOURCE=own` is the authoritative per-session read; `fallback`/`legacy` mean no
+  own file was found (run from a subagent, or a fresh session's first ~10s) and
+  the number could be another account's — treat non-`own` as soft near the ceiling.
 - `STALE=yes` (the same >90s cutoff `compute-fire.sh` uses) means the statusline
   hasn't rendered recently — terminal idle/unfocused — so `USED_PCT` lags reality.
   Note it; the number may be behind.

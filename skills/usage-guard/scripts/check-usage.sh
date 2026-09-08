@@ -63,7 +63,9 @@ else
 fi
 
 # Pick which per-session state file to read (own session's is authoritative).
-STATE_FILE="$(resolve_state_file "$WINDOW")"
+# Called directly (not in $(...)) so RESOLVED_SOURCE survives — see resolve-state.sh.
+resolve_state_file "$WINDOW" || true
+STATE_FILE="$RESOLVED_STATE_FILE"
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   echo "ERROR: no usage state file yet — the queue statusline wrapper isn't capturing usage." >&2
   echo "Fix: settings.json statusLine must point to the queue statusline-wrapper.sh; let the terminal render once." >&2
@@ -91,14 +93,13 @@ age=$(( now - captured ))
 
 # A reading whose window has ALREADY reset is self-contradictory: resets_at is the
 # payload's own timestamp, so if it's in the past the used_percentage describes a
-# window that no longer exists. This is the cross-session poisoning signature — the
-# state file is shared by every session, and an idle session holding a stale
-# rate_limits blob can overwrite it with a long-reset window, stamped captured_at=now
-# so STALE can't catch it (the write IS recent; only the payload is old). Treat a
-# past resets_at (beyond PAST_GRACE_SEC) as data-unavailable → exit 2, so callers
-# fall into the retry/relay path instead of trusting a false OVER on a dead window.
+# window that no longer exists. It's a stale render — this session's own idle
+# terminal holding a long-reset rate_limits blob, or (SOURCE!=own) a fallback file
+# — stamped captured_at=now so STALE can't catch it (the write IS recent; only the
+# payload is old). Treat a past resets_at (beyond PAST_GRACE_SEC) as data-unavailable
+# → exit 2, so callers retry instead of trusting a false OVER on a dead window.
 if [ -n "$resets_at" ] && [ "$resets_at" -lt $(( now - PAST_GRACE_SEC )) ]; then
-  echo "ERROR: the $WINDOW window's resets_at ($(date -r "$resets_at" '+%Y-%m-%d %H:%M %Z')) is in the past — its used_percentage describes an already-reset window (likely a stale cross-session blob). Retry in ~5s for a fresh render." >&2
+  echo "ERROR: the $WINDOW window's resets_at ($(date -r "$resets_at" '+%Y-%m-%d %H:%M %Z')) is in the past — its used_percentage describes an already-reset window (a stale render). Retry in ~5s for a fresh render." >&2
   exit 2
 fi
 
@@ -109,6 +110,11 @@ used_disp="$(awk -v u="$used" 'BEGIN{ printf "%.1f", u+0 }')"
 echo "WINDOW=$WINDOW"
 echo "USED_PCT=$used_disp"
 echo "THRESHOLD=$THRESH"
+# SOURCE names which file the reading came from. `own` is the authoritative
+# per-session read; anything else (`fallback`/`legacy`/`pinned`) means the reading
+# may not be THIS account's — on a multi-account machine `fallback` can be another
+# session's number (see resolve-state.sh). Callers can treat SOURCE!=own as soft.
+echo "SOURCE=${RESOLVED_SOURCE:-unknown}"
 echo "CAPTURED_AGE_SEC=$age"
 if [ "$age" -gt "$STALE_SEC" ]; then echo "STALE=yes"; else echo "STALE=no"; fi
 if [ -n "$resets_at" ]; then

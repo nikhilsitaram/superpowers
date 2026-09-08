@@ -68,7 +68,7 @@ case "$session_id" in ''|*[!A-Za-z0-9._-]*) session_id="" ;; esac
 # from overwriting this session's window data (#286). QUEUE_STATE_FILE, if set,
 # pins one legacy file (back-compat/tests). No session_id (older client, or a
 # rejected value above) also falls back to the shared legacy file.
-if [ -n "${QUEUE_STATE_FILE+set}" ]; then
+if [ -n "${QUEUE_STATE_FILE:+set}" ]; then
   STATE_FILE="$QUEUE_STATE_FILE"
 else
   STATE_DIR="${QUEUE_STATE_DIR:-$HOME/.claude/queue}"

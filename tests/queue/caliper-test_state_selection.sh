@@ -75,8 +75,15 @@ assert "our 7d survives foreign write (still 49)" '[[ "$(jq -r .seven_day.used_p
 # --- Consumer reads its OWN session's file (authoritative), foreign is fresher ---
 run sess-ours "$CHECK_USAGE"
 assert "check-usage as ours reads own 5h (59), exit 0" '[[ $RC -eq 0 && "$(field USED_PCT)" == "59.0" ]]'
+assert "own read reports SOURCE=own"                   '[[ "$(field SOURCE)" == "own" ]]'
 run sess-ours "$CHECK_USAGE" --window 7d
 assert "check-usage as ours reads own 7d (49), NOT foreign 4" '[[ "$(field USED_PCT)" == "49.0" ]]'
+assert "own 7d read also reports SOURCE=own"           '[[ "$(field SOURCE)" == "own" ]]'
+
+# --- A set-but-EMPTY QUEUE_STATE_FILE is treated as unset (not a pin to "") ---
+STDOUT="$(env QUEUE_STATE_FILE="" QUEUE_STATE_DIR="$DIR" CLAUDE_CODE_SESSION_ID=sess-ours \
+  PATH="$PATH" HOME="$HOME" bash "$CHECK_USAGE" 2>/dev/null)"; RC=$?
+assert "empty QUEUE_STATE_FILE falls to per-session (own 59, not pin to '')" '[[ $RC -eq 0 && "$(field USED_PCT)" == "59.0" && "$(field SOURCE)" == "own" ]]'
 
 # --- Own file's window null => exit 2, NEVER fall through to a foreign number ---
 # A foreign session that DOES carry a numeric 5h.
@@ -91,12 +98,19 @@ assert "own null 5h -> exit 2 (not foreign 7)" '[[ $RC -eq 2 ]]'
 run sess-unknown "$CHECK_USAGE"
 assert "unknown session falls back to a numeric 5h file (exit 0)" '[[ $RC -eq 0 ]]'
 assert "fallback 5h is a real numeric reading (7 from sess-f2)"   '[[ "$(field USED_PCT)" == "7.0" ]]'
+assert "fallback read reports SOURCE=fallback"                    '[[ "$(field SOURCE)" == "fallback" ]]'
+# 7d fallback selects the freshest state.d file with a NUMERIC 7d value. sess-f2
+# has no 7d (skipped); sess-ours (7d 49) was written after sess-foreign (7d 4).
+run sess-unknown "$CHECK_USAGE" --window 7d
+assert "7d fallback picks freshest numeric 7d file (49, not 4)"   '[[ $RC -eq 0 && "$(field USED_PCT)" == "49.0" ]]'
+assert "7d fallback reports SOURCE=fallback"                      '[[ "$(field SOURCE)" == "fallback" ]]'
 
 # --- Legacy fallback: no state.d at all, but a legacy state.json exists ---
 rm -rf "$DIR/state.d"
 printf '{"resets_at":%s,"used_percentage":33,"captured_at":%s}\n' "$F5" "$now" > "$DIR/state.json"
 run sess-unknown "$CHECK_USAGE"
 assert "legacy state.json read when no state.d (exit 0, 33)" '[[ $RC -eq 0 && "$(field USED_PCT)" == "33.0" ]]'
+assert "legacy read reports SOURCE=legacy"                   '[[ "$(field SOURCE)" == "legacy" ]]'
 rm -f "$DIR/state.json"
 
 # --- No state at all -> exit 1 (no-state) ---

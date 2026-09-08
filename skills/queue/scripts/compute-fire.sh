@@ -33,7 +33,7 @@ set -u
 . "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/resolve-state.sh"
 STALE_SEC=90            # statusline refreshes ~every 10s; >90s ⇒ likely not rendering
 PAST_GRACE_SEC=120      # a resets_at slightly past is a just-reset window; well past
-                        # is a stale cross-session blob (see check-usage.sh)
+                        # is a stale render (see check-usage.sh)
 now="$(date +%s)"
 mode="reset"
 epoch=""
@@ -64,7 +64,9 @@ stale=""
 age=0
 if [ "$mode" = "reset" ]; then
   # Pick which per-session state file to read (own session's is authoritative).
-  STATE_FILE="$(resolve_state_file "$WINDOW")"
+  # Called directly (not in $(...)) so RESOLVED_SOURCE survives — see resolve-state.sh.
+  resolve_state_file "$WINDOW" || true
+  STATE_FILE="$RESOLVED_STATE_FILE"
   if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
     echo "ERROR: no usage state file yet — the statusline hasn't captured a reset time." >&2
     echo "Fix: keep this terminal focused ~10-15s so the statusline renders once, then retry." >&2
@@ -86,11 +88,12 @@ if [ "$mode" = "reset" ]; then
       exit 2 ;;
   esac
   # A resets_at well in the past (beyond PAST_GRACE_SEC) isn't a just-reset window
-  # — it's a stale cross-session blob. Distinguish it from a legitimately-just-reset
-  # window (handled below with "run now") so the caller retries for fresh data
-  # instead of being told a dead window's stamp means it can act immediately.
+  # — it's a stale render (this session's idle terminal, or a fallback file).
+  # Distinguish it from a legitimately-just-reset window (handled below with "run
+  # now") so the caller retries for fresh data instead of being told a dead
+  # window's stamp means it can act immediately.
   if [ "$resets_at" -lt $(( now - PAST_GRACE_SEC )) ]; then
-    echo "ERROR: the $WINDOW window's resets_at ($(date -r "$resets_at" '+%Y-%m-%d %H:%M:%S %Z')) is far in the past — the state file holds a stale cross-session blob, not a fresh reset time. Focus this terminal ~10-15s to re-render, then retry." >&2
+    echo "ERROR: the $WINDOW window's resets_at ($(date -r "$resets_at" '+%Y-%m-%d %H:%M:%S %Z')) is far in the past — the state file holds a stale render, not a fresh reset time. Focus this terminal ~10-15s to re-render, then retry." >&2
     exit 2
   fi
   # Staleness from captured_at; default 0 so a missing/non-numeric value reads as
@@ -163,6 +166,9 @@ echo "SECONDS_AWAY=$secs"
 echo "MINUTES_AWAY=$(( secs / 60 ))"
 if [ "$mode" = "reset" ]; then
   echo "WINDOW=$WINDOW"
+  # SOURCE names which file the reset time came from; `own` is the authoritative
+  # per-session read, anything else may be a fallback (see resolve-state.sh).
+  echo "SOURCE=${RESOLVED_SOURCE:-unknown}"
   echo "CAPTURED_AGE_SEC=$age"
   echo "STALE=$stale"
 fi
