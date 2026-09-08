@@ -22,10 +22,13 @@
 # stale (not falsely fresh). STALE=yes|no applies the same >90s cutoff as
 # compute-fire.sh, so both consumers of captured_at agree on one threshold.
 #
-# Config (env): QUEUE_STATE_FILE (default ~/.claude/queue/state.json)
+# Config (env): QUEUE_STATE_DIR (default ~/.claude/queue), QUEUE_STATE_FILE (unset;
+# set to pin a single legacy state file). State is keyed per session under
+# state.d/ so another account's session can't poison this one — see resolve-state.sh.
 set -u
 
-STATE_FILE="${QUEUE_STATE_FILE:-$HOME/.claude/queue/state.json}"
+# shellcheck source=../../queue/scripts/resolve-state.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../../queue/scripts" && pwd)/resolve-state.sh"
 STALE_SEC=90            # statusline refreshes ~every 10s; >90s ⇒ likely not rendering
 PAST_GRACE_SEC=120      # allow a window's resets_at to sit slightly in the past
                         # (clock skew + the ~90s reset lag) before calling it stale
@@ -59,8 +62,10 @@ else
   used_path='.used_percentage'; resets_path='.resets_at'
 fi
 
-if [ ! -f "$STATE_FILE" ]; then
-  echo "ERROR: no $STATE_FILE — the queue statusline wrapper isn't capturing usage yet." >&2
+# Pick which per-session state file to read (own session's is authoritative).
+STATE_FILE="$(resolve_state_file "$WINDOW")"
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: no usage state file yet — the queue statusline wrapper isn't capturing usage." >&2
   echo "Fix: settings.json statusLine must point to the queue statusline-wrapper.sh; let the terminal render once." >&2
   exit 1
 fi

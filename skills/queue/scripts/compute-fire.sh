@@ -23,11 +23,14 @@
 #                        target bumps to the next whole minute (cron is
 #                        minute-granular).
 #
-# Config (env): QUEUE_STATE_FILE (default ~/.claude/queue/state.json)
+# Config (env): QUEUE_STATE_DIR (default ~/.claude/queue), QUEUE_STATE_FILE (unset;
+# set to pin a single legacy state file). State is keyed per session under
+# state.d/ so another account's session can't poison this one — see resolve-state.sh.
 # Prints KEY=VALUE lines on success; non-zero exit + stderr message on failure.
 set -u
 
-STATE_FILE="${QUEUE_STATE_FILE:-$HOME/.claude/queue/state.json}"
+# shellcheck source=resolve-state.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/resolve-state.sh"
 STALE_SEC=90            # statusline refreshes ~every 10s; >90s ⇒ likely not rendering
 PAST_GRACE_SEC=120      # a resets_at slightly past is a just-reset window; well past
                         # is a stale cross-session blob (see check-usage.sh)
@@ -60,8 +63,10 @@ esac
 stale=""
 age=0
 if [ "$mode" = "reset" ]; then
-  if [ ! -f "$STATE_FILE" ]; then
-    echo "ERROR: no state file at $STATE_FILE — the statusline hasn't captured a reset time yet." >&2
+  # Pick which per-session state file to read (own session's is authoritative).
+  STATE_FILE="$(resolve_state_file "$WINDOW")"
+  if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+    echo "ERROR: no usage state file yet — the statusline hasn't captured a reset time." >&2
     echo "Fix: keep this terminal focused ~10-15s so the statusline renders once, then retry." >&2
     exit 1
   fi

@@ -15,14 +15,16 @@
 # QUEUE_STATUSLINE="bunx -y ccstatusline@latest" for ccstatusline.
 #
 # Config (env):
-#   QUEUE_STATE_FILE   where to write state (default ~/.claude/queue/state.json)
+#   QUEUE_STATE_DIR    directory for state (default ~/.claude/queue). State is
+#                      keyed per session under state.d/<session_id>.json so a
+#                      session signed into a DIFFERENT account/plan can't
+#                      overwrite this one's window data (issue #286).
+#   QUEUE_STATE_FILE   pin a single legacy state file instead of per-session
+#                      keying (unset by default; back-compat / tests).
 #   QUEUE_STATUSLINE   external statusline command to forward stdin to; unset
 #                      renders the built-in line.
 # macOS/BSD `date` only (the built-in line uses `date -r <epoch>`).
 set -u
-
-STATE_FILE="${QUEUE_STATE_FILE:-$HOME/.claude/queue/state.json}"
-mkdir -p "$(dirname "$STATE_FILE")"
 
 input="$(cat)"
 
@@ -32,14 +34,15 @@ input="$(cat)"
 # when rate_limits is absent (mis-shifting model/dir); 0x1f preserves empty fields
 # and can't occur in a model name or path. Use jq's \u001f escape, not a literal
 # control byte, so the source stays readable and editor/git-safe.
-IFS=$'\x1f' read -r resets_at used seven_resets seven_used model dir <<EOF
+IFS=$'\x1f' read -r resets_at used seven_resets seven_used model dir session_id <<EOF
 $(printf '%s' "$input" | jq -r '[
     (.rate_limits.five_hour.resets_at // ""),
     (.rate_limits.five_hour.used_percentage // ""),
     (.rate_limits.seven_day.resets_at // ""),
     (.rate_limits.seven_day.used_percentage // ""),
     (.model.display_name // .model.id // ""),
-    (.workspace.current_dir // .cwd // "")
+    (.workspace.current_dir // .cwd // ""),
+    (.session_id // "")
   ] | map(tostring) | join("\u001f")' 2>/dev/null)
 EOF
 
@@ -55,6 +58,27 @@ case "$resets_at" in ''|*[!0-9]*) resets_at="" ;; esac
 case "$used" in ''|.*|*.|*[!0-9.]*|*.*.*) used="" ;; esac
 case "$seven_resets" in ''|*[!0-9]*) seven_resets="" ;; esac
 case "$seven_used" in ''|.*|*.|*[!0-9.]*|*.*.*) seven_used="" ;; esac
+# session_id keys the per-session state file; anything but a plain id would let a
+# crafted payload steer the write path, so a non-id value falls back to legacy.
+case "$session_id" in ''|*[!A-Za-z0-9._-]*) session_id="" ;; esac
+
+# Resolve the write target. Keying state per session (state.d/<session_id>.json)
+# is what stops a session on a DIFFERENT account/plan — whose payload may omit
+# five_hour, or carry a different weekly figure under the same Monday reset —
+# from overwriting this session's window data (#286). QUEUE_STATE_FILE, if set,
+# pins one legacy file (back-compat/tests). No session_id (older client, or a
+# rejected value above) also falls back to the shared legacy file.
+if [ -n "${QUEUE_STATE_FILE+set}" ]; then
+  STATE_FILE="$QUEUE_STATE_FILE"
+else
+  STATE_DIR="${QUEUE_STATE_DIR:-$HOME/.claude/queue}"
+  if [ -n "$session_id" ]; then STATE_FILE="$STATE_DIR/state.d/$session_id.json"
+  else STATE_FILE="$STATE_DIR/state.json"; fi
+fi
+mkdir -p "$(dirname "$STATE_FILE")"
+# Keep state.d bounded: drop per-session files untouched for >24h (a stale
+# session's own file; we rewrite ours below regardless).
+case "$STATE_FILE" in */state.d/*) find "$(dirname "$STATE_FILE")" -name '*.json' -mmin +1440 -delete 2>/dev/null ;; esac
 
 # Tap: persist whenever either window has a real reset time. five_hour stays the
 # top-level shape (backward compatible — existing consumers read .resets_at /
@@ -62,14 +86,16 @@ case "$seven_used" in ''|.*|*.|*[!0-9.]*|*.*.*) seven_used="" ;; esac
 # shape is stable, with null fields when that window is absent. A missing window's
 # resets_at is null, which the consumers treat as "data unavailable".
 if [ -n "$resets_at" ] || [ -n "$seven_resets" ]; then
-  # Cross-session regression guard. state.json is shared by EVERY Claude session on
-  # the machine, and captured_at is stamped at write time — so an idle session still
-  # holding a STALE rate_limits blob (a window that reset long ago) would otherwise
-  # overwrite an active session's fresh data and stamp it fresh, poisoning every
-  # consumer with no staleness signal to catch it. A window's resets_at only ever
-  # moves forward, so an incoming value OLDER than what's on disk means this render
-  # is the stale one: skip the write. Equal/newer still writes, so used_percentage
-  # keeps updating within a window and a genuine reset (resets_at jumps forward) lands.
+  # Stale-render guard. Per-session keying stops OTHER sessions poisoning this
+  # file, but this same session can still re-render an idle terminal holding a
+  # STALE rate_limits blob (a window that reset long ago) — captured_at is stamped
+  # at write time, so it would overwrite fresher data and stamp it fresh, with no
+  # staleness signal to catch it. A window's resets_at only ever moves forward, so
+  # an incoming value OLDER than what's on disk means this render is the stale one:
+  # skip the write. Equal/newer still writes, so used_percentage keeps updating
+  # within a window and a genuine reset (resets_at jumps forward) lands. (With a
+  # pinned legacy QUEUE_STATE_FILE the file is still shared, and this guard is the
+  # same cross-session protection it was before per-session keying.)
   skip=""
   if [ -f "$STATE_FILE" ]; then
     cur_resets="$(jq -r '.resets_at // empty' "$STATE_FILE" 2>/dev/null)"
