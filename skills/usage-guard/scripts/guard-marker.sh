@@ -13,11 +13,14 @@
 #           payload} atomically.
 #   clear   removes the marker (idempotent — fine if already gone).
 #
-# Config (env): QUEUE_STATE_FILE (default ~/.claude/queue/state.json)
+# Config (env): the marker lives beside the usage state, so resolve the SAME
+# directory the wrapper/consumers use — a non-empty QUEUE_STATE_FILE pins the
+# state (they ignore QUEUE_STATE_DIR then), so its dirname wins; otherwise
+# QUEUE_STATE_DIR (default ~/.claude/queue).
 set -u
 
-STATE_FILE="${QUEUE_STATE_FILE:-$HOME/.claude/queue/state.json}"
-STATE_DIR="$(dirname "$STATE_FILE")"
+if [ -n "${QUEUE_STATE_FILE:-}" ]; then STATE_DIR="$(dirname "$QUEUE_STATE_FILE")"
+else STATE_DIR="${QUEUE_STATE_DIR:-$HOME/.claude/queue}"; fi
 MARKER="$STATE_DIR/active-guard.json"
 
 case "${1:-}" in

@@ -16,11 +16,16 @@ instead of getting rate-limited mid-action.
 
 ## Requirement
 
-Reads usage from the **`queue` skill's** state file (`~/.claude/queue/state.json`),
-kept fresh by its statusline wrapper. Set that up first — see `../queue/README.md`.
-`scripts/check-usage.sh [--window 5h|7d] [threshold]` reads the file and exits
-`0` (under) / `10` (at/over) / `1|2` (no data) / `64` (bad flag). `--window 7d`
-guards the weekly cap instead of the 5-hour block. Honors `QUEUE_STATE_FILE`.
+Reads usage from the **`queue` skill's** per-session state
+(`~/.claude/queue/state.d/<session_id>.json`), kept fresh by its statusline
+wrapper. Set that up first — see `../queue/README.md`.
+`scripts/check-usage.sh [--window 5h|7d] [threshold]` reads *this session's* file
+when it exists (`SOURCE=own`, authoritative — no other account can skew it);
+absent one, it falls back to the freshest per-session file with a numeric value
+(`SOURCE=fallback`/`legacy`), which on a multi-account machine may be another
+session's number. It exits `0` (under) / `10` (at/over) / `1|2` (no data) / `64`
+(bad flag). `--window 7d` guards the weekly cap instead of the 5-hour block.
+Honors `QUEUE_STATE_DIR` (and `QUEUE_STATE_FILE` to pin a single legacy file).
 macOS/BSD only.
 
 ## How the stop works (honest limits)

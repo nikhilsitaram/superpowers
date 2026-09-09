@@ -53,7 +53,10 @@ cron fires in the machine's local timezone, so no conversion is needed; let
 
 The helper prints `CRON=`, `FIRE_HUMAN=`, `MINUTES_AWAY=`, and either
 `RESET_HUMAN=` (reset mode) or `TARGET_HUMAN=` (explicit). In reset mode it also
-prints `STALE=yes|no`. On non-zero exit, relay the stderr message and do not
+prints `STALE=yes|no` and `SOURCE=own|fallback|legacy|pinned` — `own` is this
+session's own reset time; if it's not `own` (state read from another session's
+file, e.g. run from a subagent), say so when reporting the fire time, since on a
+multi-account machine the reset could be a different account's window. On non-zero exit, relay the stderr message and do not
 schedule — exit 1/2 = no reset time captured (keep terminal focused ~10-15s and
 retry); 3 = target in the past; 4 = bad `--epoch`. If a `WARNING:` is printed
 (stale state, or a DST-gap fire time), surface it: for `STALE=yes`, refresh the

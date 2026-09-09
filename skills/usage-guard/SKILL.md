@@ -24,20 +24,26 @@ actions don't trip a real rate limit mid-action.
 ## How usage is read
 
 `./skills/usage-guard/scripts/check-usage.sh [--window 5h|7d] [threshold]`
-(invoke directly — executable, no `bash` prefix) reads `~/.claude/queue/state.json`,
-kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_PCT=`,
-`VERDICT=` (UNDER/OVER), `CAPTURED_AGE_SEC=`, `STALE=` (yes/no), `RESETS_AT_HUMAN=`,
-`RESETS_IN_MIN=` and exits **0 = under**, **10 = at/over**, **1/2 = data unavailable**.
+(invoke directly — executable, no `bash` prefix) reads *this session's*
+`~/.claude/queue/state.d/<session_id>.json` (so another account's session can't
+skew it), kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_PCT=`,
+`VERDICT=` (UNDER/OVER), `SOURCE=`, `CAPTURED_AGE_SEC=`, `STALE=` (yes/no),
+`RESETS_AT_HUMAN=`, `RESETS_IN_MIN=` and exits **0 = under**, **10 = at/over**,
+**1/2 = data unavailable**.
 
 - `--window` selects the rolling window (default `5h`). Pass `--window 7d` to guard
   the **weekly** cap instead — e.g. "stop when I'm near my 7-day limit". The work
   loop is otherwise identical; just thread the same `--window` value through every
   check this run so cadence and the threshold branch track one window.
 - This depends on the **queue skill's statusline wrapper** being wired in. If
-  check-usage exits 1/2, relay its stderr and stop — usage can't be read. One
-  exception: exit 2 with a *past `resets_at`* stderr is a transient cross-session
-  glitch (a stale blob from another session, overwritten within ~10s). Re-run once
-  after ~5s before stopping; only stop if it repeats.
+  check-usage exits 1/2, relay its stderr and stop — usage can't be read. Two
+  transient exit-2 cases warrant one re-run after ~5s before stopping (only stop
+  if it repeats): a *past `resets_at`* (a stale render), and right after a window
+  reset (a fresh reset reads null until the first post-reset render lands — if it
+  then clears to a low number, treat that ~0% as the new window's start).
+- `SOURCE=own` is the authoritative per-session read; `fallback`/`legacy` mean no
+  own file was found (run from a subagent, or a fresh session's first ~10s) and
+  the number could be another account's — treat non-`own` as soft near the ceiling.
 - `STALE=yes` (the same >90s cutoff `compute-fire.sh` uses) means the statusline
   hasn't rendered recently — terminal idle/unfocused — so `USED_PCT` lags reality.
   Note it; the number may be behind.
@@ -56,7 +62,9 @@ kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=`, `USED_P
 4. **Check usage** by running check-usage.sh:
    - Exit 0 (UNDER) → continue to the next chunk.
    - Exit 10 (OVER) → go to "At the threshold".
-   - Exit 1/2 → relay and stop.
+   - Exit 1 → relay and stop (usage can't be read).
+   - Exit 2 → re-run once after ~5s for the two transient cases above (a past
+     `resets_at`, or a fresh-reset null); relay and stop only if it repeats.
 5. **Cadence AND chunk size** — the overshoot guard. Checking often isn't enough
    if a single chunk between checks can itself burn several percent:
    - Check after each sub-task while usage is low; past ~90% `USED_PCT`, check
