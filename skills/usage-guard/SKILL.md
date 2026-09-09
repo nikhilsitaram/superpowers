@@ -62,7 +62,9 @@ skew it), kept fresh by the queue skill's statusline wrapper. It prints `WINDOW=
 4. **Check usage** by running check-usage.sh:
    - Exit 0 (UNDER) → continue to the next chunk.
    - Exit 10 (OVER) → go to "At the threshold".
-   - Exit 1/2 → relay and stop.
+   - Exit 1 → relay and stop (usage can't be read).
+   - Exit 2 → re-run once after ~5s for the two transient cases above (a past
+     `resets_at`, or a fresh-reset null); relay and stop only if it repeats.
 5. **Cadence AND chunk size** — the overshoot guard. Checking often isn't enough
    if a single chunk between checks can itself burn several percent:
    - Check after each sub-task while usage is low; past ~90% `USED_PCT`, check

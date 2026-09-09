@@ -15,12 +15,14 @@
 # present), so it is safe to leave registered. OPT-IN: wire it into settings.json
 # yourself (a plugin can't edit settings.json) — see ../README.md.
 #
-# Config (env): QUEUE_STATE_DIR (default ~/.claude/queue), or QUEUE_STATE_FILE
-# whose dirname is used when QUEUE_STATE_DIR is unset. The marker/breadcrumb live
-# beside the usage state, so this must match the wrapper/consumers' directory.
+# Config (env): the marker/breadcrumb live beside the usage state, so resolve the
+# SAME directory the wrapper/consumers use — a non-empty QUEUE_STATE_FILE pins the
+# state (they ignore QUEUE_STATE_DIR then), so its dirname wins; otherwise
+# QUEUE_STATE_DIR (default ~/.claude/queue).
 set -u
 
-STATE_DIR="${QUEUE_STATE_DIR:-$(dirname "${QUEUE_STATE_FILE:-$HOME/.claude/queue/state.json}")}"
+if [ -n "${QUEUE_STATE_FILE:-}" ]; then STATE_DIR="$(dirname "$QUEUE_STATE_FILE")"
+else STATE_DIR="${QUEUE_STATE_DIR:-$HOME/.claude/queue}"; fi
 MARKER="$STATE_DIR/active-guard.json"
 PENDING="$STATE_DIR/pending-resume.json"
 LOG="$STATE_DIR/stopfailure.log"

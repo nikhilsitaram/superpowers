@@ -133,6 +133,11 @@ touch -t "$(date -v-2d +%Y%m%d%H%M)" "$DIR/state.d/sess-stale.json"
 produce "$ours_blob"
 assert "stale (>24h) per-session file pruned"     '[[ ! -f "$DIR/state.d/sess-stale.json" ]]'
 assert "fresh own file kept after prune"          '[[ -f "$DIR/state.d/sess-ours.json" ]]'
+# The active session's OWN file must never be pruned — even if it is >24h old AND
+# this render carries no window to rewrite it (else good data drops to fallback).
+touch -t "$(date -v-2d +%Y%m%d%H%M)" "$DIR/state.d/sess-ours.json"
+produce '{"session_id":"sess-ours"}'
+assert "own file survives prune when >24h old and render has no window" '[[ -f "$DIR/state.d/sess-ours.json" ]]'
 
 # --- Defensive: a session_id with path traversal is rejected -> legacy file ---
 rm -rf "$DIR/state.d" "$DIR/state.json"

@@ -76,9 +76,12 @@ else
   else STATE_FILE="$STATE_DIR/state.json"; fi
 fi
 mkdir -p "$(dirname "$STATE_FILE")"
-# Keep state.d bounded: drop per-session files untouched for >24h (a stale
-# session's own file; we rewrite ours below regardless).
-case "$STATE_FILE" in */state.d/*) find "$(dirname "$STATE_FILE")" -name '*.json' -mmin +1440 -delete 2>/dev/null ;; esac
+# Keep state.d bounded: drop OTHER sessions' files untouched for >24h. Exclude our
+# own file — this render may carry no window (nothing to write below), so pruning
+# a >24h-old own file would delete good data and push consumers onto the fallback.
+case "$STATE_FILE" in
+  */state.d/*) find "$(dirname "$STATE_FILE")" -type f -name '*.json' ! -path "$STATE_FILE" -mmin +1440 -delete 2>/dev/null ;;
+esac
 
 # Tap: persist whenever either window has a real reset time. five_hour stays the
 # top-level shape (backward compatible — existing consumers read .resets_at /
